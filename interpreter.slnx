@@ -1,0 +1,12 @@
+<Solution>
+  <Project Path="interpreter.Api/interpreter.Api.csproj" />
+  <Project Path="interpreter.AppHost/interpreter.AppHost.csproj" />
+  <Project Path="interpreter.Maui/interpreter.Maui.Droid/interpreter.Maui.Droid.csproj">
+    <Deploy />
+  </Project>
+  <Project Path="interpreter.Maui/interpreter.Maui.WinUI/interpreter.Maui.WinUI.csproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="interpreter.Maui/interpreter.Maui/interpreter.Maui.csproj" />
+  <Project Path="interpreter.ServiceDefaults/interpreter.ServiceDefaults.csproj" />
+</Solution>
