@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\interpreter.Api\interpreter.Api.csproj" />
+    <ProjectReference Include="..\Backend\interpreter.Api\interpreter.Api.csproj" />
     <ProjectReference Include="..\interpreter.Maui\interpreter.Maui.WinUI\interpreter.Maui.WinUI.csproj" />
     <ProjectReference Include="..\interpreter.Maui\interpreter.Maui.Droid\interpreter.Maui.Droid.csproj" />
   </ItemGroup>

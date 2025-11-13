@@ -8,10 +8,12 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0" />
+    <PackageReference Include="PiperSharp" Version="1.0.6" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.0.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\interpreter.ServiceDefaults\interpreter.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\interpreter.ServiceDefaults\interpreter.ServiceDefaults.csproj" />
   </ItemGroup>
 
 </Project>

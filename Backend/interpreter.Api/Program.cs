@@ -1,3 +1,4 @@
+using Microsoft.OpenApi;
 
 namespace interpreter.Api
 {
@@ -12,6 +13,19 @@ namespace interpreter.Api
             builder.Services.AddControllers();
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
+            
+            // Add Swagger/Swashbuckle for development
+            builder.Services.AddEndpointsApiExplorer();
+            builder.Services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Title = "Interpreter API",
+                    Version = "v1",
+                    Description = "API for interpreter services"
+                });
+            });
+            
             builder.AddServiceDefaults();
             var app = builder.Build();
 
@@ -19,6 +33,14 @@ namespace interpreter.Api
             if (app.Environment.IsDevelopment())
             {
                 app.MapOpenApi();
+                
+                // Enable Swagger UI
+                app.UseSwagger();
+                app.UseSwaggerUI(c =>
+                {
+                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Interpreter API V1");
+                    c.RoutePrefix = "swagger"; // Access at /swagger
+                });
             }
 
             app.UseHttpsRedirection();
