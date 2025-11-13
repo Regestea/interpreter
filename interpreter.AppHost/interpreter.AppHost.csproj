@@ -8,4 +8,10 @@
     <UserSecretsId>cf9b6e0e-e205-49fd-9c67-087ccbb16373</UserSecretsId>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\interpreter.Api\interpreter.Api.csproj" />
+    <ProjectReference Include="..\interpreter.Maui\interpreter.Maui.WinUI\interpreter.Maui.WinUI.csproj" />
+    <ProjectReference Include="..\interpreter.Maui\interpreter.Maui.Droid\interpreter.Maui.Droid.csproj" />
+  </ItemGroup>
+
 </Project>

@@ -1,4 +1,6 @@
-﻿namespace interpreter.Maui.WinUI
+﻿using Microsoft.Extensions.Hosting;
+
+namespace interpreter.Maui.WinUI
 {
     public static class MauiProgram
     {
@@ -8,6 +10,7 @@
 
             builder
                 .UseSharedMauiApp();
+            builder.AddServiceDefaults();
 
             return builder.Build();
         }

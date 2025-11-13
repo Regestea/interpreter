@@ -1,4 +1,6 @@
-﻿namespace interpreter.Maui.Droid
+﻿using Microsoft.Extensions.Hosting;
+
+namespace interpreter.Maui.Droid
 {
     public static class MauiProgram
     {
@@ -8,6 +10,7 @@
 
             builder
                 .UseSharedMauiApp();
+            builder.AddServiceDefaults();
 
             return builder.Build();
         }

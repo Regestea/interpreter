@@ -1,6 +1,7 @@
 <Solution>
   <Project Path="interpreter.Api/interpreter.Api.csproj" />
   <Project Path="interpreter.AppHost/interpreter.AppHost.csproj" />
+  <Project Path="interpreter.Maui.ServiceDefaults/interpreter.Maui.ServiceDefaults.csproj" />
   <Project Path="interpreter.Maui/interpreter.Maui.Droid/interpreter.Maui.Droid.csproj">
     <Deploy />
   </Project>
