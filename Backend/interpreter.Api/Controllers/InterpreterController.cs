@@ -28,6 +28,20 @@ public class InterpreterController : ControllerBase
             return BadRequest(new { error = "No file provided or file is empty" });
         }
 
+        // Validate that the file is a WAV audio file
+        var fileExtension = Path.GetExtension(file.FileName)?.ToLowerInvariant();
+        var validContentTypes = new[] { "audio/wav", "audio/x-wav", "audio/wave" };
+        
+        if (fileExtension != ".wav")
+        {
+            return BadRequest(new { error = "Only WAV audio files are allowed" });
+        }
+
+        if (!validContentTypes.Contains(file.ContentType?.ToLowerInvariant()))
+        {
+            return BadRequest(new { error = "Only WAV audio files are allowed" });
+        }
+
         try
         {
             _logger.LogInformation("Receiving file: {FileName}, Size: {FileSize} bytes", 
