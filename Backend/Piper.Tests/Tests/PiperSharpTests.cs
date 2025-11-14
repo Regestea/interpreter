@@ -1,12 +1,11 @@
 ﻿using System.Diagnostics;
 using NAudio.Wave;
-using NUnit.Framework;
+using Xunit;
 using PiperSharp.Models;
 
 namespace PiperSharp.Tests.Tests
 {
-    [TestFixture]
-    public class PiperSharpTests
+    public class PiperSharpTests : IAsyncLifetime
     {
         private const string TestModelName = "en_US-ryan-high";
         private const string TestPhrase = "Hello there!";
@@ -23,8 +22,7 @@ namespace PiperSharp.Tests.Tests
         private string _piperPath = null!;
         private string _piperExecutablePath = null!;
 
-        [OneTimeSetUp]
-        public async Task OneTimeSetUp()
+        public async Task InitializeAsync()
         {
             _testDirectory = Path.Combine(Path.GetTempPath(), "PiperSharpTests", Guid.NewGuid().ToString());
             Directory.CreateDirectory(_testDirectory);
@@ -43,8 +41,7 @@ namespace PiperSharp.Tests.Tests
             }
         }
 
-        [OneTimeTearDown]
-        public void OneTimeTearDown()
+        public Task DisposeAsync()
         {
             if (Directory.Exists(_testDirectory))
             {
@@ -57,23 +54,23 @@ namespace PiperSharp.Tests.Tests
                     // Best effort cleanup
                 }
             }
+            
+            return Task.CompletedTask;
         }
 
-        [Test]
-        [Order(1)]
+        [Fact]
         public void DownloadPiper_ShouldCreatePiperDirectory()
         {
             // Assert
-            Assert.That(Directory.Exists(_piperPath), Is.True, "Piper directory should exist after download");
-            Assert.That(File.Exists(_piperExecutablePath), Is.True, "Piper executable should exist");
+            Assert.True(Directory.Exists(_piperPath), "Piper directory should exist after download");
+            Assert.True(File.Exists(_piperExecutablePath), "Piper executable should exist");
         }
 
-        [Test]
-        [Order(2)]
-        [TestCase("en_US-ryan-high")]
-        [TestCase("en_US-hfc_female-medium")]
-        [TestCase("en_US-amy-medium")]
-        [TestCase("fa_IR-gyro-medium")]
+        [Theory]
+        [InlineData("en_US-ryan-high")]
+        [InlineData("en_US-hfc_female-medium")]
+        [InlineData("en_US-amy-medium")]
+        [InlineData("fa_IR-gyro-medium")]
         public async Task DownloadModel_ShouldDownloadAndExtractModel_WhenValidModelNameProvided(string modelName)
         {
             // Arrange
@@ -81,43 +78,54 @@ namespace PiperSharp.Tests.Tests
 
             // Act
             var models = await PiperDownloader.GetHuggingFaceModelList();
-            Assert.That(models, Is.Not.Null, "Model list should not be null");
+            Assert.NotNull(models);
             
             var model = models[modelName];
             model = await model.DownloadModel(_testDirectory);
 
             // Assert
-            Assert.That(models.Count, Is.GreaterThan(0), "Model list should contain models");
-            Assert.That(model.Key, Is.EqualTo(modelName), $"Model key should be '{modelName}'");
-            Assert.That(Directory.Exists(modelPath), Is.True, $"Model directory '{modelPath}' should exist");
-            Assert.That(model.ModelLocation, Is.EqualTo(modelPath), "Model location should match expected path");
+            Assert.True(models.Count > 0, "Model list should contain models");
+            Assert.Equal(modelName, model.Key);
+            Assert.True(Directory.Exists(modelPath), $"Model directory '{modelPath}' should exist");
+            Assert.Equal(modelPath, model.ModelLocation);
         }
 
-        [Test]
-        [Order(3)]
-        [TestCase("en_US-ryan-high")]
-        [TestCase("en_US-hfc_female-medium")]
-        [TestCase("en_US-amy-medium")]
-        [TestCase("fa_IR-gyro-medium")]
+        [Theory]
+        [InlineData("en_US-ryan-high")]
+        [InlineData("en_US-hfc_female-medium")]
+        [InlineData("en_US-amy-medium")]
+        [InlineData("fa_IR-gyro-medium")]
         public async Task LoadModel_ShouldLoadPreviouslyDownloadedModel_WhenModelExists(string modelName)
         {
             // Arrange
             var modelPath = Path.Combine(_testDirectory, modelName);
+            
+            // Download the model first
+            var models = await PiperDownloader.GetHuggingFaceModelList();
+            Assert.NotNull(models);
+            var modelToDownload = models[modelName];
+            await modelToDownload.DownloadModel(_testDirectory);
 
             // Act
             var model = await VoiceModel.LoadModel(modelPath);
 
             // Assert
-            Assert.That(model, Is.Not.Null, "Loaded model should not be null");
-            Assert.That(model.Key, Is.EqualTo(modelName), $"Loaded model key should be '{modelName}'");
+            Assert.NotNull(model);
+            Assert.Equal(modelName, model.Key);
         }
 
-        [Test]
-        [Order(4)]
+        [Fact]
         public async Task InferAsync_ShouldGenerateValidWavData_WhenProvidedWithText()
         {
             // Arrange
             var modelPath = Path.Combine(_testDirectory, TestModelName);
+            
+            // Download the model first
+            var models = await PiperDownloader.GetHuggingFaceModelList();
+            Assert.NotNull(models);
+            var modelToDownload = models[TestModelName];
+            await modelToDownload.DownloadModel(_testDirectory);
+            
             var model = await VoiceModel.LoadModel(modelPath);
             
             var piperProvider = new PiperProvider(new PiperConfiguration
@@ -130,18 +138,24 @@ namespace PiperSharp.Tests.Tests
             var result = await piperProvider.InferAsync(TestPhrase);
 
             // Assert
-            Assert.That(result, Is.Not.Null, "Result should not be null");
-            Assert.That(result.Length, Is.GreaterThan(MinimumExpectedWavFileSize), 
+            Assert.NotNull(result);
+            Assert.True(result.Length > MinimumExpectedWavFileSize, 
                 $"WAV file should be at least {MinimumExpectedWavFileSize} bytes");
             AssertIsValidWavFile(result);
         }
 
-        [Test]
-        [Order(5)]
+        [Fact]
         public async Task InferAsync_WithWaveProvider_ShouldGenerateValidAudioStream_WhenProvidedWithText()
         {
             // Arrange
             var modelPath = Path.Combine(_testDirectory, TestModelName);
+            
+            // Download the model first
+            var models = await PiperDownloader.GetHuggingFaceModelList();
+            Assert.NotNull(models);
+            var modelToDownload = models[TestModelName];
+            await modelToDownload.DownloadModel(_testDirectory);
+            
             var model = await VoiceModel.LoadModel(modelPath);
             
             var piperWaveProvider = new PiperWaveProvider(new PiperConfiguration
@@ -159,7 +173,7 @@ namespace PiperSharp.Tests.Tests
             var bytesRead = piperWaveProvider.Read(buffer, 0, buffer.Length);
 
             // Assert
-            Assert.That(bytesRead, Is.GreaterThan(0), "Should read audio data from wave provider");
+            Assert.True(bytesRead > 0, "Should read audio data from wave provider");
             
             // Convert to WAV format for validation
             using var rawStream = new RawSourceWaveStream(buffer, 0, bytesRead, piperWaveProvider.WaveFormat);
@@ -173,27 +187,27 @@ namespace PiperSharp.Tests.Tests
             AssertIsValidWavFile(wavBytes);
         }
 
-        [Test]
+        [Fact]
         public async Task GetHuggingFaceModelList_ShouldReturnNonEmptyList()
         {
             // Act
             var models = await PiperDownloader.GetHuggingFaceModelList();
 
             // Assert
-            Assert.That(models, Is.Not.Null, "Model list should not be null");
-            Assert.That(models!.Count, Is.GreaterThan(0), "Should retrieve at least one model from HuggingFace");
-            Assert.That(models.ContainsKey(TestModelName), Is.True, 
+            Assert.NotNull(models);
+            Assert.True(models!.Count > 0, "Should retrieve at least one model from HuggingFace");
+            Assert.True(models.ContainsKey(TestModelName), 
                 $"Model list should contain the test model '{TestModelName}'");
         }
 
         private static void AssertIsValidWavFile(byte[] data)
         {
-            Assert.That(data.Length, Is.GreaterThanOrEqualTo(4), 
+            Assert.True(data.Length >= 4, 
                 "Data should be at least 4 bytes to contain WAV header");
-            Assert.That(data[0], Is.EqualTo(WavMagicByte1), "First byte should be 'R' (82)");
-            Assert.That(data[1], Is.EqualTo(WavMagicByte2), "Second byte should be 'I' (73)");
-            Assert.That(data[2], Is.EqualTo(WavMagicByte3), "Third byte should be 'F' (70)");
-            Assert.That(data[3], Is.EqualTo(WavMagicByte4), "Fourth byte should be 'F' (70)");
+            Assert.Equal(WavMagicByte1, data[0]);
+            Assert.Equal(WavMagicByte2, data[1]);
+            Assert.Equal(WavMagicByte3, data[2]);
+            Assert.Equal(WavMagicByte4, data[3]);
         }
 
         private async Task MakePiperExecutableAsync()
