@@ -62,7 +62,7 @@ namespace PiperSharp.Tests.Tests
         public async Task TestTTSInference()
         {
             var cwd = Directory.GetCurrentDirectory();
-            const string modelName = "ar_JO-kareem-low";
+            const string modelName = "en_US-ryan-high";
             var modelPath = Path.Join(cwd, modelName);
             var piperPath = Path.Join(cwd, "piper",
                 Environment.OSVersion.Platform == PlatformID.Win32NT ? "piper.exe" : "piper");
@@ -87,7 +87,7 @@ namespace PiperSharp.Tests.Tests
         public async Task TestTTSInferenceWaveProvider()
         {
             var cwd = Directory.GetCurrentDirectory();
-            const string modelName = "ar_JO-kareem-low";
+            const string modelName = "en_US-ryan-high";
             var modelPath = Path.Join(cwd, modelName);
             var piperPath = Path.Join(cwd, "piper",
                 Environment.OSVersion.Platform == PlatformID.Win32NT ? "piper.exe" : "piper");
