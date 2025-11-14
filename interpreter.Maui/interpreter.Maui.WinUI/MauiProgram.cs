@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿using interpreter.ServiceDefaults;
+using Microsoft.Extensions.Hosting;
 
 namespace interpreter.Maui.WinUI
 {

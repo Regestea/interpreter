@@ -1,6 +1,6 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿using interpreter.Maui.ServiceDefaults;
 
-namespace interpreter.Maui.Droid
+namespace interpreter.Maui
 {
     public static class MauiProgram
     {

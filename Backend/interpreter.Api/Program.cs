@@ -1,3 +1,4 @@
+using interpreter.ServiceDefaults;
 using Microsoft.OpenApi;
 
 namespace interpreter.Api
