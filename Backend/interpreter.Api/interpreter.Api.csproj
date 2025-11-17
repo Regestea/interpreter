@@ -10,6 +10,7 @@
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0" />
     <PackageReference Include="PiperSharp" Version="1.0.6" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.0.1" />
+    <PackageReference Include="Whisper.net.AllRuntimes" Version="1.9.0" />
   </ItemGroup>
 
   <ItemGroup>

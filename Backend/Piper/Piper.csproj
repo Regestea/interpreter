@@ -20,7 +20,6 @@
       <PackageReference Include="NAudio.Core" Version="2.2.1" />
       <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
       <PackageReference Include="SharpCompress" Version="0.41.0" />
-        <PackageReference Include="System.Text.Json" Version="9.0.10" />
     </ItemGroup>
 
 </Project>

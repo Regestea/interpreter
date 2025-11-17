@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using interpreter.Api.Services;
 
 namespace interpreter.Api.Controllers;
 
@@ -7,10 +8,14 @@ namespace interpreter.Api.Controllers;
 public class InterpreterController : ControllerBase
 {
     private readonly ILogger<InterpreterController> _logger;
+    private readonly IWhisperService _whisperService;
 
-    public InterpreterController(ILogger<InterpreterController> logger)
+    public InterpreterController(
+        ILogger<InterpreterController> logger,
+        IWhisperService whisperService)
     {
         _logger = logger;
+        _whisperService = whisperService;
     }
 
     /// <summary>
@@ -21,25 +26,19 @@ public class InterpreterController : ControllerBase
     [HttpPost("upload")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> UploadFile(IFormFile file)
+    public async Task<IActionResult> UploadFile(IFormFile file, CancellationToken cancellationToken)
     {
-        if (file == null || file.Length == 0)
+        if (file.Length == 0)
         {
-            return BadRequest(new { error = "No file provided or file is empty" });
+            return BadRequest(new { error = "File is empty" });
         }
 
-        // Validate that the file is a WAV audio file
-        var fileExtension = Path.GetExtension(file.FileName)?.ToLowerInvariant();
-        var validContentTypes = new[] { "audio/wav", "audio/x-wav", "audio/wave" };
+        // Validate that the file is an audio file
+        var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
         
-        if (fileExtension != ".wav")
+        if (string.IsNullOrEmpty(fileExtension))
         {
-            return BadRequest(new { error = "Only WAV audio files are allowed" });
-        }
-
-        if (!validContentTypes.Contains(file.ContentType?.ToLowerInvariant()))
-        {
-            return BadRequest(new { error = "Only WAV audio files are allowed" });
+            return BadRequest(new { error = "Invalid file extension" });
         }
 
         try
@@ -47,26 +46,19 @@ public class InterpreterController : ControllerBase
             _logger.LogInformation("Receiving file: {FileName}, Size: {FileSize} bytes", 
                 file.FileName, file.Length);
 
-            // Process the file stream
-            using (var stream = file.OpenReadStream())
-            {
-                // Example: Read the stream content
-                using (var memoryStream = new MemoryStream())
-                {
-                    await stream.CopyToAsync(memoryStream);
-                    var fileBytes = memoryStream.ToArray();
-                    
-                    // TODO: Add your file processing logic here
-                    _logger.LogInformation("File processed successfully: {FileName}", file.FileName);
-                }
-            }
+            // Process the file stream with Whisper
+            await using var stream = file.OpenReadStream();
+            var transcription = await _whisperService.TranscribeStreamAsync(stream, cancellationToken);
+            
+            _logger.LogInformation("File processed successfully: {FileName}", file.FileName);
 
             return Ok(new
             {
-                message = "File uploaded successfully",
+                message = "File uploaded and transcribed successfully",
                 fileName = file.FileName,
                 fileSize = file.Length,
-                contentType = file.ContentType
+                contentType = file.ContentType,
+                transcription = transcription
             });
         }
         catch (Exception ex)
@@ -78,34 +70,29 @@ public class InterpreterController : ControllerBase
     }
 
     /// <summary>
-    /// Upload a file stream directly
+    /// Upload a file stream directly with real-time transcription
     /// </summary>
     /// <returns>Result of the stream processing</returns>
     [HttpPost("upload-stream")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> UploadStream()
+    public async Task<IActionResult> UploadStream(CancellationToken cancellationToken)
     {
         try
         {
-            if (!Request.HasFormContentType && Request.ContentLength > 0)
+            if (Request.ContentLength > 0)
             {
-                // Handle raw stream upload
-                using (var memoryStream = new MemoryStream())
+                _logger.LogInformation("Stream received, Size: {Size} bytes", Request.ContentLength);
+                
+                // Use streaming transcription for real-time results
+                var transcription = await _whisperService.TranscribeStreamAsync(Request.Body, cancellationToken);
+                
+                return Ok(new
                 {
-                    await Request.Body.CopyToAsync(memoryStream);
-                    var streamBytes = memoryStream.ToArray();
-                    
-                    _logger.LogInformation("Stream received, Size: {Size} bytes", streamBytes.Length);
-                    
-                    // TODO: Add your stream processing logic here
-                    
-                    return Ok(new
-                    {
-                        message = "Stream processed successfully",
-                        size = streamBytes.Length
-                    });
-                }
+                    message = "Stream processed successfully",
+                    size = Request.ContentLength,
+                    transcription = transcription
+                });
             }
 
             return BadRequest(new { error = "No stream data provided" });
@@ -115,6 +102,49 @@ public class InterpreterController : ControllerBase
             _logger.LogError(ex, "Error processing stream");
             return StatusCode(StatusCodes.Status500InternalServerError, 
                 new { error = "An error occurred while processing the stream" });
+        }
+    }
+
+    /// <summary>
+    /// Upload audio stream and get real-time transcription segments (Server-Sent Events)
+    /// </summary>
+    /// <returns>Streaming transcription segments</returns>
+    [HttpPost("upload-stream-realtime")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task UploadStreamRealtime(CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (Request.ContentLength > 0)
+            {
+                _logger.LogInformation("Starting real-time stream transcription, Size: {Size} bytes", Request.ContentLength);
+                
+                Response.ContentType = "text/event-stream";
+                Response.Headers.Append("Cache-Control", "no-cache");
+                Response.Headers.Append("Connection", "keep-alive");
+                
+                await foreach (var segment in _whisperService.TranscribeStreamingAsync(Request.Body, cancellationToken))
+                {
+                    var message = $"data: {segment}\n\n";
+                    await Response.WriteAsync(message, cancellationToken);
+                    await Response.Body.FlushAsync(cancellationToken);
+                }
+                
+                await Response.WriteAsync("data: [DONE]\n\n", cancellationToken);
+                await Response.Body.FlushAsync(cancellationToken);
+            }
+            else
+            {
+                Response.StatusCode = StatusCodes.Status400BadRequest;
+                await Response.WriteAsJsonAsync(new { error = "No stream data provided" }, cancellationToken);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing real-time stream");
+            Response.StatusCode = StatusCodes.Status500InternalServerError;
+            await Response.WriteAsJsonAsync(new { error = "An error occurred while processing the stream" }, cancellationToken);
         }
     }
 }

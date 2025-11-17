@@ -1,5 +1,6 @@
 using interpreter.ServiceDefaults;
-using Microsoft.OpenApi;
+using interpreter.Api.Models;
+using interpreter.Api.Services;
 
 namespace interpreter.Api
 {
@@ -10,22 +11,20 @@ namespace interpreter.Api
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
-
+            // Configure Whisper settings from appsettings.json
+            builder.Services.Configure<WhisperSettings>(
+                builder.Configuration.GetSection("Whisper"));
+            
+            // Register WhisperService as singleton for better performance and resource management
+            builder.Services.AddSingleton<IWhisperService, WhisperService>();
+            
             builder.Services.AddControllers();
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
             
             // Add Swagger/Swashbuckle for development
             builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc("v1", new OpenApiInfo
-                {
-                    Title = "Interpreter API",
-                    Version = "v1",
-                    Description = "API for interpreter services"
-                });
-            });
+            builder.Services.AddSwaggerGen();
             
             builder.AddServiceDefaults();
             var app = builder.Build();
