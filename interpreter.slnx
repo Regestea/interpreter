@@ -1,9 +1,13 @@
 <Solution>
   <Folder Name="/Backend/">
-    <Project Path="Backend/interpreter.Api.Test/interpreter.Api.Test.csproj" />
+    <Project Path="Backend/interpreter.Api.Tests/interpreter.Api.Tests.csproj" />
     <Project Path="Backend/interpreter.Api/interpreter.Api.csproj" />
     <Project Path="Backend/Piper.Tests/Piper.Tests.csproj" />
     <Project Path="Backend/Piper/Piper.csproj" />
+  </Folder>
+  <Folder Name="/Shared/">
+    <Project Path="Shared/Opus.Tests/Opus.Tests.csproj" />
+    <Project Path="Shared/Opus/Opus.csproj" />
   </Folder>
   <Project Path="interpreter.AppHost/interpreter.AppHost.csproj" />
   <Project Path="interpreter.Maui.ServiceDefaults/interpreter.Maui.ServiceDefaults.csproj" />
