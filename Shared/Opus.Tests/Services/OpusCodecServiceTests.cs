@@ -1,15 +1,18 @@
 using Opus.Services;
 using NAudio.Wave;
+using Xunit.Abstractions;
 
 namespace Opus.Tests.Services;
 
 public class OpusCodecServiceTests
 {
+    private readonly ITestOutputHelper _testOutputHelper;
     private readonly IOpusCodecService _opusCodecService;
     private readonly string _testAudioPath;
 
-    public OpusCodecServiceTests()
+    public OpusCodecServiceTests(ITestOutputHelper testOutputHelper)
     {
+        _testOutputHelper = testOutputHelper;
         _opusCodecService = new OpusCodecService();
         _testAudioPath = Path.Combine("AudioSample", "sample-audio.wav");
     }
@@ -19,9 +22,11 @@ public class OpusCodecServiceTests
     {
         // Arrange
         await using var wavStream = File.OpenRead(_testAudioPath);
+        _testOutputHelper.WriteLine($"Before Encode - WAV file size: {wavStream.Length} bytes ({wavStream.Length / 1024.0:F2} KB)");
 
         // Act
         var opusStream = await _opusCodecService.EncodeAsync(wavStream);
+        _testOutputHelper.WriteLine($"After Encode - Opus file size: {opusStream.Length} bytes ({opusStream.Length / 1024.0:F2} KB)");
 
         // Assert
         Assert.NotNull(opusStream);
@@ -37,10 +42,14 @@ public class OpusCodecServiceTests
     {
         // Arrange
         await using var wavStream = File.OpenRead(_testAudioPath);
+        _testOutputHelper.WriteLine($"Before Encode - WAV file size: {wavStream.Length} bytes ({wavStream.Length / 1024.0:F2} KB)");
         var opusStream = await _opusCodecService.EncodeAsync(wavStream);
+        _testOutputHelper.WriteLine($"After Encode - Opus file size: {opusStream.Length} bytes ({opusStream.Length / 1024.0:F2} KB)");
 
         // Act
+        _testOutputHelper.WriteLine($"Before Decode - Opus file size: {opusStream.Length} bytes ({opusStream.Length / 1024.0:F2} KB)");
         var decodedStream = await _opusCodecService.DecodeAsync(opusStream);
+        _testOutputHelper.WriteLine($"After Decode - WAV file size: {decodedStream.Length} bytes ({decodedStream.Length / 1024.0:F2} KB)");
 
         // Assert
         Assert.NotNull(decodedStream);
@@ -63,13 +72,17 @@ public class OpusCodecServiceTests
     {
         // Arrange
         await using var originalWavStream = File.OpenRead(_testAudioPath);
+        _testOutputHelper.WriteLine($"Before Encode - Original WAV file size: {originalWavStream.Length} bytes ({originalWavStream.Length / 1024.0:F2} KB)");
         
         // Act - Encode
         var opusStream = await _opusCodecService.EncodeAsync(originalWavStream);
+        _testOutputHelper.WriteLine($"After Encode - Opus file size: {opusStream.Length} bytes ({opusStream.Length / 1024.0:F2} KB)");
         
         // Act - Decode
         opusStream.Position = 0;
+        _testOutputHelper.WriteLine($"Before Decode - Opus file size: {opusStream.Length} bytes ({opusStream.Length / 1024.0:F2} KB)");
         var decodedStream = await _opusCodecService.DecodeAsync(opusStream);
+        _testOutputHelper.WriteLine($"After Decode - Decoded WAV file size: {decodedStream.Length} bytes ({decodedStream.Length / 1024.0:F2} KB)");
 
         // Assert
         Assert.NotNull(decodedStream);
@@ -128,9 +141,14 @@ public class OpusCodecServiceTests
         // Arrange
         await using var wavStream = File.OpenRead(_testAudioPath);
         var originalSize = wavStream.Length;
+        _testOutputHelper.WriteLine($"Before Encode - Original WAV size: {originalSize} bytes ({originalSize / 1024.0:F2} KB)");
 
         // Act
         var opusStream = await _opusCodecService.EncodeAsync(wavStream);
+        _testOutputHelper.WriteLine($"After Encode - Opus size: {opusStream.Length} bytes ({opusStream.Length / 1024.0:F2} KB)");
+        
+        var compressionRatio = (double)originalSize / opusStream.Length;
+        _testOutputHelper.WriteLine($"Compression ratio: {compressionRatio:F2}x");
 
         // Assert
         Assert.True(opusStream.Length < originalSize, 
