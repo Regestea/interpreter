@@ -15,6 +15,14 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\interpreter.ServiceDefaults\interpreter.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\Shared\Opus\Opus.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="E:\LocalModels\ggml-large-v3.bin">
+      <Link>WhisperAiModel\ggml-large-v3.bin</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

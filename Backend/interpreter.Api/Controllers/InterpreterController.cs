@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using interpreter.Api.Services;
+using Opus.Services;
 
 namespace interpreter.Api.Controllers;
 
@@ -9,19 +10,23 @@ public class InterpreterController : ControllerBase
 {
     private readonly ILogger<InterpreterController> _logger;
     private readonly IWhisperService _whisperService;
+    private readonly IOpusCodecService _opusCodecService;
 
     public InterpreterController(
         ILogger<InterpreterController> logger,
-        IWhisperService whisperService)
+        IWhisperService whisperService,
+        IOpusCodecService opusCodecService)
     {
         _logger = logger;
         _whisperService = whisperService;
+        _opusCodecService = opusCodecService;
     }
 
     /// <summary>
-    /// Upload a file for interpretation
+    /// Upload an Opus-encoded audio file for interpretation
     /// </summary>
-    /// <param name="file">The file to upload</param>
+    /// <param name="file">The Opus-encoded audio file to upload</param>
+    /// <param name="cancellationToken">Cancellation token to cancel the request</param>
     /// <returns>Result of the file processing</returns>
     [HttpPost("upload")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -43,12 +48,15 @@ public class InterpreterController : ControllerBase
 
         try
         {
-            _logger.LogInformation("Receiving file: {FileName}, Size: {FileSize} bytes", 
+            _logger.LogInformation("Receiving Opus-encoded file: {FileName}, Size: {FileSize} bytes", 
                 file.FileName, file.Length);
 
-            // Process the file stream with Whisper
-            await using var stream = file.OpenReadStream();
-            var transcription = await _whisperService.TranscribeStreamAsync(stream, cancellationToken);
+            // Decode the Opus stream to WAV format
+            await using var opusStream = file.OpenReadStream();
+            await using var decodedWavStream = await _opusCodecService.DecodeAsync(opusStream, cancellationToken);
+            
+            // Process the decoded WAV stream with Whisper
+            var transcription = await _whisperService.TranscribeStreamAsync(decodedWavStream, cancellationToken);
             
             _logger.LogInformation("File processed successfully: {FileName}", file.FileName);
 

@@ -1,6 +1,7 @@
 using interpreter.ServiceDefaults;
 using interpreter.Api.Models;
 using interpreter.Api.Services;
+using Opus.Services;
 
 namespace interpreter.Api
 {
@@ -17,6 +18,9 @@ namespace interpreter.Api
             
             // Register WhisperService as singleton for better performance and resource management
             builder.Services.AddSingleton<IWhisperService, WhisperService>();
+            
+            // Register OpusCodecService as scoped
+            builder.Services.AddScoped<IOpusCodecService, OpusCodecService>();
             
             builder.Services.AddControllers();
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi

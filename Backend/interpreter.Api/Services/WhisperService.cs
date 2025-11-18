@@ -31,11 +31,7 @@ namespace interpreter.Api.Services
         {
             _settings = settings.Value ?? throw new ArgumentNullException(nameof(settings));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-
-            if (!File.Exists(_settings.ModelPath))
-            {
-                throw new FileNotFoundException("Whisper model file not found.", _settings.ModelPath);
-            }
+            
 
             _logger.LogInformation("Initializing Whisper service with model: {ModelPath}, Language: {Language}",
                 _settings.ModelPath, _settings.Language);
