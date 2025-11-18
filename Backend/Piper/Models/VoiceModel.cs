@@ -43,7 +43,7 @@ namespace PiperSharp.Models
 
 
         public static Task<VoiceModel> LoadModelByKey(string modelKey) 
-            => LoadModel(Path.Join(PiperDownloader.DefaultModelLocation, modelKey));
+            => LoadModel(Path.Join(PiperDataExtractor.DefaultModelLocation, modelKey));
         public static async Task<VoiceModel> LoadModel(string directory)
         {
             if (!Directory.Exists(directory)) throw new DirectoryNotFoundException("Model directory not found!");

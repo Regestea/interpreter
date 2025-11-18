@@ -21,4 +21,11 @@
       </PackageReference>
     </ItemGroup>
 
+    <ItemGroup>
+      <Content Include="..\Piper\PiperFiles\PiperData.zip">
+        <Link>PiperFiles\PiperData.zip</Link>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+
 </Project>

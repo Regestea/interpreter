@@ -7,8 +7,8 @@ namespace PiperSharp.Tests.Tests
 {
     public class PiperSharpTests : IAsyncLifetime
     {
-        private const string TestModelName = "en_US-ryan-high";
-        private const string TestPhrase = "Hello there!";
+        private const string TestModelName = "en_US-hfc_female-medium";
+        private const string TestPhrase = "A rainbow is a meteorological phenomenon that is caused by reflection, refraction, and dispersion of light in water droplets resulting in a spectrum of light appearing in the sky.";
         private const int MinimumExpectedWavFileSize = 20_000;
         private const int WaveBufferSize = 19200;
         
@@ -22,7 +22,7 @@ namespace PiperSharp.Tests.Tests
         private string _piperPath = null!;
         private string _piperExecutablePath = null!;
 
-        public async Task InitializeAsync()
+        public Task InitializeAsync()
         {
             _testDirectory = Path.Combine(Path.GetTempPath(), "PiperSharpTests", Guid.NewGuid().ToString());
             Directory.CreateDirectory(_testDirectory);
@@ -31,14 +31,16 @@ namespace PiperSharp.Tests.Tests
             _piperExecutablePath = Path.Combine(_piperPath,
                 Environment.OSVersion.Platform == PlatformID.Win32NT ? "piper.exe" : "piper");
 
-            // Download Piper once for all tests
-            await PiperDownloader.DownloadPiper().ExtractPiper(_testDirectory);
+            // Extract Piper and models from local zip file
+            PiperDataExtractor.EnsurePiperExtracted(_testDirectory);
 
-            // Make executable on Unix systems
-            if (Environment.OSVersion.Platform != PlatformID.Win32NT)
+            // Make executable on Unix systems (if needed)
+            if (Environment.OSVersion.Platform != PlatformID.Win32NT && File.Exists(_piperExecutablePath))
             {
-                await MakePiperExecutableAsync();
+                MakePiperExecutable();
             }
+            
+            return Task.CompletedTask;
         }
 
         public Task DisposeAsync()
@@ -59,10 +61,10 @@ namespace PiperSharp.Tests.Tests
         }
 
         [Fact]
-        public void DownloadPiper_ShouldCreatePiperDirectory()
+        public void ExtractPiper_ShouldCreatePiperDirectory()
         {
             // Assert
-            Assert.True(Directory.Exists(_piperPath), "Piper directory should exist after download");
+            Assert.True(Directory.Exists(_piperPath), "Piper directory should exist after extraction");
             Assert.True(File.Exists(_piperExecutablePath), "Piper executable should exist");
         }
 
@@ -71,23 +73,24 @@ namespace PiperSharp.Tests.Tests
         [InlineData("en_US-hfc_female-medium")]
         [InlineData("en_US-amy-medium")]
         [InlineData("fa_IR-gyro-medium")]
-        public async Task DownloadModel_ShouldDownloadAndExtractModel_WhenValidModelNameProvided(string modelName)
+        public void GetModel_ShouldReturnModel_WhenValidModelNameProvided(string modelName)
         {
             // Arrange
-            var modelPath = Path.Combine(_testDirectory, modelName);
+            var modelsDir = Path.Combine(_testDirectory, "models");
+            var modelPath = Path.Combine(modelsDir, modelName);
 
             // Act
-            var models = await PiperDownloader.GetHuggingFaceModelList();
+            var models = PiperDataExtractor.GetAvailableModels(modelsDir);
             Assert.NotNull(models);
             
-            var model = models[modelName];
-            model = await model.DownloadModel(_testDirectory);
+            var model = models.GetValueOrDefault(modelName);
 
             // Assert
             Assert.True(models.Count > 0, "Model list should contain models");
-            Assert.Equal(modelName, model.Key);
+            Assert.NotNull(model);
+            Assert.Equal(modelName, model!.Key);
             Assert.True(Directory.Exists(modelPath), $"Model directory '{modelPath}' should exist");
-            Assert.Equal(modelPath, model.ModelLocation);
+            Assert.Equal(modelPath, model.ModelLocation ?? string.Empty);
         }
 
         [Theory]
@@ -95,16 +98,10 @@ namespace PiperSharp.Tests.Tests
         [InlineData("en_US-hfc_female-medium")]
         [InlineData("en_US-amy-medium")]
         [InlineData("fa_IR-gyro-medium")]
-        public async Task LoadModel_ShouldLoadPreviouslyDownloadedModel_WhenModelExists(string modelName)
+        public async Task LoadModel_ShouldLoadExtractedModel_WhenModelExists(string modelName)
         {
             // Arrange
-            var modelPath = Path.Combine(_testDirectory, modelName);
-            
-            // Download the model first
-            var models = await PiperDownloader.GetHuggingFaceModelList();
-            Assert.NotNull(models);
-            var modelToDownload = models[modelName];
-            await modelToDownload.DownloadModel(_testDirectory);
+            var modelPath = Path.Combine(_testDirectory, "models", modelName);
 
             // Act
             var model = await VoiceModel.LoadModel(modelPath);
@@ -118,14 +115,7 @@ namespace PiperSharp.Tests.Tests
         public async Task InferAsync_ShouldGenerateValidWavData_WhenProvidedWithText()
         {
             // Arrange
-            var modelPath = Path.Combine(_testDirectory, TestModelName);
-            
-            // Download the model first
-            var models = await PiperDownloader.GetHuggingFaceModelList();
-            Assert.NotNull(models);
-            var modelToDownload = models[TestModelName];
-            await modelToDownload.DownloadModel(_testDirectory);
-            
+            var modelPath = Path.Combine(_testDirectory, "models", TestModelName);
             var model = await VoiceModel.LoadModel(modelPath);
             
             var piperProvider = new PiperProvider(new PiperConfiguration
@@ -148,14 +138,7 @@ namespace PiperSharp.Tests.Tests
         public async Task InferAsync_WithWaveProvider_ShouldGenerateValidAudioStream_WhenProvidedWithText()
         {
             // Arrange
-            var modelPath = Path.Combine(_testDirectory, TestModelName);
-            
-            // Download the model first
-            var models = await PiperDownloader.GetHuggingFaceModelList();
-            Assert.NotNull(models);
-            var modelToDownload = models[TestModelName];
-            await modelToDownload.DownloadModel(_testDirectory);
-            
+            var modelPath = Path.Combine(_testDirectory, "models", TestModelName);
             var model = await VoiceModel.LoadModel(modelPath);
             
             var piperWaveProvider = new PiperWaveProvider(new PiperConfiguration
@@ -188,14 +171,17 @@ namespace PiperSharp.Tests.Tests
         }
 
         [Fact]
-        public async Task GetHuggingFaceModelList_ShouldReturnNonEmptyList()
+        public void GetAvailableModels_ShouldReturnNonEmptyList()
         {
+            // Arrange
+            var modelsDir = Path.Combine(_testDirectory, "models");
+            
             // Act
-            var models = await PiperDownloader.GetHuggingFaceModelList();
+            var models = PiperDataExtractor.GetAvailableModels(modelsDir);
 
             // Assert
             Assert.NotNull(models);
-            Assert.True(models!.Count > 0, "Should retrieve at least one model from HuggingFace");
+            Assert.True(models.Count > 0, "Should retrieve at least one model from extracted zip");
             Assert.True(models.ContainsKey(TestModelName), 
                 $"Model list should contain the test model '{TestModelName}'");
         }
@@ -210,7 +196,7 @@ namespace PiperSharp.Tests.Tests
             Assert.Equal(WavMagicByte4, data[3]);
         }
 
-        private async Task MakePiperExecutableAsync()
+        private void MakePiperExecutable()
         {
             using var process = Process.Start(new ProcessStartInfo
             {
@@ -221,13 +207,14 @@ namespace PiperSharp.Tests.Tests
                 RedirectStandardOutput = true
             });
 
-            if (process != null)
+            var processNotNull = process != null;
+            if (processNotNull)
             {
-                await process.WaitForExitAsync();
+                process!.WaitForExit();
                 
                 if (process.ExitCode != 0)
                 {
-                    var error = await process.StandardError.ReadToEndAsync();
+                    var error = process.StandardError.ReadToEnd();
                     throw new InvalidOperationException($"Failed to make Piper executable: {error}");
                 }
             }

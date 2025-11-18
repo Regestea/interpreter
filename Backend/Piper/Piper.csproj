@@ -22,4 +22,15 @@
       <PackageReference Include="SharpCompress" Version="0.41.0" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="PiperFiles\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="PiperFiles\PiperData.zip" />
+      <Content Include="PiperFiles\PiperData.zip">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+
 </Project>
