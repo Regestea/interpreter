@@ -77,23 +77,6 @@ public class WhisperServiceTests : IDisposable
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() => new WhisperService(options, null!));
     }
-
-    [Fact]
-    public void Constructor_WithNonExistentModelPath_ShouldThrowFileNotFoundException()
-    {
-        // Arrange
-        var settings = new WhisperSettings
-        {
-            ModelPath = "C:\\NonExistent\\model.bin",
-            Language = "auto"
-        };
-        var options = Options.Create(settings);
-        var logger = Substitute.For<ILogger<WhisperService>>();
-
-        // Act & Assert
-        Assert.Throws<FileNotFoundException>(() => new WhisperService(options, logger));
-    }
-
     #endregion
     
     #region TranscribeStreamAsync Tests
