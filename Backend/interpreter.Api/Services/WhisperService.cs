@@ -37,7 +37,7 @@ namespace interpreter.Api.Services
                 throw new FileNotFoundException("Whisper model file not found.", _settings.ModelPath);
             }
 
-            _logger.LogInformation("Initializing Whisper service with model: {ModelPath}, Language: {Language}", 
+            _logger.LogInformation("Initializing Whisper service with model: {ModelPath}, Language: {Language}",
                 _settings.ModelPath, _settings.Language);
 
             _factory = WhisperFactory.FromPath(_settings.ModelPath);
@@ -78,26 +78,6 @@ namespace interpreter.Api.Services
             }
         }
 
-        /// <summary>
-        /// Transcribes an audio file.
-        /// </summary>
-        /// <param name="audioPath">The path to the audio file.</param>
-        /// <param name="cancellationToken">A cancellation token.</param>
-        /// <returns>The full transcription text.</returns>
-        public async Task<string> TranscribeAsync(
-            string audioPath,
-            CancellationToken cancellationToken = default)
-        {
-            if (!File.Exists(audioPath))
-            {
-                throw new FileNotFoundException("Audio file not found.", audioPath);
-            }
-
-            _logger.LogInformation("Starting transcription of file: {AudioPath}", audioPath);
-
-            await using var fileStream = File.OpenRead(audioPath);
-            return await TranscribeStreamAsync(fileStream, cancellationToken);
-        }
 
         /// <summary>
         /// Transcribes an audio stream.
@@ -135,9 +115,10 @@ namespace interpreter.Api.Services
         /// <param name="audioStream">The audio stream to transcribe.</param>
         /// <param name="cancellationToken">A cancellation token.</param>
         /// <returns>An async enumerable of transcription segments.</returns>
-        public async IAsyncEnumerable<string> TranscribeStreamingAsync(
+        private async IAsyncEnumerable<string> TranscribeStreamingAsync(
             Stream audioStream,
-            [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+            [System.Runtime.CompilerServices.EnumeratorCancellation]
+            CancellationToken cancellationToken = default)
         {
             if (audioStream == null)
             {
@@ -156,7 +137,7 @@ namespace interpreter.Api.Services
                 await foreach (var result in processor.ProcessAsync(audioStream, cancellationToken))
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    
+
                     if (!string.IsNullOrWhiteSpace(result.Text))
                     {
                         _logger.LogDebug("Transcription segment: {Text}", result.Text);

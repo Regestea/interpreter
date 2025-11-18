@@ -1,11 +1,10 @@
-﻿using System.Diagnostics;
-using interpreter.Api.Models;
+﻿using interpreter.Api.Models;
 using interpreter.Api.Services;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 
-namespace interpreter.Api.Test.ServicesTests;
+namespace interpreter.Api.Tests.ServicesTests;
 
 public class WhisperServiceTests : IDisposable
 {
@@ -96,59 +95,7 @@ public class WhisperServiceTests : IDisposable
     }
 
     #endregion
-
-    #region TranscribeAsync Tests
-
-    [Fact]
-    public async Task TranscribeAsync_WithValidAudioFile_ShouldReturnTranscription()
-    {
-        // Skip if test files don't exist
-        if (!File.Exists(_modelPath) || !File.Exists(_testAudioPath))
-        {
-            // Skip test if model or audio file is not available
-            return;
-        }
-
-        // Act
-        var result = await _whisperService.TranscribeAsync(_testAudioPath);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.NotEmpty(result);
-    }
-
-    [Fact]
-    public async Task TranscribeAsync_WithNonExistentFile_ShouldThrowFileNotFoundException()
-    {
-        // Arrange
-        var nonExistentPath = "C:\\NonExistent\\audio.wav";
-
-        // Act & Assert
-        await Assert.ThrowsAsync<FileNotFoundException>(
-            async () => await _whisperService.TranscribeAsync(nonExistentPath));
-    }
-
-    [Fact]
-    public async Task TranscribeAsync_WithCancellationToken_ShouldRespectCancellation()
-    {
-        // Skip if test files don't exist
-        if (!File.Exists(_modelPath) || !File.Exists(_testAudioPath))
-        {
-            return;
-        }
-
-        // Arrange
-        using var cts = new CancellationTokenSource();
-        cts.Cancel(); // Cancel immediately
-
-        // Act & Assert
-        // TaskCanceledException is a subclass of OperationCanceledException
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(
-            async () => await _whisperService.TranscribeAsync(_testAudioPath, cts.Token));
-    }
-
-    #endregion
-
+    
     #region TranscribeStreamAsync Tests
 
     [Fact]
@@ -215,131 +162,6 @@ public class WhisperServiceTests : IDisposable
         // TaskCanceledException is a subclass of OperationCanceledException
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
             async () => await _whisperService.TranscribeStreamAsync(stream, cts.Token));
-    }
-
-    #endregion
-
-    #region TranscribeStreamingAsync Tests
-
-    [Fact]
-    public async Task TranscribeStreamingAsync_WithValidStream_ShouldYieldSegments()
-    {
-        // Skip if test files don't exist
-        if (!File.Exists(_modelPath) || !File.Exists(_testAudioPath))
-        {
-            return;
-        }
-
-        // Arrange
-        await using var stream = File.OpenRead(_testAudioPath);
-        var segments = new List<string>();
-
-        // Act
-        await foreach (var segment in _whisperService.TranscribeStreamingAsync(stream))
-        {
-            segments.Add(segment);
-        }
-
-        // Assert
-        Assert.NotNull(segments);
-        // Should have at least one segment (or zero if audio is silent/empty)
-        Assert.True(segments.Count >= 0);
-    }
-
-    [Fact]
-    public async Task TranscribeStreamingAsync_WithNullStream_ShouldThrowArgumentNullException()
-    {
-        // Act & Assert
-        await Assert.ThrowsAsync<ArgumentNullException>(async () =>
-        {
-            await foreach (var _ in _whisperService.TranscribeStreamingAsync(null!))
-            {
-                // Should not reach here
-            }
-        });
-    }
-
-    [Fact]
-    public async Task TranscribeStreamingAsync_WithCancellationToken_ShouldRespectCancellation()
-    {
-        // Skip if test files don't exist
-        if (!File.Exists(_modelPath) || !File.Exists(_testAudioPath))
-        {
-            return;
-        }
-
-        // Arrange
-        await using var stream = File.OpenRead(_testAudioPath);
-        using var cts = new CancellationTokenSource();
-        cts.Cancel();
-
-        // Act & Assert
-        // TaskCanceledException is a subclass of OperationCanceledException
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
-        {
-            await foreach (var _ in _whisperService.TranscribeStreamingAsync(stream, cts.Token))
-            {
-                // Should not reach here
-            }
-        });
-    }
-
-    #endregion
-
-    #region Performance and Resource Tests
-
-    [Fact]
-    public async Task TranscribeAsync_WithValidAudioFile_ShouldCompleteInReasonableTime()
-    {
-        // Skip if test files don't exist
-        if (!File.Exists(_modelPath) || !File.Exists(_testAudioPath))
-        {
-            return;
-        }
-
-        // Arrange
-        var stopwatch = Stopwatch.StartNew();
-
-        // Act
-        var result = await _whisperService.TranscribeAsync(_testAudioPath);
-        stopwatch.Stop();
-
-        // Assert
-        Assert.NotNull(result);
-        // Transcription should complete within a reasonable time (e.g., 60 seconds)
-        // Adjust this threshold based on your audio file length and model size
-        Assert.True(stopwatch.Elapsed.TotalSeconds < 60, 
-            $"Transcription took {stopwatch.Elapsed.TotalSeconds} seconds, which exceeds the 60-second threshold");
-    }
-
-    [Fact]
-    public async Task ConcurrentTranscriptions_ShouldHandleMultipleRequestsSafely()
-    {
-        // Skip if test files don't exist
-        if (!File.Exists(_modelPath) || !File.Exists(_testAudioPath))
-        {
-            return;
-        }
-
-        // Arrange
-        var tasks = new List<Task<string>>();
-        const int concurrentRequests = 3;
-
-        // Act
-        for (int i = 0; i < concurrentRequests; i++)
-        {
-            tasks.Add(_whisperService.TranscribeAsync(_testAudioPath));
-        }
-
-        var results = await Task.WhenAll(tasks);
-
-        // Assert
-        Assert.Equal(concurrentRequests, results.Length);
-        Assert.All(results, result =>
-        {
-            Assert.NotNull(result);
-            Assert.NotEmpty(result);
-        });
     }
 
     #endregion
