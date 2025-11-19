@@ -11,43 +11,75 @@ using Xunit.Abstractions;
 
 namespace interpreter.Api.Tests.Controllers;
 
-public class InterpreterControllerTests : IDisposable
+/// <summary>
+/// Fixture to share WhisperService instance across all tests to avoid parallel model loading
+/// </summary>
+public class WhisperServiceFixture : IDisposable
+{
+    public WhisperService? WhisperService { get; }
+    public string ModelPath { get; }
+    public string TestAudioPath { get; }
+
+    public WhisperServiceFixture()
+    {
+        ModelPath = Path.Combine(AppContext.BaseDirectory, "WhisperTestModel", "ggml-tiny.bin");
+        TestAudioPath = Path.Combine(AppContext.BaseDirectory, "AudioSample", "sample-audio.wav");
+
+        if (File.Exists(ModelPath))
+        {
+            var whisperSettings = new WhisperSettings
+            {
+                ModelPath = ModelPath,
+                Language = "auto"
+            };
+            var whisperOptions = Options.Create(whisperSettings);
+            var whisperLogger = Substitute.For<ILogger<WhisperService>>();
+            
+            WhisperService = new WhisperService(whisperOptions, whisperLogger);
+        }
+    }
+
+    public void Dispose()
+    {
+        WhisperService?.Dispose();
+    }
+}
+
+/// <summary>
+/// Collection definition to ensure tests run sequentially and not in parallel
+/// </summary>
+[CollectionDefinition("Whisper Collection")]
+public class WhisperCollection : ICollectionFixture<WhisperServiceFixture>
+{
+}
+
+[Collection("Whisper Collection")]
+public class InterpreterControllerTests
 {
     private readonly ITestOutputHelper _testOutputHelper;
     private readonly InterpreterController _controller;
     private readonly ILogger<InterpreterController> _logger;
-    private readonly WhisperService _whisperService;
+    private readonly WhisperService? _whisperService;
     private readonly IOpusCodecService _opusCodecService;
     private readonly string _testAudioPath;
     private readonly string _modelPath;
 
-    public InterpreterControllerTests(ITestOutputHelper testOutputHelper)
+    public InterpreterControllerTests(ITestOutputHelper testOutputHelper, WhisperServiceFixture fixture)
     {
         _testOutputHelper = testOutputHelper;
         // Setup logger mock
         _logger = Substitute.For<ILogger<InterpreterController>>();
         
-        // Setup paths - using the test model and audio file in the project
-        _modelPath = Path.Combine(AppContext.BaseDirectory, "WhisperTestModel", "ggml-tiny.bin");
-        _testAudioPath = Path.Combine(AppContext.BaseDirectory, "AudioSample", "sample-audio.wav");
-
-        // Setup WhisperSettings
-        var whisperSettings = new WhisperSettings
-        {
-            ModelPath = _modelPath,
-            Language = "auto"
-        };
-        var whisperOptions = Options.Create(whisperSettings);
-        var whisperLogger = Substitute.For<ILogger<WhisperService>>();
-        
-        // Use real WhisperService to get actual transcription results
-        _whisperService = new WhisperService(whisperOptions, whisperLogger);
+        // Get paths and service from the shared fixture
+        _modelPath = fixture.ModelPath;
+        _testAudioPath = fixture.TestAudioPath;
+        _whisperService = fixture.WhisperService;
         
         // Use real OpusCodecService for encoding/decoding
         _opusCodecService = new OpusCodecService();
 
-        // Create controller instance with real services
-        _controller = new InterpreterController(_logger, _whisperService, _opusCodecService);
+        // Create controller instance with shared WhisperService
+        _controller = new InterpreterController(_logger, _whisperService!, _opusCodecService);
     }
 
     [Fact]
@@ -164,11 +196,6 @@ public class InterpreterControllerTests : IDisposable
         formFile.OpenReadStream().Returns(stream);
         
         return formFile;
-    }
-
-    public void Dispose()
-    {
-        _whisperService?.Dispose();
     }
 }
 
