@@ -1,5 +1,6 @@
 ﻿using interpreter.Api.Models;
 using interpreter.Api.Services;
+using interpreter.Api.Tests.Fixture;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NSubstitute;
@@ -15,7 +16,7 @@ public class WhisperServiceTests
     private readonly string _testAudioPath;
     private readonly string _modelPath;
 
-    public WhisperServiceTests(Controllers.WhisperServiceFixture fixture)
+    public WhisperServiceTests(WhisperServiceFixture fixture)
     {
         // Setup logger mock
         _logger = Substitute.For<ILogger<WhisperService>>();

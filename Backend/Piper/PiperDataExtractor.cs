@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Text.Json;
@@ -19,7 +20,7 @@ namespace PiperSharp
         private const string PIPER_FILES_FOLDER = "PiperFiles";
         private const string PIPER_DATA_ZIP = "PiperData.zip";
 
-        public static string DefaultLocation => Directory.GetCurrentDirectory();
+        public static string DefaultLocation => AppContext.BaseDirectory;
         public static string DefaultModelLocation => Path.Join(DefaultLocation, "models");
         public static string DefaultPiperLocation => Path.Join(DefaultLocation, "piper");
         public static string PiperExecutable => Environment.OSVersion.Platform == PlatformID.Win32NT ? "piper.exe" : "piper";
@@ -31,15 +32,23 @@ namespace PiperSharp
 
         private static string GetProjectRoot()
         {
-            // First check current directory
+            // First check the application's base directory (where the app is running from - bin/Debug/net10.0)
+            var appBaseDir = AppContext.BaseDirectory;
+            var piperFilesPath = Path.Join(appBaseDir, PIPER_FILES_FOLDER);
+            if (Directory.Exists(piperFilesPath))
+            {
+                return appBaseDir;
+            }
+
+            // Then check current directory
             var currentDir = DefaultLocation;
-            var piperFilesPath = Path.Join(currentDir, PIPER_FILES_FOLDER);
+            piperFilesPath = Path.Join(currentDir, PIPER_FILES_FOLDER);
             if (Directory.Exists(piperFilesPath))
             {
                 return currentDir;
             }
 
-            // Then search upwards from current directory
+            // Search upwards from current directory
             while (!string.IsNullOrEmpty(currentDir))
             {
                 piperFilesPath = Path.Join(currentDir, PIPER_FILES_FOLDER);
@@ -77,8 +86,8 @@ namespace PiperSharp
                 }
             }
 
-            // If not found, default to current directory
-            return DefaultLocation;
+            // If not found, default to application base directory
+            return appBaseDir;
         }
 
         /// <summary>
@@ -144,6 +153,43 @@ namespace PiperSharp
 
                     entry.ExtractToFile(destinationPath, overwrite: true);
                 }
+            }
+
+            // Make piper executable on Unix systems
+            var piperExecutablePath = Path.Join(targetPiperLocation, PiperExecutable);
+            if (Environment.OSVersion.Platform != PlatformID.Win32NT && File.Exists(piperExecutablePath))
+            {
+                MakePiperExecutable(piperExecutablePath);
+            }
+        }
+
+        private static void MakePiperExecutable(string piperExecutablePath)
+        {
+            try
+            {
+                using var process = Process.Start(new ProcessStartInfo
+                {
+                    FileName = "/bin/chmod",
+                    Arguments = $"+x {piperExecutablePath}",
+                    UseShellExecute = false,
+                    RedirectStandardError = true,
+                    RedirectStandardOutput = true
+                });
+
+                if (process != null)
+                {
+                    process.WaitForExit();
+                    
+                    if (process.ExitCode != 0)
+                    {
+                        var error = process.StandardError.ReadToEnd();
+                        throw new InvalidOperationException($"Failed to make Piper executable: {error}");
+                    }
+                }
+            }
+            catch
+            {
+                // Ignore errors on Windows or if chmod is not available
             }
         }
 

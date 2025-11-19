@@ -8,7 +8,6 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0" />
-    <PackageReference Include="PiperSharp" Version="1.0.6" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.0.1" />
     <PackageReference Include="Whisper.net.AllRuntimes" Version="1.9.0" />
   </ItemGroup>
@@ -20,6 +19,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="..\Piper\PiperFiles\PiperData.zip">
+      <Link>PiperFiles\PiperData.zip</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="E:\LocalModels\ggml-large-v3.bin">
       <Link>WhisperAiModel\ggml-large-v3.bin</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
