@@ -22,6 +22,10 @@ namespace interpreter.Api
             // Register OpusCodecService as scoped
             builder.Services.AddScoped<IOpusCodecService, OpusCodecService>();
             
+            // Register HttpClient factory and TranslationService
+            builder.Services.AddHttpClient("GoogleTranslate");
+            builder.Services.AddScoped<ITranslationService, TranslationService>();
+            
             builder.Services.AddControllers();
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
