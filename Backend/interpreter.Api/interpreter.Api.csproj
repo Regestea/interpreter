@@ -16,6 +16,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\interpreter.ServiceDefaults\interpreter.ServiceDefaults.csproj" />
     <ProjectReference Include="..\..\Shared\Opus\Opus.csproj" />
+    <ProjectReference Include="..\Piper\Piper.csproj" />
   </ItemGroup>
 
   <ItemGroup>
