@@ -24,9 +24,19 @@
                     x:Name="MainBorder"
                     StrokeThickness="1"
                     Stroke="#30FFFFFF"
-                    Padding="24"
-                    Margin="16"
                     Opacity="0.96">
+                <Border.Padding>
+                    <OnIdiom x:TypeArguments="Thickness"
+                             Phone="16"
+                             Tablet="32"
+                             Desktop="32"/>
+                </Border.Padding>
+                <Border.Margin>
+                    <OnIdiom x:TypeArguments="Thickness"
+                             Phone="8"
+                             Tablet="20"
+                             Desktop="20"/>
+                </Border.Margin>
                 <Border.StrokeShape>
                     <RoundRectangle CornerRadius="26"/>
                 </Border.StrokeShape>
@@ -40,16 +50,22 @@
                 <!-- Initial State -->
                 <VerticalStackLayout x:Name="InitialStateLayout" 
                                    Spacing="16" 
-                                   VerticalOptions="Center"
+                                   VerticalOptions="Start"
+                                   Margin="0,20,0,200"
                                    IsVisible="True">
                     
                     <!-- Language Picker Card -->
                     <Border BackgroundColor="{StaticResource GlassWhite}"
                             StrokeThickness="1"
                             Stroke="#40FFFFFF"
-                            Padding="20,16"
                             Opacity="0"
                             x:Name="LanguagePickerBorder">
+                        <Border.Padding>
+                            <OnIdiom x:TypeArguments="Thickness"
+                                     Phone="16,12"
+                                     Tablet="20,16"
+                                     Desktop="20,16"/>
+                        </Border.Padding>
                         <Border.Shadow>
                             <Shadow Brush="#40000000"
                                     Offset="0,10"
@@ -62,13 +78,24 @@
                         <VerticalStackLayout Spacing="8">
                             <Label Text="🌍 Language"
                                    TextColor="{AppThemeBinding Light={StaticResource AppPurple}, Dark=White}"
-                                   FontSize="14"
-                                   FontAttributes="Bold"/>
+                                   FontAttributes="Bold">
+                                <Label.FontSize>
+                                    <OnIdiom x:TypeArguments="x:Double"
+                                             Phone="13"
+                                             Tablet="14"
+                                             Desktop="14"/>
+                                </Label.FontSize>
+                            </Label>
                             <Picker x:Name="LanguagePicker"
                                     TextColor="{AppThemeBinding Light={StaticResource AppTextDark}, Dark=White}"
                                     TitleColor="{AppThemeBinding Light={StaticResource AppTextGray}, Dark=White}"
-                                    Title="Select Language"
-                                    FontSize="16">
+                                    Title="Select Language">
+                                <Picker.FontSize>
+                                    <OnIdiom x:TypeArguments="x:Double"
+                                             Phone="14"
+                                             Tablet="16"
+                                             Desktop="16"/>
+                                </Picker.FontSize>
                                 <Picker.Items>
                                     <x:String>🇮🇷 Persian</x:String>
                                     <x:String>🇬🇧 English</x:String>
@@ -81,9 +108,14 @@
                     <Border BackgroundColor="{StaticResource GlassWhite}"
                             StrokeThickness="1"
                             Stroke="#40FFFFFF"
-                            Padding="20,16"
                             Opacity="0"
                             x:Name="ModePickerBorder">
+                        <Border.Padding>
+                            <OnIdiom x:TypeArguments="Thickness"
+                                     Phone="16,12"
+                                     Tablet="20,16"
+                                     Desktop="20,16"/>
+                        </Border.Padding>
                         <Border.Shadow>
                             <Shadow Brush="#40000000"
                                     Offset="0,10"
@@ -96,13 +128,24 @@
                         <VerticalStackLayout Spacing="8">
                             <Label Text="⚙️ Mode"
                                    TextColor="{AppThemeBinding Light={StaticResource AppMint}, Dark=White}"
-                                   FontSize="14"
-                                   FontAttributes="Bold"/>
+                                   FontAttributes="Bold">
+                                <Label.FontSize>
+                                    <OnIdiom x:TypeArguments="x:Double"
+                                             Phone="13"
+                                             Tablet="14"
+                                             Desktop="14"/>
+                                </Label.FontSize>
+                            </Label>
                             <Picker x:Name="ModePicker"
                                     TextColor="{AppThemeBinding Light={StaticResource AppTextDark}, Dark=White}"
                                     TitleColor="{AppThemeBinding Light={StaticResource AppTextGray}, Dark=White}"
-                                    Title="Select Mode"
-                                    FontSize="16">
+                                    Title="Select Mode">
+                                <Picker.FontSize>
+                                    <OnIdiom x:TypeArguments="x:Double"
+                                             Phone="14"
+                                             Tablet="16"
+                                             Desktop="16"/>
+                                </Picker.FontSize>
                                 <Picker.Items>
                                     <x:String>🔄 Translate Everything</x:String>
                                     <x:String>🤫 Ignore My Talks</x:String>
@@ -119,8 +162,13 @@
                                 x:Name="VoiceTuneButton"
                                 BackgroundColor="{StaticResource GlassWhite}"
                                 StrokeThickness="1"
-                                Stroke="#40FFFFFF"
-                                Padding="16,20">
+                                Stroke="#40FFFFFF">
+                            <Border.Padding>
+                                <OnIdiom x:TypeArguments="Thickness"
+                                         Phone="12,16"
+                                         Tablet="16,20"
+                                         Desktop="16,20"/>
+                            </Border.Padding>
                             <Border.Shadow>
                                 <Shadow Brush="{StaticResource AppCoral}"
                                         Offset="0,6"
@@ -135,13 +183,25 @@
                             </Border.GestureRecognizers>
                             <VerticalStackLayout Spacing="6" HorizontalOptions="Center">
                                 <Label Text="🎵"
-                                       FontSize="28"
-                                       HorizontalOptions="Center"/>
+                                       HorizontalOptions="Center">
+                                    <Label.FontSize>
+                                        <OnIdiom x:TypeArguments="x:Double"
+                                                 Phone="24"
+                                                 Tablet="28"
+                                                 Desktop="28"/>
+                                    </Label.FontSize>
+                                </Label>
                                 <Label Text="Voice Tune"
                                        TextColor="{AppThemeBinding Light={StaticResource AppCoral}, Dark=White}"
-                                       FontSize="13"
                                        FontAttributes="Bold"
-                                       HorizontalTextAlignment="Center"/>
+                                       HorizontalTextAlignment="Center">
+                                    <Label.FontSize>
+                                        <OnIdiom x:TypeArguments="x:Double"
+                                                 Phone="11"
+                                                 Tablet="13"
+                                                 Desktop="13"/>
+                                    </Label.FontSize>
+                                </Label>
                             </VerticalStackLayout>
                         </Border>
 
@@ -150,8 +210,13 @@
                                 x:Name="NoiseButton"
                                 BackgroundColor="{StaticResource GlassWhite}"
                                 StrokeThickness="1"
-                                Stroke="#40FFFFFF"
-                                Padding="16,20">
+                                Stroke="#40FFFFFF">
+                            <Border.Padding>
+                                <OnIdiom x:TypeArguments="Thickness"
+                                         Phone="12,16"
+                                         Tablet="16,20"
+                                         Desktop="16,20"/>
+                            </Border.Padding>
                             <Border.Shadow>
                                 <Shadow Brush="{StaticResource AppCyan}"
                                         Offset="0,6"
@@ -166,13 +231,25 @@
                             </Border.GestureRecognizers>
                             <VerticalStackLayout Spacing="6" HorizontalOptions="Center">
                                 <Label Text="🔇"
-                                       FontSize="28"
-                                       HorizontalOptions="Center"/>
+                                       HorizontalOptions="Center">
+                                    <Label.FontSize>
+                                        <OnIdiom x:TypeArguments="x:Double"
+                                                 Phone="24"
+                                                 Tablet="28"
+                                                 Desktop="28"/>
+                                    </Label.FontSize>
+                                </Label>
                                 <Label Text="Noise Control"
                                        TextColor="{AppThemeBinding Light={StaticResource AppCyan}, Dark=White}"
-                                       FontSize="13"
                                        FontAttributes="Bold"
-                                       HorizontalTextAlignment="Center"/>
+                                       HorizontalTextAlignment="Center">
+                                    <Label.FontSize>
+                                        <OnIdiom x:TypeArguments="x:Double"
+                                                 Phone="11"
+                                                 Tablet="13"
+                                                 Desktop="13"/>
+                                    </Label.FontSize>
+                                </Label>
                             </VerticalStackLayout>
                         </Border>
                     </Grid>
@@ -181,7 +258,8 @@
                 <!-- Recording State -->
                 <VerticalStackLayout x:Name="RecordingStateLayout" 
                                    Spacing="20" 
-                                   VerticalOptions="Center"
+                                   VerticalOptions="Start"
+                                   Margin="0,20,0,200"
                                    IsVisible="False"
                                    Opacity="0">
                     
@@ -189,9 +267,19 @@
                     <Border BackgroundColor="{StaticResource GlassWhite}"
                             StrokeThickness="1"
                             Stroke="#40FFFFFF"
-                            Padding="24"
-                            HeightRequest="140"
                             x:Name="TranscriptBorder">
+                        <Border.Padding>
+                            <OnIdiom x:TypeArguments="Thickness"
+                                     Phone="16"
+                                     Tablet="24"
+                                     Desktop="24"/>
+                        </Border.Padding>
+                        <Border.HeightRequest>
+                            <OnIdiom x:TypeArguments="x:Double"
+                                     Phone="120"
+                                     Tablet="140"
+                                     Desktop="140"/>
+                        </Border.HeightRequest>
                         <Border.Shadow>
                             <Shadow Brush="#40000000"
                                     Offset="0,8"
@@ -205,8 +293,14 @@
                             <Label x:Name="TranscriptLabel"
                                    Text="This is a sample text for the transcription area. The recognized speech will appear here in real-time as you speak."
                                    TextColor="{StaticResource AppTextDark}"
-                                   FontSize="16"
-                                   LineHeight="1.5"/>
+                                   LineHeight="1.5">
+                                <Label.FontSize>
+                                    <OnIdiom x:TypeArguments="x:Double"
+                                             Phone="14"
+                                             Tablet="16"
+                                             Desktop="16"/>
+                                </Label.FontSize>
+                            </Label>
                         </ScrollView>
                     </Border>
                     
@@ -214,9 +308,19 @@
                     <Border BackgroundColor="{StaticResource GlassWhite}"
                             StrokeThickness="1"
                             Stroke="#40FFFFFF"
-                            HeightRequest="150"
-                            Padding="20"
                             x:Name="ChartBorder">
+                        <Border.Padding>
+                            <OnIdiom x:TypeArguments="Thickness"
+                                     Phone="16"
+                                     Tablet="20"
+                                     Desktop="20"/>
+                        </Border.Padding>
+                        <Border.HeightRequest>
+                            <OnIdiom x:TypeArguments="x:Double"
+                                     Phone="130"
+                                     Tablet="150"
+                                     Desktop="150"/>
+                        </Border.HeightRequest>
                         <Border.Shadow>
                             <Shadow Brush="#40000000"
                                     Offset="0,8"
@@ -229,8 +333,14 @@
                         <VerticalStackLayout Spacing="12">
                             <Label Text="📊 Voice Frequency"
                                    TextColor="{StaticResource AppMint}"
-                                   FontSize="14"
-                                   FontAttributes="Bold"/>
+                                   FontAttributes="Bold">
+                                <Label.FontSize>
+                                    <OnIdiom x:TypeArguments="x:Double"
+                                             Phone="13"
+                                             Tablet="14"
+                                             Desktop="14"/>
+                                </Label.FontSize>
+                            </Label>
                             <GraphicsView x:Name="FrequencyChartView" 
                                           HeightRequest="100"
                                           Drawable="{StaticResource FrequencyChartDrawable}"/>
@@ -243,11 +353,21 @@
                 <Border x:Name="ActionButton"
                         StrokeThickness="3"
                         Stroke="#90FFFFFF"
-                        WidthRequest="180"
-                        HeightRequest="180"
                         HorizontalOptions="Center"
                         VerticalOptions="End"
-                        Margin="0,0,0,30">
+                        Margin="0,0,0,20">
+                    <Border.WidthRequest>
+                        <OnIdiom x:TypeArguments="x:Double"
+                                 Phone="150"
+                                 Tablet="180"
+                                 Desktop="180"/>
+                    </Border.WidthRequest>
+                    <Border.HeightRequest>
+                        <OnIdiom x:TypeArguments="x:Double"
+                                 Phone="150"
+                                 Tablet="180"
+                                 Desktop="180"/>
+                    </Border.HeightRequest>
                     <Border.Background>
                         <RadialGradientBrush Center="0.5,0.5" Radius="1.0">
                             <GradientStop Color="#7cc8a5" Offset="0.0" />
@@ -270,16 +390,28 @@
                         <Label x:Name="ActionIcon"
                                Text="▶"
                                TextColor="White"
-                               FontSize="52"
                                HorizontalOptions="Center"
                                FontAttributes="Bold"
-                               Margin="8,0,0,0"/>
+                               Margin="8,0,0,0">
+                            <Label.FontSize>
+                                <OnIdiom x:TypeArguments="x:Double"
+                                         Phone="42"
+                                         Tablet="52"
+                                         Desktop="52"/>
+                            </Label.FontSize>
+                        </Label>
                         <Label x:Name="ActionText"
                                Text="START"
                                TextColor="White"
-                               FontSize="20"
                                FontAttributes="Bold"
-                               HorizontalOptions="Center"/>
+                               HorizontalOptions="Center">
+                            <Label.FontSize>
+                                <OnIdiom x:TypeArguments="x:Double"
+                                         Phone="16"
+                                         Tablet="20"
+                                         Desktop="20"/>
+                            </Label.FontSize>
+                        </Label>
                     </VerticalStackLayout>
                 </Border>
             </Grid>
@@ -287,18 +419,33 @@
     </ScrollView>
 
         <!-- Menu Flyout -->
-        <Border x:Name="MenuFlyout"
+            <Border x:Name="MenuFlyout"
                 IsVisible="False"
                 Opacity="0"
                 HorizontalOptions="End"
                 VerticalOptions="Start"
-                Margin="10,5"
                 BackgroundColor="{StaticResource GlassWhite}"
                 StrokeThickness="1"
-                Stroke="#40FFFFFF"
-                Padding="16"
-                MinimumWidthRequest="180">
-            <Border.Shadow>
+                Stroke="#40FFFFFF">
+                <Border.Padding>
+                    <OnIdiom x:TypeArguments="Thickness"
+                             Phone="12"
+                             Tablet="16"
+                             Desktop="16"/>
+                </Border.Padding>
+                <Border.Margin>
+                    <OnIdiom x:TypeArguments="Thickness"
+                             Phone="8,4"
+                             Tablet="10,5"
+                             Desktop="10,5"/>
+                </Border.Margin>
+                <Border.MinimumWidthRequest>
+                    <OnIdiom x:TypeArguments="x:Double"
+                             Phone="160"
+                             Tablet="180"
+                             Desktop="180"/>
+                </Border.MinimumWidthRequest>
+                <Border.Shadow>
                 <Shadow Brush="#40000000"
                         Offset="0,8"
                         Radius="25"
@@ -310,9 +457,15 @@
             <VerticalStackLayout Spacing="12">
                 <Label Text="⚙️ Settings"
                        TextColor="{StaticResource AppTextDark}"
-                       FontSize="16"
                        FontAttributes="Bold"
-                       Margin="0,0,0,8"/>
+                       Margin="0,0,0,8">
+                    <Label.FontSize>
+                        <OnIdiom x:TypeArguments="x:Double"
+                                 Phone="14"
+                                 Tablet="16"
+                                 Desktop="16"/>
+                    </Label.FontSize>
+                </Label>
                 
                 <!-- Theme Toggle Button -->
                 <Border BackgroundColor="Transparent"
@@ -324,13 +477,25 @@
                     <HorizontalStackLayout Spacing="12">
                         <Label x:Name="ThemeIcon"
                                Text="🌙"
-                               FontSize="20"
-                               VerticalOptions="Center"/>
+                               VerticalOptions="Center">
+                            <Label.FontSize>
+                                <OnIdiom x:TypeArguments="x:Double"
+                                         Phone="18"
+                                         Tablet="20"
+                                         Desktop="20"/>
+                            </Label.FontSize>
+                        </Label>
                         <Label x:Name="ThemeLabel"
                                Text="Dark Theme"
                                TextColor="{StaticResource AppTextDark}"
-                               FontSize="14"
-                               VerticalOptions="Center"/>
+                               VerticalOptions="Center">
+                            <Label.FontSize>
+                                <OnIdiom x:TypeArguments="x:Double"
+                                         Phone="13"
+                                         Tablet="14"
+                                         Desktop="14"/>
+                            </Label.FontSize>
+                        </Label>
                     </HorizontalStackLayout>
                 </Border>
             </VerticalStackLayout>
