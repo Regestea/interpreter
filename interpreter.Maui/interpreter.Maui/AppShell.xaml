@@ -5,7 +5,51 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:local="clr-namespace:interpreter.Maui"
     Shell.FlyoutBehavior="Disabled"
-    Title="interpreter.Maui">
+    Title="interpreter.Maui"
+    Shell.NavBarIsVisible="True"
+    Shell.BackgroundColor="{AppThemeBinding Light=White, Dark=#1a1a2e}"
+    Shell.ForegroundColor="{AppThemeBinding Light=#2C3E50, Dark=#E0E0E0}">
+
+    <Shell.TitleView>
+        <Grid ColumnDefinitions="Auto,*,Auto" Padding="10,0">
+            <Label Grid.Column="0" 
+                   Text="Home" 
+                   FontSize="20" 
+                   FontAttributes="Bold"
+                   VerticalOptions="Center"
+                   TextColor="{AppThemeBinding Light=#2C3E50, Dark=#E0E0E0}"/>
+            
+            <!-- Menu Button -->
+            <Border Grid.Column="2"
+                    x:Name="ShellMenuButton"
+                    BackgroundColor="{AppThemeBinding Light=#D0FFFFFF, Dark=#40FFFFFF}"
+                    StrokeThickness="1"
+                    Stroke="{AppThemeBinding Light=#40FFFFFF, Dark=#60FFFFFF}"
+                    Padding="10"
+                    WidthRequest="44"
+                    HeightRequest="44"
+                    VerticalOptions="Center">
+                <Border.Shadow>
+                    <Shadow Brush="#40000000"
+                            Offset="0,4"
+                            Radius="15"
+                            Opacity="0.65"/>
+                </Border.Shadow>
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="22"/>
+                </Border.StrokeShape>
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnMenuButtonClicked"/>
+                </Border.GestureRecognizers>
+                <Label Text="☰"
+                       TextColor="{AppThemeBinding Light=#7141d0, Dark=#C8B5F0}"
+                       FontSize="20"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center"
+                       FontAttributes="Bold"/>
+            </Border>
+        </Grid>
+    </Shell.TitleView>
 
     <ShellContent
         Title="Home"

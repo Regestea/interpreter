@@ -5,6 +5,54 @@
 
     <!-- Note: For Android please see also Platforms\Android\Resources\values\colors.xml -->
 
+    <!-- Modern Vibrant Theme Colors -->
+    <Color x:Key="AppPurple">#7141d0</Color>
+    <Color x:Key="AppMint">#7cc8a5</Color>
+    <Color x:Key="AppCoral">#ff916b</Color>
+    <Color x:Key="AppCyan">#72c9e4</Color>
+    
+    <!-- Glassmorphism Colors (Semi-transparent) -->
+    <Color x:Key="GlassPurple">#B07141d0</Color>
+    <Color x:Key="GlassMint">#B07cc8a5</Color>
+    <Color x:Key="GlassCoral">#B0ff916b</Color>
+    <Color x:Key="GlassCyan">#B072c9e4</Color>
+    <Color x:Key="GlassWhite">#D0FFFFFF</Color>
+    <Color x:Key="GlassLight">#E0FFFFFF</Color>
+    <Color x:Key="GlassDark">#40000000</Color>
+    
+    <!-- Dark Theme Glassmorphism -->
+    <Color x:Key="GlassWhiteDark">#40FFFFFF</Color>
+    <Color x:Key="GlassLightDark">#30FFFFFF</Color>
+    <Color x:Key="GlassDarkTheme">#B0000000</Color>
+    
+    <!-- Light Theme Colors -->
+    <Color x:Key="AppBackground">#F8F9FA</Color>
+    <Color x:Key="AppCardBackground">#FFFFFF</Color>
+    <Color x:Key="AppLightPurple">#E8E0F7</Color>
+    <Color x:Key="AppLightMint">#E0F5ED</Color>
+    <Color x:Key="AppLightCoral">#FFE8E0</Color>
+    <Color x:Key="AppLightCyan">#E0F3F9</Color>
+    
+    <!-- Dark accents -->
+    <Color x:Key="AppDark">#1A1A1A</Color>
+    <Color x:Key="AppDarkSecondary">#2A2A2A</Color>
+    <Color x:Key="AppDarkTertiary">#1E1E1E</Color>
+    <Color x:Key="AppTextLight">#FFFFFF</Color>
+    <Color x:Key="AppTextDark">#2C3E50</Color>
+    <Color x:Key="AppTextGray">#6C757D</Color>
+    
+    <!-- Dark Theme Specific -->
+    <Color x:Key="DarkBackground">#121212</Color>
+    <Color x:Key="DarkSurface">#1E1E1E</Color>
+    <Color x:Key="DarkCardBackground">#2A2A2A</Color>
+    <Color x:Key="DarkTextPrimary">#E0E0E0</Color>
+    <Color x:Key="DarkTextSecondary">#A0A0A0</Color>
+    
+    <!-- Legacy Colors (kept for compatibility) -->
+    <Color x:Key="AppOrange">#ff916b</Color>
+    <Color x:Key="AppOrangeLight">#FFA500</Color>
+    <Color x:Key="AppLightGreen">#7cc8a5</Color>
+    
     <Color x:Key="Primary">#512BD4</Color>
     <Color x:Key="PrimaryDark">#ac99ea</Color>
     <Color x:Key="PrimaryDarkText">#242424</Color>
@@ -27,6 +75,28 @@
     <Color x:Key="Gray900">#212121</Color>
     <Color x:Key="Gray950">#141414</Color>
 
+    <SolidColorBrush x:Key="AppPurpleBrush" Color="{StaticResource AppPurple}"/>
+    <SolidColorBrush x:Key="AppMintBrush" Color="{StaticResource AppMint}"/>
+    <SolidColorBrush x:Key="AppCoralBrush" Color="{StaticResource AppCoral}"/>
+    <SolidColorBrush x:Key="AppCyanBrush" Color="{StaticResource AppCyan}"/>
+    <SolidColorBrush x:Key="AppBackgroundBrush" Color="{StaticResource AppBackground}"/>
+    <SolidColorBrush x:Key="AppCardBackgroundBrush" Color="{StaticResource AppCardBackground}"/>
+    <SolidColorBrush x:Key="AppLightPurpleBrush" Color="{StaticResource AppLightPurple}"/>
+    <SolidColorBrush x:Key="AppLightMintBrush" Color="{StaticResource AppLightMint}"/>
+    <SolidColorBrush x:Key="AppLightCoralBrush" Color="{StaticResource AppLightCoral}"/>
+    <SolidColorBrush x:Key="AppLightCyanBrush" Color="{StaticResource AppLightCyan}"/>
+    <SolidColorBrush x:Key="AppDarkBrush" Color="{StaticResource AppDark}"/>
+    <SolidColorBrush x:Key="AppDarkSecondaryBrush" Color="{StaticResource AppDarkSecondary}"/>
+    <SolidColorBrush x:Key="AppDarkTertiaryBrush" Color="{StaticResource AppDarkTertiary}"/>
+    <SolidColorBrush x:Key="AppTextLightBrush" Color="{StaticResource AppTextLight}"/>
+    <SolidColorBrush x:Key="AppTextDarkBrush" Color="{StaticResource AppTextDark}"/>
+    <SolidColorBrush x:Key="AppTextGrayBrush" Color="{StaticResource AppTextGray}"/>
+    
+    <!-- Legacy Brushes -->
+    <SolidColorBrush x:Key="AppOrangeBrush" Color="{StaticResource AppCoral}"/>
+    <SolidColorBrush x:Key="AppOrangeLightBrush" Color="{StaticResource AppCoral}"/>
+    <SolidColorBrush x:Key="AppLightGreenBrush" Color="{StaticResource AppMint}"/>
+    
     <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource Primary}"/>
     <SolidColorBrush x:Key="SecondaryBrush" Color="{StaticResource Secondary}"/>
     <SolidColorBrush x:Key="TertiaryBrush" Color="{StaticResource Tertiary}"/>

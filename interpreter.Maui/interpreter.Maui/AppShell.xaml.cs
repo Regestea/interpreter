@@ -6,5 +6,14 @@
         {
             InitializeComponent();
         }
+
+        private void OnMenuButtonClicked(object sender, EventArgs e)
+        {
+            // Navigate to MainPage and trigger menu
+            if (CurrentPage is MainPage mainPage)
+            {
+                mainPage.ToggleMenu();
+            }
+        }
     }
 }

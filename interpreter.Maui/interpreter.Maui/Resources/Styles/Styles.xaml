@@ -3,6 +3,18 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
 
+    <LinearGradientBrush x:Key="GlassSurfaceBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="{StaticResource GlassLight}" Offset="0" />
+        <GradientStop Color="{StaticResource GlassWhite}" Offset="0.45" />
+        <GradientStop Color="#60FFFFFF" Offset="1" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="GlassSurfaceBrushDark" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="{StaticResource GlassLightDark}" Offset="0" />
+        <GradientStop Color="{StaticResource GlassWhiteDark}" Offset="0.45" />
+        <GradientStop Color="#30FFFFFF" Offset="1" />
+    </LinearGradientBrush>
+
     <Style TargetType="ActivityIndicator">
         <Setter Property="Color" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource White}}" />
     </Style>
@@ -427,6 +439,39 @@
         <Setter Property="BarTextColor" Value="{AppThemeBinding Light={StaticResource Magenta}, Dark={StaticResource White}}" />
         <Setter Property="UnselectedTabColor" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray950}}" />
         <Setter Property="SelectedTabColor" Value="{AppThemeBinding Light={StaticResource Gray950}, Dark={StaticResource Gray200}}" />
+    </Style>
+
+    <!-- Glassmorphism Styles -->
+    <Style x:Key="GlassCard" TargetType="Border">
+        <Setter Property="BackgroundColor" Value="{StaticResource GlassWhite}" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="Stroke" Value="#40FFFFFF" />
+        <Setter Property="StrokeShape">
+            <RoundRectangle CornerRadius="20"/>
+        </Setter>
+        <Setter Property="Shadow">
+            <Shadow Brush="#40000000" Offset="0,10" Radius="30" Opacity="0.3"/>
+        </Setter>
+    </Style>
+
+    <Style x:Key="GlassButton" TargetType="Border">
+        <Setter Property="BackgroundColor" Value="{StaticResource GlassWhite}" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="Stroke" Value="#40FFFFFF" />
+        <Setter Property="StrokeShape">
+            <RoundRectangle CornerRadius="18"/>
+        </Setter>
+        <Setter Property="Shadow">
+            <Shadow Brush="#40000000" Offset="0,6" Radius="15" Opacity="0.2"/>
+        </Setter>
+    </Style>
+
+    <Style x:Key="GlassCircleButton" TargetType="Border">
+        <Setter Property="StrokeThickness" Value="2" />
+        <Setter Property="Stroke" Value="#60FFFFFF" />
+        <Setter Property="StrokeShape">
+            <Ellipse/>
+        </Setter>
     </Style>
 
 </ResourceDictionary>
