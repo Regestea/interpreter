@@ -61,12 +61,12 @@
                         </Border.StrokeShape>
                         <VerticalStackLayout Spacing="8">
                             <Label Text="🌍 Language"
-                                   TextColor="{StaticResource AppPurple}"
+                                   TextColor="{AppThemeBinding Light={StaticResource AppPurple}, Dark=White}"
                                    FontSize="14"
                                    FontAttributes="Bold"/>
                             <Picker x:Name="LanguagePicker"
-                                    TextColor="{StaticResource AppTextDark}"
-                                    TitleColor="{StaticResource AppTextGray}"
+                                    TextColor="{AppThemeBinding Light={StaticResource AppTextDark}, Dark=White}"
+                                    TitleColor="{AppThemeBinding Light={StaticResource AppTextGray}, Dark=White}"
                                     Title="Select Language"
                                     FontSize="16">
                                 <Picker.Items>
@@ -95,12 +95,12 @@
                         </Border.StrokeShape>
                         <VerticalStackLayout Spacing="8">
                             <Label Text="⚙️ Mode"
-                                   TextColor="{StaticResource AppMint}"
+                                   TextColor="{AppThemeBinding Light={StaticResource AppMint}, Dark=White}"
                                    FontSize="14"
                                    FontAttributes="Bold"/>
                             <Picker x:Name="ModePicker"
-                                    TextColor="{StaticResource AppTextDark}"
-                                    TitleColor="{StaticResource AppTextGray}"
+                                    TextColor="{AppThemeBinding Light={StaticResource AppTextDark}, Dark=White}"
+                                    TitleColor="{AppThemeBinding Light={StaticResource AppTextGray}, Dark=White}"
                                     Title="Select Mode"
                                     FontSize="16">
                                 <Picker.Items>
@@ -140,7 +140,7 @@
                                        FontSize="28"
                                        HorizontalOptions="Center"/>
                                 <Label Text="Voice Tune"
-                                       TextColor="{StaticResource AppCoral}"
+                                       TextColor="{AppThemeBinding Light={StaticResource AppCoral}, Dark=White}"
                                        FontSize="13"
                                        FontAttributes="Bold"
                                        HorizontalTextAlignment="Center"/>
@@ -173,7 +173,7 @@
                                        FontSize="28"
                                        HorizontalOptions="Center"/>
                                 <Label Text="Noise Control"
-                                       TextColor="{StaticResource AppCyan}"
+                                       TextColor="{AppThemeBinding Light={StaticResource AppCyan}, Dark=White}"
                                        FontSize="13"
                                        FontAttributes="Bold"
                                        HorizontalTextAlignment="Center"/>

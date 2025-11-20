@@ -259,10 +259,6 @@
         {
             // Update primary text elements
             TranscriptLabel.TextColor = textColor;
-            
-            // Update picker text colors
-            LanguagePicker.TextColor = textColor;
-            ModePicker.TextColor = textColor;
         }
     }
 
