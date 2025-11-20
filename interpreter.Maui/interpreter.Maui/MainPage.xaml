@@ -120,9 +120,7 @@
                                 BackgroundColor="{StaticResource GlassWhite}"
                                 StrokeThickness="1"
                                 Stroke="#40FFFFFF"
-                                Padding="16,20"
-                                Opacity="0"
-                                TranslationY="20">
+                                Padding="16,20">
                             <Border.Shadow>
                                 <Shadow Brush="{StaticResource AppCoral}"
                                         Offset="0,6"
@@ -153,9 +151,7 @@
                                 BackgroundColor="{StaticResource GlassWhite}"
                                 StrokeThickness="1"
                                 Stroke="#40FFFFFF"
-                                Padding="16,20"
-                                Opacity="0"
-                                TranslationY="20">
+                                Padding="16,20">
                             <Border.Shadow>
                                 <Shadow Brush="{StaticResource AppCyan}"
                                         Offset="0,6"

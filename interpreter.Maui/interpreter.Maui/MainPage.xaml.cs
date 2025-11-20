@@ -15,22 +15,12 @@
             // Animate initial state elements on page load with staggered timing
             await Task.WhenAll(
                 Task.Delay(150).ContinueWith(async _ => await LanguagePickerBorder.FadeTo(1, 600, Easing.CubicOut)),
-                Task.Delay(250).ContinueWith(async _ => await ModePickerBorder.FadeTo(1, 600, Easing.CubicOut)),
-                Task.Delay(450).ContinueWith(async _ =>
-                {
-                    await Task.WhenAll(
-                        VoiceTuneButton.FadeTo(1, 600, Easing.CubicOut),
-                        VoiceTuneButton.TranslateTo(0, 0, 600, Easing.CubicOut)
-                    );
-                }),
-                Task.Delay(500).ContinueWith(async _ =>
-                {
-                    await Task.WhenAll(
-                        NoiseButton.FadeTo(1, 600, Easing.CubicOut),
-                        NoiseButton.TranslateTo(0, 0, 600, Easing.CubicOut)
-                    );
-                })
+                Task.Delay(250).ContinueWith(async _ => await ModePickerBorder.FadeTo(1, 600, Easing.CubicOut))
             );
+            
+            // Make buttons visible immediately without animation
+            VoiceTuneButton.Opacity = 1;
+            NoiseButton.Opacity = 1;
         }
 
         private async void OnStartClicked(object sender, EventArgs e)
@@ -91,10 +81,6 @@
             InitialStateLayout.Opacity = 0;
 
             // Reset all elements
-            VoiceTuneButton.Opacity = 0;
-            VoiceTuneButton.TranslationY = 20;
-            NoiseButton.Opacity = 0;
-            NoiseButton.TranslationY = 20;
             LanguagePickerBorder.Opacity = 0;
             ModePickerBorder.Opacity = 0;
 
@@ -102,22 +88,12 @@
             await Task.WhenAll(
                 InitialStateLayout.FadeTo(1, 400, Easing.CubicOut),
                 LanguagePickerBorder.FadeTo(1, 600, Easing.CubicOut),
-                Task.Delay(100).ContinueWith(async _ => await ModePickerBorder.FadeTo(1, 600, Easing.CubicOut)),
-                Task.Delay(300).ContinueWith(async _ =>
-                {
-                    await Task.WhenAll(
-                        VoiceTuneButton.FadeTo(1, 600, Easing.CubicOut),
-                        VoiceTuneButton.TranslateTo(0, 0, 600, Easing.CubicOut)
-                    );
-                }),
-                Task.Delay(350).ContinueWith(async _ =>
-                {
-                    await Task.WhenAll(
-                        NoiseButton.FadeTo(1, 600, Easing.CubicOut),
-                        NoiseButton.TranslateTo(0, 0, 600, Easing.CubicOut)
-                    );
-                })
+                Task.Delay(100).ContinueWith(async _ => await ModePickerBorder.FadeTo(1, 600, Easing.CubicOut))
             );
+            
+            // Make buttons visible immediately without animation
+            VoiceTuneButton.Opacity = 1;
+            NoiseButton.Opacity = 1;
         }
 
         private async void OnVoiceTuneClicked(object sender, EventArgs e)
