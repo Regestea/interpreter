@@ -176,49 +176,6 @@
                             </VerticalStackLayout>
                         </Border>
                     </Grid>
-
-                    <!-- Start Button -->
-                    <Border x:Name="StartButton"
-                            StrokeThickness="3"
-                            Stroke="#90FFFFFF"
-                            WidthRequest="180"
-                            HeightRequest="180"
-                            HorizontalOptions="Center"
-                            Margin="0,30,0,30">
-                        <Border.Background>
-                            <RadialGradientBrush Center="0.5,0.5" Radius="1.0">
-                                <GradientStop Color="#7cc8a5" Offset="0.0" />
-                                <GradientStop Color="#5cb88d" Offset="1.0" />
-                            </RadialGradientBrush>
-                        </Border.Background>
-                        <Border.Shadow>
-                            <Shadow Brush="#7cc8a5"
-                                    Offset="0,12"
-                                    Radius="35"
-                                    Opacity="0.5"/>
-                        </Border.Shadow>
-                        <Border.StrokeShape>
-                            <Ellipse/>
-                        </Border.StrokeShape>
-                        <Border.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="OnStartClicked"/>
-                        </Border.GestureRecognizers>
-                        <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="10">
-                            <Label Text="▶"
-                                   TextColor="White"
-                                   FontSize="52"
-                                   HorizontalOptions="Center"
-                                   FontAttributes="Bold"
-                                   Margin="8,0,0,0"/>
-                            <Label Text="START"
-                                   TextColor="White"
-                                   FontSize="20"
-                                   FontAttributes="Bold"
-                                   HorizontalOptions="Center"/>
-                        </VerticalStackLayout>
-                    </Border>
-
-               
                 </VerticalStackLayout>
 
                 <!-- Recording State -->
@@ -279,48 +236,52 @@
                                           Drawable="{StaticResource FrequencyChartDrawable}"/>
                         </VerticalStackLayout>
                     </Border>
-
-                    <!-- Stop Button -->
-                    <Border x:Name="StopButton"
-                            StrokeThickness="3"
-                            Stroke="#90FFFFFF"
-                            WidthRequest="180"
-                            HeightRequest="180"
-                            HorizontalOptions="Center"
-                            Margin="0,20,0,20">
-                        <Border.Background>
-                            <RadialGradientBrush Center="0.5,0.5" Radius="1.0">
-                                <GradientStop Color="#ff6b6b" Offset="0.0" />
-                                <GradientStop Color="#ee5a52" Offset="1.0" />
-                            </RadialGradientBrush>
-                        </Border.Background>
-                        <Border.Shadow>
-                            <Shadow Brush="#ff6b6b"
-                                    Offset="0,12"
-                                    Radius="35"
-                                    Opacity="0.5"/>
-                        </Border.Shadow>
-                        <Border.StrokeShape>
-                            <Ellipse/>
-                        </Border.StrokeShape>
-                        <Border.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="OnStopClicked"/>
-                        </Border.GestureRecognizers>
-                        <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="10">
-                            <Label Text="⏹"
-                                   TextColor="White"
-                                   FontSize="52"
-                                   HorizontalOptions="Center"
-                                   FontAttributes="Bold"/>
-                            <Label Text="STOP"
-                                   TextColor="White"
-                                   FontSize="20"
-                                   FontAttributes="Bold"
-                                   HorizontalOptions="Center"/>
-                        </VerticalStackLayout>
-                    </Border>
                     
                 </VerticalStackLayout>
+
+                <!-- Action Button (Start/Stop) - Always visible, positioned at bottom -->
+                <Border x:Name="ActionButton"
+                        StrokeThickness="3"
+                        Stroke="#90FFFFFF"
+                        WidthRequest="180"
+                        HeightRequest="180"
+                        HorizontalOptions="Center"
+                        VerticalOptions="End"
+                        Margin="0,0,0,30">
+                    <Border.Background>
+                        <RadialGradientBrush Center="0.5,0.5" Radius="1.0">
+                            <GradientStop Color="#7cc8a5" Offset="0.0" />
+                            <GradientStop Color="#5cb88d" Offset="1.0" />
+                        </RadialGradientBrush>
+                    </Border.Background>
+                    <Border.Shadow>
+                        <Shadow Brush="#7cc8a5"
+                                Offset="0,12"
+                                Radius="35"
+                                Opacity="0.5"/>
+                    </Border.Shadow>
+                    <Border.StrokeShape>
+                        <Ellipse/>
+                    </Border.StrokeShape>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnActionButtonClicked"/>
+                    </Border.GestureRecognizers>
+                    <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="10">
+                        <Label x:Name="ActionIcon"
+                               Text="▶"
+                               TextColor="White"
+                               FontSize="52"
+                               HorizontalOptions="Center"
+                               FontAttributes="Bold"
+                               Margin="8,0,0,0"/>
+                        <Label x:Name="ActionText"
+                               Text="START"
+                               TextColor="White"
+                               FontSize="20"
+                               FontAttributes="Bold"
+                               HorizontalOptions="Center"/>
+                    </VerticalStackLayout>
+                </Border>
             </Grid>
         </Border>
     </ScrollView>

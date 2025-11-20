@@ -3,6 +3,7 @@
     public partial class MainPage : ContentPage
     {
         private bool isDarkTheme = false;
+        private bool isRecording = false;
 
         public MainPage()
         {
@@ -23,21 +24,37 @@
             NoiseButton.Opacity = 1;
         }
 
-        private async void OnStartClicked(object sender, EventArgs e)
+        private async void OnActionButtonClicked(object sender, EventArgs e)
+        {
+            if (!isRecording)
+            {
+                await StartRecording();
+            }
+            else
+            {
+                await StopRecording();
+            }
+        }
+
+        private async Task StartRecording()
         {
             // Add button press animation
-            await StartButton.ScaleTo(0.9, 100, Easing.CubicIn);
-            await StartButton.ScaleTo(1, 100, Easing.CubicOut);
+            await ActionButton.ScaleTo(0.9, 100, Easing.CubicIn);
+            await ActionButton.ScaleTo(1, 100, Easing.CubicOut);
 
             // Fade out initial state with animations
             await Task.WhenAll(
                 InitialStateLayout.FadeTo(0, 400, Easing.CubicIn),
-                StartButton.ScaleTo(0.8, 400, Easing.CubicIn)
+                ActionButton.ScaleTo(0.8, 400, Easing.CubicIn)
             );
 
             InitialStateLayout.IsVisible = false;
             RecordingStateLayout.IsVisible = true;
             RecordingStateLayout.Opacity = 0;
+
+            // Change button to Stop state
+            UpdateButtonToStop();
+            isRecording = true;
 
             // Animate recording state elements
             await Task.WhenAll(
@@ -47,31 +64,33 @@
                 Task.Delay(100).ContinueWith(async _ =>
                 {
                     await Task.WhenAll(
-                        StopButton.ScaleTo(1.1, 100, Easing.CubicOut),
-                        StopButton.ScaleTo(1, 600, Easing.SpringOut)
+                        ActionButton.ScaleTo(1.1, 100, Easing.CubicOut),
+                        ActionButton.ScaleTo(1, 600, Easing.SpringOut)
                     );
-                    // Pulse animation for stop button
-                    _ = PulseStopButton();
+                    // Pulse animation for action button
+                    _ = PulseActionButton();
                 }),
                 Task.Delay(200).ContinueWith(async _ =>
                     await ChartBorder.FadeTo(1, 600, Easing.CubicOut))
             );
         }
 
-        private async Task PulseStopButton()
+        private async Task PulseActionButton()
         {
-            while (RecordingStateLayout.IsVisible)
+            while (isRecording && RecordingStateLayout.IsVisible)
             {
-                await StopButton.ScaleTo(1.05, 1000, Easing.SinInOut);
-                await StopButton.ScaleTo(1.0, 1000, Easing.SinInOut);
+                await ActionButton.ScaleTo(1.05, 1000, Easing.SinInOut);
+                await ActionButton.ScaleTo(1.0, 1000, Easing.SinInOut);
             }
         }
 
-        private async void OnStopClicked(object sender, EventArgs e)
+        private async Task StopRecording()
         {
             // Add button press animation
-            await StopButton.ScaleTo(0.9, 100, Easing.CubicIn);
-            await StopButton.ScaleTo(1, 100, Easing.CubicOut);
+            await ActionButton.ScaleTo(0.9, 100, Easing.CubicIn);
+            await ActionButton.ScaleTo(1, 100, Easing.CubicOut);
+
+            isRecording = false;
 
             // Fade out recording state
             await RecordingStateLayout.FadeTo(0, 400, Easing.CubicIn);
@@ -84,6 +103,9 @@
             LanguagePickerBorder.Opacity = 0;
             ModePickerBorder.Opacity = 0;
 
+            // Change button back to Start state
+            UpdateButtonToStart();
+
             // Animate initial state back in
             await Task.WhenAll(
                 InitialStateLayout.FadeTo(1, 400, Easing.CubicOut),
@@ -94,6 +116,55 @@
             // Make buttons visible immediately without animation
             VoiceTuneButton.Opacity = 1;
             NoiseButton.Opacity = 1;
+        }
+
+        private void UpdateButtonToStop()
+        {
+            // Change to red stop button
+            var stopGradient = new RadialGradientBrush
+            {
+                Center = new Point(0.5, 0.5),
+                Radius = 1.0
+            };
+            stopGradient.GradientStops.Add(new GradientStop { Color = Color.FromArgb("#ff6b6b"), Offset = 0.0f });
+            stopGradient.GradientStops.Add(new GradientStop { Color = Color.FromArgb("#ee5a52"), Offset = 1.0f });
+            
+            ActionButton.Background = stopGradient;
+            ActionButton.Shadow = new Shadow
+            {
+                Brush = Color.FromArgb("#ff6b6b"),
+                Offset = new Point(0, 12),
+                Radius = 35,
+                Opacity = 0.5f
+            };
+            
+            ActionIcon.Text = "⏹";
+            ActionText.Text = "STOP";
+        }
+
+        private void UpdateButtonToStart()
+        {
+            // Change to green start button
+            var startGradient = new RadialGradientBrush
+            {
+                Center = new Point(0.5, 0.5),
+                Radius = 1.0
+            };
+            startGradient.GradientStops.Add(new GradientStop { Color = Color.FromArgb("#7cc8a5"), Offset = 0.0f });
+            startGradient.GradientStops.Add(new GradientStop { Color = Color.FromArgb("#5cb88d"), Offset = 1.0f });
+            
+            ActionButton.Background = startGradient;
+            ActionButton.Shadow = new Shadow
+            {
+                Brush = Color.FromArgb("#7cc8a5"),
+                Offset = new Point(0, 12),
+                Radius = 35,
+                Opacity = 0.5f
+            };
+            
+            ActionIcon.Text = "▶";
+            ActionIcon.Margin = new Thickness(8, 0, 0, 0);
+            ActionText.Text = "START";
         }
 
         private async void OnVoiceTuneClicked(object sender, EventArgs e)
