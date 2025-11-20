@@ -252,6 +252,33 @@
                                    LineHeight="1.5"/>
                         </ScrollView>
                     </Border>
+                    
+                    <!-- Frequency Chart Card -->
+                    <Border BackgroundColor="{StaticResource GlassWhite}"
+                            StrokeThickness="1"
+                            Stroke="#40FFFFFF"
+                            HeightRequest="150"
+                            Padding="20"
+                            x:Name="ChartBorder">
+                        <Border.Shadow>
+                            <Shadow Brush="#40000000"
+                                    Offset="0,8"
+                                    Radius="20"
+                                    Opacity="0.2"/>
+                        </Border.Shadow>
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="24"/>
+                        </Border.StrokeShape>
+                        <VerticalStackLayout Spacing="12">
+                            <Label Text="📊 Voice Frequency"
+                                   TextColor="{StaticResource AppMint}"
+                                   FontSize="14"
+                                   FontAttributes="Bold"/>
+                            <GraphicsView x:Name="FrequencyChartView" 
+                                          HeightRequest="100"
+                                          Drawable="{StaticResource FrequencyChartDrawable}"/>
+                        </VerticalStackLayout>
+                    </Border>
 
                     <!-- Stop Button -->
                     <Border x:Name="StopButton"
@@ -292,33 +319,7 @@
                                    HorizontalOptions="Center"/>
                         </VerticalStackLayout>
                     </Border>
-
-                    <!-- Frequency Chart Card -->
-                    <Border BackgroundColor="{StaticResource GlassWhite}"
-                            StrokeThickness="1"
-                            Stroke="#40FFFFFF"
-                            HeightRequest="150"
-                            Padding="20"
-                            x:Name="ChartBorder">
-                        <Border.Shadow>
-                            <Shadow Brush="#40000000"
-                                    Offset="0,8"
-                                    Radius="20"
-                                    Opacity="0.2"/>
-                        </Border.Shadow>
-                        <Border.StrokeShape>
-                            <RoundRectangle CornerRadius="24"/>
-                        </Border.StrokeShape>
-                        <VerticalStackLayout Spacing="12">
-                            <Label Text="📊 Voice Frequency"
-                                   TextColor="{StaticResource AppMint}"
-                                   FontSize="14"
-                                   FontAttributes="Bold"/>
-                            <GraphicsView x:Name="FrequencyChartView" 
-                                          HeightRequest="100"
-                                          Drawable="{StaticResource FrequencyChartDrawable}"/>
-                        </VerticalStackLayout>
-                    </Border>
+                    
                 </VerticalStackLayout>
             </Grid>
         </Border>
