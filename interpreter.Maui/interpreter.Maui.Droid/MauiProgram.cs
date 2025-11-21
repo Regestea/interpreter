@@ -1,4 +1,5 @@
 ﻿using interpreter.Maui.ServiceDefaults;
+using interpreter.Maui.Services;
 
 namespace interpreter.Maui
 {
@@ -11,6 +12,10 @@ namespace interpreter.Maui
             builder
                 .UseSharedMauiApp();
             builder.AddServiceDefaults();
+
+            // Platform services
+            builder.Services.AddSingleton<IAudioRecordingService, AndroidAudioRecordingService>();
+            builder.Services.AddSingleton<IAudioPlaybackService, AndroidAudioPlaybackService>();
 
             return builder.Build();
         }

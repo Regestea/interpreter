@@ -1,5 +1,6 @@
 ﻿using interpreter.Maui.ViewModels;
 using interpreter.Maui.Services;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace interpreter.Maui
 {
@@ -13,6 +14,8 @@ namespace interpreter.Maui
         private readonly IAnimationService _animationService;
         private readonly IThemeService _themeService;
         private readonly IButtonStateService _buttonStateService;
+        private readonly IAudioRecordingService? _audioRecordingService;
+        private readonly IAudioPlaybackService? _audioPlaybackService;
 
         // Default constructor for XAML - creates services manually
         public MainPage() 
@@ -36,6 +39,21 @@ namespace interpreter.Maui
 
             BindingContext = _viewModel;
             
+            // Try resolve platform audio services when available (Android)
+            try
+            {
+                var sp = Application.Current?.Handler?.MauiContext?.Services;
+                if (sp != null)
+                {
+                    _audioRecordingService = sp.GetService<IAudioRecordingService>();
+                    _audioPlaybackService = sp.GetService<IAudioPlaybackService>();
+                }
+            }
+            catch
+            {
+                // ignore DI resolve failures
+            }
+
             SubscribeToViewModelEvents();
             Loaded += OnPageLoaded;
         }
@@ -81,6 +99,14 @@ namespace interpreter.Maui
         {
             if (_viewModel.IsRecording)
             {
+                if (_audioRecordingService != null)
+                {
+                    var granted = await _audioRecordingService.RequestPermissionsAsync();
+                    if (granted)
+                    {
+                        await _audioRecordingService.StartAsync();
+                    }
+                }
                 await _animationService.AnimateToRecordingStateAsync(
                     InitialStateLayout,
                     RecordingStateLayout,
@@ -108,6 +134,15 @@ namespace interpreter.Maui
                     NoiseButton);
 
                 _buttonStateService.UpdateToStartState(ActionButton, ActionIcon, ActionText);
+
+                if (_audioRecordingService != null)
+                {
+                    var file = await _audioRecordingService.StopAsync();
+                    if (!string.IsNullOrWhiteSpace(file) && _audioPlaybackService != null)
+                    {
+                        await _audioPlaybackService.PlayAsync(file);
+                    }
+                }
             }
         }
 
