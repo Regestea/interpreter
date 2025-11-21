@@ -1,373 +1,188 @@
-﻿namespace interpreter.Maui
+﻿using interpreter.Maui.ViewModels;
+using interpreter.Maui.Services;
+
+namespace interpreter.Maui
 {
+    /// <summary>
+    /// Main page refactored following MVVM pattern and SOLID principles
+    /// View layer is responsible only for UI interactions and animations
+    /// </summary>
     public partial class MainPage : ContentPage
     {
-        private bool isDarkTheme = false;
-        private bool isRecording = false;
+        private readonly MainViewModel _viewModel;
+        private readonly IAnimationService _animationService;
+        private readonly IThemeService _themeService;
+        private readonly IButtonStateService _buttonStateService;
 
-        public MainPage()
+        // Default constructor for XAML - creates services manually
+        public MainPage() 
+            : this(new MainViewModel(), new AnimationService(), new ThemeService(), new ButtonStateService())
+        {
+        }
+
+        // Constructor with dependency injection for testability (Dependency Inversion Principle)
+        public MainPage(
+            MainViewModel viewModel,
+            IAnimationService animationService,
+            IThemeService themeService,
+            IButtonStateService buttonStateService)
         {
             InitializeComponent();
+            
+            _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
+            _animationService = animationService ?? throw new ArgumentNullException(nameof(animationService));
+            _themeService = themeService ?? throw new ArgumentNullException(nameof(themeService));
+            _buttonStateService = buttonStateService ?? throw new ArgumentNullException(nameof(buttonStateService));
+
+            BindingContext = _viewModel;
+            
+            SubscribeToViewModelEvents();
             Loaded += OnPageLoaded;
         }
 
-        private async void OnPageLoaded(object sender, EventArgs e)
+        /// <summary>
+        /// Subscribe to ViewModel property changes (Observer pattern)
+        /// </summary>
+        private void SubscribeToViewModelEvents()
         {
-            // Animate initial state elements on page load with staggered timing
-            await Task.WhenAll(
-                Task.Delay(150).ContinueWith(async _ => await LanguagePickerBorder.FadeTo(1, 600, Easing.CubicOut)),
-                Task.Delay(250).ContinueWith(async _ => await ModePickerBorder.FadeTo(1, 600, Easing.CubicOut))
-            );
-            
-            // Make buttons visible immediately without animation
-            VoiceTuneButton.Opacity = 1;
-            NoiseButton.Opacity = 1;
+            _viewModel.PropertyChanged += async (sender, args) =>
+            {
+                if (args.PropertyName == nameof(_viewModel.IsRecording))
+                {
+                    await HandleRecordingStateChange();
+                }
+                else if (args.PropertyName == nameof(_viewModel.IsDarkTheme))
+                {
+                    HandleThemeChange();
+                }
+                else if (args.PropertyName == nameof(_viewModel.IsMenuVisible))
+                {
+                    await HandleMenuVisibilityChange();
+                }
+            };
         }
 
-        private async void OnActionButtonClicked(object sender, EventArgs e)
+        #region Lifecycle Events
+
+        private async void OnPageLoaded(object? sender, EventArgs e)
         {
-            if (!isRecording)
+            await _animationService.AnimatePageLoadAsync(
+                LanguagePickerBorder,
+                ModePickerBorder,
+                VoiceTuneButton,
+                NoiseButton);
+        }
+
+        #endregion
+
+        #region ViewModel Event Handlers
+
+        private async Task HandleRecordingStateChange()
+        {
+            if (_viewModel.IsRecording)
             {
-                await StartRecording();
+                await _animationService.AnimateToRecordingStateAsync(
+                    InitialStateLayout,
+                    RecordingStateLayout,
+                    ActionButton,
+                    TranscriptBorder,
+                    ChartBorder);
+
+                _buttonStateService.UpdateToStopState(ActionButton, ActionIcon, ActionText);
+                
+                // Start pulse animation
+                _ = _animationService.AnimatePulseAsync(
+                    ActionButton, 
+                    () => _viewModel.IsRecording && RecordingStateLayout.IsVisible);
             }
             else
             {
-                await StopRecording();
+                await _animationService.AnimateButtonPressAsync(ActionButton, 0.9);
+                
+                await _animationService.AnimateToInitialStateAsync(
+                    RecordingStateLayout,
+                    InitialStateLayout,
+                    LanguagePickerBorder,
+                    ModePickerBorder,
+                    VoiceTuneButton,
+                    NoiseButton);
+
+                _buttonStateService.UpdateToStartState(ActionButton, ActionIcon, ActionText);
             }
         }
 
-        private async Task StartRecording()
+        private void HandleThemeChange()
         {
-            // Add button press animation
-            await ActionButton.ScaleTo(0.9, 100, Easing.CubicIn);
-            await ActionButton.ScaleTo(1, 100, Easing.CubicOut);
-
-            // Fade out initial state with animations
-            await Task.WhenAll(
-                InitialStateLayout.FadeTo(0, 400, Easing.CubicIn),
-                ActionButton.ScaleTo(0.8, 400, Easing.CubicIn)
-            );
-
-            InitialStateLayout.IsVisible = false;
-            RecordingStateLayout.IsVisible = true;
-            RecordingStateLayout.Opacity = 0;
-
-            // Change button to Stop state
-            UpdateButtonToStop();
-            isRecording = true;
-
-            // Animate recording state elements
-            await Task.WhenAll(
-                RecordingStateLayout.FadeTo(1, 400, Easing.CubicOut),
-                TranscriptBorder.TranslateTo(0, 0, 600, Easing.SpringOut).ContinueWith(_ =>
-                    TranscriptBorder.FadeTo(1, 400, Easing.CubicOut)),
-                Task.Delay(100).ContinueWith(async _ =>
-                {
-                    await Task.WhenAll(
-                        ActionButton.ScaleTo(1.1, 100, Easing.CubicOut),
-                        ActionButton.ScaleTo(1, 600, Easing.SpringOut)
-                    );
-                    // Pulse animation for action button
-                    _ = PulseActionButton();
-                }),
-                Task.Delay(200).ContinueWith(async _ =>
-                    await ChartBorder.FadeTo(1, 600, Easing.CubicOut))
-            );
+            _themeService.ApplyTheme(_viewModel.IsDarkTheme, this, CreateThemeElements());
         }
 
-        private async Task PulseActionButton()
+        private async Task HandleMenuVisibilityChange()
         {
-            while (isRecording && RecordingStateLayout.IsVisible)
+            await _animationService.AnimateFadeToggleAsync(MenuFlyout, _viewModel.IsMenuVisible);
+        }
+
+        #endregion
+
+        #region UI Event Handlers
+
+        private void OnActionButtonClicked(object? sender, EventArgs e)
+        {
+            _viewModel.ActionButtonCommand.Execute(null);
+        }
+
+        private async void OnVoiceTuneClicked(object? sender, EventArgs e)
+        {
+            await _animationService.AnimateButtonPressAsync(VoiceTuneButton);
+            _viewModel.VoiceTuneCommand.Execute(null);
+        }
+
+        private async void OnNoiseAdjustClicked(object? sender, EventArgs e)
+        {
+            await _animationService.AnimateButtonPressAsync(NoiseButton);
+            _viewModel.NoiseAdjustCommand.Execute(null);
+        }
+
+        private void OnMenuClicked(object? sender, EventArgs e)
+        {
+            _viewModel.MenuToggleCommand.Execute(null);
+        }
+
+        private async void OnThemeToggleClicked(object? sender, EventArgs e)
+        {
+            if (sender is Border border)
             {
-                await ActionButton.ScaleTo(1.05, 1000, Easing.SinInOut);
-                await ActionButton.ScaleTo(1.0, 1000, Easing.SinInOut);
+                await _animationService.AnimateButtonPressAsync(border, 0.95);
             }
+
+            _viewModel.ThemeToggleCommand.Execute(null);
         }
 
-        private async Task StopRecording()
+        #endregion
+
+        #region Helper Methods
+
+        /// <summary>
+        /// Factory method to create theme elements DTO
+        /// </summary>
+        private ThemeElements CreateThemeElements()
         {
-            // Add button press animation
-            await ActionButton.ScaleTo(0.9, 100, Easing.CubicIn);
-            await ActionButton.ScaleTo(1, 100, Easing.CubicOut);
-
-            isRecording = false;
-
-            // Fade out recording state
-            await RecordingStateLayout.FadeTo(0, 400, Easing.CubicIn);
-
-            RecordingStateLayout.IsVisible = false;
-            InitialStateLayout.IsVisible = true;
-            InitialStateLayout.Opacity = 0;
-
-            // Reset all elements
-            LanguagePickerBorder.Opacity = 0;
-            ModePickerBorder.Opacity = 0;
-
-            // Change button back to Start state
-            UpdateButtonToStart();
-
-            // Animate initial state back in
-            await Task.WhenAll(
-                InitialStateLayout.FadeTo(1, 400, Easing.CubicOut),
-                LanguagePickerBorder.FadeTo(1, 600, Easing.CubicOut),
-                Task.Delay(100).ContinueWith(async _ => await ModePickerBorder.FadeTo(1, 600, Easing.CubicOut))
-            );
-            
-            // Make buttons visible immediately without animation
-            VoiceTuneButton.Opacity = 1;
-            NoiseButton.Opacity = 1;
-        }
-
-        private void UpdateButtonToStop()
-        {
-            // Change to red stop button
-            var stopGradient = new RadialGradientBrush
+            return new ThemeElements
             {
-                Center = new Point(0.5, 0.5),
-                Radius = 1.0
+                MainBorder = MainBorder,
+                MenuFlyout = MenuFlyout,
+                ThemeIcon = ThemeIcon,
+                ThemeLabel = ThemeLabel,
+                LanguagePickerBorder = LanguagePickerBorder,
+                ModePickerBorder = ModePickerBorder,
+                VoiceTuneButton = VoiceTuneButton,
+                NoiseButton = NoiseButton,
+                TranscriptBorder = TranscriptBorder,
+                ChartBorder = ChartBorder,
+                TranscriptLabel = TranscriptLabel
             };
-            stopGradient.GradientStops.Add(new GradientStop { Color = Color.FromArgb("#ff6b6b"), Offset = 0.0f });
-            stopGradient.GradientStops.Add(new GradientStop { Color = Color.FromArgb("#ee5a52"), Offset = 1.0f });
-            
-            ActionButton.Background = stopGradient;
-            ActionButton.Shadow = new Shadow
-            {
-                Brush = Color.FromArgb("#ff6b6b"),
-                Offset = new Point(0, 12),
-                Radius = 35,
-                Opacity = 0.5f
-            };
-            
-            ActionIcon.Text = "⏹";
-            ActionText.Text = "STOP";
         }
 
-        private void UpdateButtonToStart()
-        {
-            // Change to green start button
-            var startGradient = new RadialGradientBrush
-            {
-                Center = new Point(0.5, 0.5),
-                Radius = 1.0
-            };
-            startGradient.GradientStops.Add(new GradientStop { Color = Color.FromArgb("#7cc8a5"), Offset = 0.0f });
-            startGradient.GradientStops.Add(new GradientStop { Color = Color.FromArgb("#5cb88d"), Offset = 1.0f });
-            
-            ActionButton.Background = startGradient;
-            ActionButton.Shadow = new Shadow
-            {
-                Brush = Color.FromArgb("#7cc8a5"),
-                Offset = new Point(0, 12),
-                Radius = 35,
-                Opacity = 0.5f
-            };
-            
-            ActionIcon.Text = "▶";
-            ActionIcon.Margin = new Thickness(8, 0, 0, 0);
-            ActionText.Text = "START";
-        }
-
-        private async void OnVoiceTuneClicked(object sender, EventArgs e)
-        {
-            // Add button press animation
-            await VoiceTuneButton.ScaleTo(0.95, 100, Easing.CubicIn);
-            await VoiceTuneButton.ScaleTo(1, 100, Easing.SpringOut);
-            // Add your voice tune detection logic here
-        }
-
-        private async void OnNoiseAdjustClicked(object sender, EventArgs e)
-        {
-            // Add button press animation
-            await NoiseButton.ScaleTo(0.95, 100, Easing.CubicIn);
-            await NoiseButton.ScaleTo(1, 100, Easing.SpringOut);
-            // Add your noise adjustment logic here
-        }
-
-        public async void ToggleMenu()
-        {
-            // Toggle menu flyout visibility
-            if (MenuFlyout.IsVisible)
-            {
-                await MenuFlyout.FadeTo(0, 200, Easing.CubicIn);
-                MenuFlyout.IsVisible = false;
-            }
-            else
-            {
-                MenuFlyout.IsVisible = true;
-                await MenuFlyout.FadeTo(1, 200, Easing.CubicOut);
-            }
-        }
-
-        private async void OnMenuClicked(object sender, EventArgs e)
-        {
-            ToggleMenu();
-        }
-
-        private async void OnThemeToggleClicked(object sender, EventArgs e)
-        {
-            // Animate button press
-            var border = sender as Border;
-            if (border != null)
-            {
-                await border.ScaleTo(0.95, 50, Easing.CubicIn);
-                await border.ScaleTo(1, 50, Easing.CubicOut);
-            }
-
-            isDarkTheme = !isDarkTheme;
-            ApplyTheme(isDarkTheme);
-        }
-
-        private void ApplyTheme(bool useDarkTheme)
-        {
-            if (useDarkTheme)
-            {
-                // Apply dark theme to entire app
-                Application.Current.UserAppTheme = AppTheme.Dark;
-                
-                ThemeIcon.Text = "☀️";
-                ThemeLabel.Text = "Light Theme";
-                
-                // Update background gradient
-                var darkGradient = new LinearGradientBrush
-                {
-                    StartPoint = new Point(0, 0),
-                    EndPoint = new Point(1, 1)
-                };
-                darkGradient.GradientStops.Add(new GradientStop { Color = Color.FromArgb("#1a1a2e"), Offset = 0.0f });
-                darkGradient.GradientStops.Add(new GradientStop { Color = Color.FromArgb("#16213e"), Offset = 0.33f });
-                darkGradient.GradientStops.Add(new GradientStop { Color = Color.FromArgb("#0f3460"), Offset = 0.66f });
-                darkGradient.GradientStops.Add(new GradientStop { Color = Color.FromArgb("#1a1a2e"), Offset = 1.0f });
-                this.Background = darkGradient;
-
-                // Update main border to dark glass effect
-                var darkGlassBrush = Application.Current.Resources["GlassSurfaceBrushDark"] as LinearGradientBrush;
-                MainBorder.Background = darkGlassBrush;
-                MainBorder.Stroke = Color.FromArgb("#50FFFFFF");
-
-                // Update menu flyout
-                MenuFlyout.BackgroundColor = Color.FromArgb("#40FFFFFF");
-
-                // Update all card backgrounds
-                UpdateCardBackgrounds(Color.FromArgb("#30FFFFFF"));
-                
-                // Update text colors
-                UpdateTextColors(Color.FromArgb("#E0E0E0"));
-            }
-            else
-            {
-                // Apply light theme to entire app
-                Application.Current.UserAppTheme = AppTheme.Light;
-                
-                ThemeIcon.Text = "🌙";
-                ThemeLabel.Text = "Dark Theme";
-                
-                // Restore original background gradient
-                var lightGradient = new LinearGradientBrush
-                {
-                    StartPoint = new Point(0, 0),
-                    EndPoint = new Point(1, 1)
-                };
-                lightGradient.GradientStops.Add(new GradientStop { Color = Color.FromArgb("#C8B5F0"), Offset = 0.0f });
-                lightGradient.GradientStops.Add(new GradientStop { Color = Color.FromArgb("#B5E8D9"), Offset = 0.33f });
-                lightGradient.GradientStops.Add(new GradientStop { Color = Color.FromArgb("#FFCFB5"), Offset = 0.66f });
-                lightGradient.GradientStops.Add(new GradientStop { Color = Color.FromArgb("#B5DBF0"), Offset = 1.0f });
-                this.Background = lightGradient;
-
-                // Restore main border to light glass effect
-                var lightGlassBrush = Application.Current.Resources["GlassSurfaceBrush"] as LinearGradientBrush;
-                MainBorder.Background = lightGlassBrush;
-                MainBorder.Stroke = Color.FromArgb("#30FFFFFF");
-
-                // Restore menu flyout
-                var glassWhite = Application.Current.Resources["GlassWhite"] as Color;
-                MenuFlyout.BackgroundColor = glassWhite;
-
-                // Restore card backgrounds
-                UpdateCardBackgrounds(glassWhite ?? Color.FromArgb("#D0FFFFFF"));
-                
-                // Restore text colors
-                var textDark = Application.Current.Resources["AppTextDark"] as Color;
-                UpdateTextColors(textDark ?? Color.FromArgb("#2C3E50"));
-            }
-        }
-
-        private void UpdateCardBackgrounds(Color backgroundColor)
-        {
-            // Update all border card backgrounds
-            LanguagePickerBorder.BackgroundColor = backgroundColor;
-            ModePickerBorder.BackgroundColor = backgroundColor;
-            VoiceTuneButton.BackgroundColor = backgroundColor;
-            NoiseButton.BackgroundColor = backgroundColor;
-            TranscriptBorder.BackgroundColor = backgroundColor;
-            ChartBorder.BackgroundColor = backgroundColor;
-        }
-
-        private void UpdateTextColors(Color textColor)
-        {
-            // Update primary text elements
-            TranscriptLabel.TextColor = textColor;
-        }
+        #endregion
     }
-
-    public class FrequencyChartDrawable : IDrawable
-    {
-        // Default data points for two lines
-        private readonly float[] orangeLineData = { 0.3f, 0.5f, 0.7f, 0.6f, 0.8f, 0.7f, 0.5f, 0.6f, 0.8f, 0.9f, 0.7f, 0.6f, 0.8f, 0.7f, 0.5f, 0.6f, 0.7f, 0.5f, 0.4f, 0.3f };
-        private readonly float[] greenLineData = { 0.4f, 0.3f, 0.5f, 0.7f, 0.6f, 0.8f, 0.9f, 0.7f, 0.6f, 0.5f, 0.6f, 0.8f, 0.7f, 0.6f, 0.7f, 0.8f, 0.6f, 0.5f, 0.3f, 0.2f };
-
-        public void Draw(ICanvas canvas, RectF dirtyRect)
-        {
-            if (dirtyRect.Width == 0 || dirtyRect.Height == 0)
-                return;
-
-            float width = dirtyRect.Width;
-            float height = dirtyRect.Height;
-            float padding = 10;
-
-            // Draw cyan line
-            DrawLine(canvas, orangeLineData, width, height, padding, Color.FromArgb("#72c9e4"));
-
-            // Draw mint green line
-            DrawLine(canvas, greenLineData, width, height, padding, Color.FromArgb("#7cc8a5"));
-        }
-
-        private void DrawLine(ICanvas canvas, float[] data, float width, float height, float padding, Color color)
-        {
-            if (data.Length < 2)
-                return;
-
-            float availableWidth = width - (2 * padding);
-            float availableHeight = height - (2 * padding);
-            float xStep = availableWidth / (data.Length - 1);
-
-            PathF path = new PathF();
-
-            // Start at first point
-            float x = padding;
-            float y = height - padding - (data[0] * availableHeight);
-            path.MoveTo(x, y);
-
-            // Draw line through all points
-            for (int i = 1; i < data.Length; i++)
-            {
-                x = padding + (i * xStep);
-                y = height - padding - (data[i] * availableHeight);
-                path.LineTo(x, y);
-            }
-
-            canvas.StrokeColor = color;
-            canvas.StrokeSize = 3;
-            canvas.DrawPath(path);
-
-            // Draw points on the line
-            for (int i = 0; i < data.Length; i++)
-            {
-                x = padding + (i * xStep);
-                y = height - padding - (data[i] * availableHeight);
-                canvas.FillColor = color;
-                canvas.FillCircle(x, y, 3);
-            }
-        }
-    }
-
 }
+
