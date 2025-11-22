@@ -11,14 +11,50 @@ namespace interpreter.Maui.Services;
 public class AudioRecorder : IDisposable
 {
     private readonly AudioRecordingConfiguration _config;
+    private readonly AudioManager? _audioManager;
     private AudioRecord? _audioRecord;
     private NoiseSuppressor? _noiseSuppressor;
     private AcousticEchoCanceler? _echoCanceler;
     private bool _disposed;
 
-    public AudioRecorder(AudioRecordingConfiguration config)
+    public AudioRecorder(AudioRecordingConfiguration config, AudioManager? audioManager = null)
     {
         _config = config ?? throw new ArgumentNullException(nameof(config));
+        _audioManager = audioManager;
+    }
+
+    /// <summary>
+    /// Gets available audio input devices (requires AudioManager to be provided in constructor).
+    /// Returns null if AudioManager is not available or API level is below 23.
+    /// </summary>
+    public AudioDeviceInfo[]? GetAvailableInputDevices()
+    {
+#pragma warning disable CA1416
+        if (_audioManager == null)
+            return null;
+
+        if (Android.OS.Build.VERSION.SdkInt >= Android.OS.BuildVersionCodes.M)
+        {
+            return _audioManager.GetDevices(GetDevicesTargets.Inputs);
+        }
+
+        return null;
+#pragma warning restore CA1416
+    }
+
+    /// <summary>
+    /// Sets the preferred audio input device for recording.
+    /// Requires Android API 23+ (Marshmallow).
+    /// </summary>
+    public bool SetPreferredDevice(AudioRecord audioRecord, AudioDeviceInfo device)
+    {
+#pragma warning disable CA1416
+        if (Android.OS.Build.VERSION.SdkInt >= Android.OS.BuildVersionCodes.M)
+        {
+            return audioRecord.SetPreferredDevice(device);
+        }
+        return false;
+#pragma warning restore CA1416
     }
 
     /// <summary>
@@ -49,7 +85,7 @@ public class AudioRecorder : IDisposable
                 audioFormat,
                 minBufferSize
             );
-
+            
             // Apply audio enhancements
             int audioSessionId = audioRecord.AudioSessionId;
             
@@ -144,7 +180,6 @@ public class AudioRecorder : IDisposable
         int minBufferSize = AudioRecord.GetMinBufferSize(_config.SampleRate, channelConfig, audioFormat);
         if (minBufferSize <= 0)
             minBufferSize = _config.SampleRate * _config.ChannelCount * (_config.BitsPerSample / 8); // 1 second fallback
-
         bufferSize = minBufferSize;
 
         var audioRecord = new AudioRecord(
