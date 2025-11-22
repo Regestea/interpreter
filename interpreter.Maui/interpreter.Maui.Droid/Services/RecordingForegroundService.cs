@@ -15,29 +15,30 @@ public class RecordingForegroundService : Service
 {
     public const string ActionStart = "ACTION_START_RECORDING";
     public const string ActionStop = "ACTION_STOP_RECORDING";
-    private const int NotificationId = 1001;
-    private const string ChannelId = "recording_channel";
 
-    // Switched from MediaRecorder to AudioRecord (raw PCM -> WAV)
     private AudioRecord? _audioRecord;
     private Thread? _recordingThread;
     private FileStream? _outputStream;
     private volatile bool _isRecordingInternal;
-    private int _sampleRate = 44100;
-    private int _channelCount = 1; // Mono
-    private int _bitsPerSample = 16;
     private string? _filePath;
+    
+    private readonly AudioRecordingConfiguration _config = new AudioRecordingConfiguration();
+    private RecordingNotificationManager? _notificationManager;
+    private AudioRecorder? _audioRecorder;
 
     public override IBinder? OnBind(Intent? intent) => null;
 
     public override StartCommandResult OnStartCommand(Intent? intent, StartCommandFlags flags, int startId)
     {
+        _notificationManager ??= new RecordingNotificationManager(this);
+        _audioRecorder ??= new AudioRecorder(_config);
+        
         var action = intent?.Action;
         if (action == ActionStart)
         {
             if (!RecordingState.IsRecording)
             {
-                StartInForeground();
+                _notificationManager.StartForegroundNotification();
                 StartRecording();
             }
         }
@@ -50,56 +51,18 @@ public class RecordingForegroundService : Service
         return StartCommandResult.Sticky;
     }
 
-    private void StartInForeground()
-    {
-        var mgr = (NotificationManager?)GetSystemService(NotificationService);
-        if (Build.VERSION.SdkInt >= BuildVersionCodes.O)
-        {
-            var channel = new NotificationChannel(ChannelId, "Recording", NotificationImportance.Low)
-            {
-                Description = "Voice recording in progress"
-            };
-            mgr?.CreateNotificationChannel(channel);
-        }
-
-        // PendingIntent to stop recording
-        var stopIntent = new Intent(this, typeof(RecordingStopReceiver));
-        var pendingStop = PendingIntent.GetBroadcast(this, 0, stopIntent, PendingIntentFlags.Immutable | PendingIntentFlags.UpdateCurrent);
-
-        var builder = new NotificationCompat.Builder(this, ChannelId)
-            .SetContentTitle("Recording audio")
-            .SetContentText("Tap Stop to finish and play")
-            .SetSmallIcon((int)Android.Resource.Drawable.IcMediaPlay)
-            .SetOngoing(true)
-            .AddAction(new NotificationCompat.Action(0, "Stop", pendingStop));
-
-        StartForeground(NotificationId, builder.Build());
-    }
-
     private void StartRecording()
     {
         Directory.CreateDirectory(CacheDir.AbsolutePath);
         _filePath = Path.Combine(CacheDir.AbsolutePath, $"rec_{DateTime.Now:yyyyMMdd_HHmmss}.wav");
 
 #pragma warning disable CA1416
-        // Configure AudioRecord
-        var channelConfig = ChannelIn.Mono;
-        var audioFormat = Encoding.Pcm16bit;
-        int minBufferSize = AudioRecord.GetMinBufferSize(_sampleRate, channelConfig, audioFormat);
-        if (minBufferSize <= 0)
-            minBufferSize = _sampleRate * _channelCount * (_bitsPerSample / 8); // 1 second fallback
-
-        _audioRecord = new AudioRecord(
-            AudioSource.Mic,
-            _sampleRate,
-            channelConfig,
-            audioFormat,
-            minBufferSize
-        );
+        // Create AudioRecord using the recorder
+        _audioRecord = _audioRecorder!.CreateAudioRecord(out int minBufferSize);
 
         // Open output stream and write WAV header placeholder
         _outputStream = new FileStream(_filePath, FileMode.Create, FileAccess.ReadWrite, FileShare.None);
-        WriteWavHeader(_outputStream, _sampleRate, _channelCount, _bitsPerSample);
+        WavFileHandler.WriteWavHeader(_outputStream, _config.SampleRate, _config.ChannelCount, _config.BitsPerSample);
 
         _audioRecord.StartRecording();
         _isRecordingInternal = true;
@@ -156,7 +119,7 @@ public class RecordingForegroundService : Service
             if (_outputStream != null)
             {
                 // Finalize WAV header sizes
-                try { UpdateWavHeader(_outputStream); } catch { }
+                try { WavFileHandler.UpdateWavHeader(_outputStream); } catch { }
                 _outputStream.Flush();
                 _outputStream.Dispose();
                 _outputStream = null;
@@ -168,44 +131,6 @@ public class RecordingForegroundService : Service
             RecordingState.IsRecording = false;
             RecordingState.LastFilePath = _filePath;
         }
-    }
-
-    // WAV helpers
-    private static void WriteWavHeader(System.IO.Stream stream, int sampleRate, int channels, int bitsPerSample)
-    {
-        // RIFF header with placeholder sizes
-        using var bw = new System.IO.BinaryWriter(stream, System.Text.Encoding.ASCII, leaveOpen: true);
-        int byteRate = sampleRate * channels * bitsPerSample / 8;
-        short blockAlign = (short)(channels * bitsPerSample / 8);
-
-        bw.Write(System.Text.Encoding.ASCII.GetBytes("RIFF"));
-        bw.Write(0); // ChunkSize placeholder
-        bw.Write(System.Text.Encoding.ASCII.GetBytes("WAVE"));
-        bw.Write(System.Text.Encoding.ASCII.GetBytes("fmt "));
-        bw.Write(16); // Subchunk1Size for PCM
-        bw.Write((short)1); // PCM format
-        bw.Write((short)channels);
-        bw.Write(sampleRate);
-        bw.Write(byteRate);
-        bw.Write(blockAlign);
-        bw.Write((short)bitsPerSample);
-        bw.Write(System.Text.Encoding.ASCII.GetBytes("data"));
-        bw.Write(0); // Subchunk2Size placeholder
-    }
-
-    private static void UpdateWavHeader(System.IO.Stream stream)
-    {
-        long fileSize = stream.Length;
-        if (fileSize < 44) return;
-        using var bw = new System.IO.BinaryWriter(stream, System.Text.Encoding.ASCII, leaveOpen: true);
-        long dataSize = fileSize - 44;
-        // ChunkSize = 36 + Subchunk2Size
-        bw.Seek(4, SeekOrigin.Begin);
-        bw.Write((int)(36 + dataSize));
-        // Subchunk2Size
-        bw.Seek(40, SeekOrigin.Begin);
-        bw.Write((int)dataSize);
-        bw.Flush();
     }
 }
 
