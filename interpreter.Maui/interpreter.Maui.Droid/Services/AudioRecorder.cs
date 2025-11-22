@@ -1,6 +1,7 @@
 ﻿using Android.Media;
 using System;
 using System.IO;
+using Android.Media.Audiofx;
 
 namespace interpreter.Maui.Services;
 
@@ -11,6 +12,8 @@ public class AudioRecorder : IDisposable
 {
     private readonly AudioRecordingConfiguration _config;
     private AudioRecord? _audioRecord;
+    private NoiseSuppressor? _noiseSuppressor;
+    private AcousticEchoCanceler? _echoCanceler;
     private bool _disposed;
 
     public AudioRecorder(AudioRecordingConfiguration config)
@@ -32,6 +35,8 @@ public class AudioRecorder : IDisposable
             minBufferSize = _config.SampleRate * _config.ChannelCount * (_config.BitsPerSample / 8); // 1 second fallback
 
         AudioRecord? audioRecord = null;
+        NoiseSuppressor? noiseSuppressor = null;
+        AcousticEchoCanceler? echoCanceler = null;
         MemoryStream outputStream = new MemoryStream();
 
         try
@@ -44,6 +49,21 @@ public class AudioRecorder : IDisposable
                 audioFormat,
                 minBufferSize
             );
+
+            // Apply audio enhancements
+            int audioSessionId = audioRecord.AudioSessionId;
+            
+            if (NoiseSuppressor.IsAvailable)
+            {
+                noiseSuppressor = NoiseSuppressor.Create(audioSessionId);
+                noiseSuppressor?.SetEnabled(true);
+            }
+
+            if (AcousticEchoCanceler.IsAvailable)
+            {
+                echoCanceler = AcousticEchoCanceler.Create(audioSessionId);
+                echoCanceler?.SetEnabled(true);
+            }
 
             // Write WAV header placeholder
             WavFileHandler.WriteWavHeader(outputStream, _config.SampleRate, _config.ChannelCount, _config.BitsPerSample);
@@ -70,6 +90,23 @@ public class AudioRecorder : IDisposable
             audioRecord.Dispose();
             audioRecord = null;
 
+            // Cleanup audio enhancements
+            if (noiseSuppressor != null)
+            {
+                noiseSuppressor.SetEnabled(false);
+                noiseSuppressor.Release();
+                noiseSuppressor.Dispose();
+                noiseSuppressor = null;
+            }
+
+            if (echoCanceler != null)
+            {
+                echoCanceler.SetEnabled(false);
+                echoCanceler.Release();
+                echoCanceler.Dispose();
+                echoCanceler = null;
+            }
+
             // Finalize WAV header
             WavFileHandler.UpdateWavHeader(outputStream);
             outputStream.Seek(0, SeekOrigin.Begin);
@@ -82,6 +119,13 @@ public class AudioRecorder : IDisposable
             audioRecord?.Stop();
             audioRecord?.Release();
             audioRecord?.Dispose();
+            
+            noiseSuppressor?.Release();
+            noiseSuppressor?.Dispose();
+            
+            echoCanceler?.Release();
+            echoCanceler?.Dispose();
+            
             outputStream.Dispose();
             throw;
         }
@@ -89,7 +133,7 @@ public class AudioRecorder : IDisposable
     }
 
     /// <summary>
-    /// Creates and configures an AudioRecord instance for continuous recording.
+    /// Creates and configures an AudioRecord instance for continuous recording with audio enhancements.
     /// </summary>
     public AudioRecord CreateAudioRecord(out int bufferSize)
     {
@@ -103,13 +147,30 @@ public class AudioRecorder : IDisposable
 
         bufferSize = minBufferSize;
 
-        return new AudioRecord(
+        var audioRecord = new AudioRecord(
             AudioSource.Mic,
             _config.SampleRate,
             channelConfig,
             audioFormat,
             minBufferSize
         );
+
+        // Apply audio enhancements
+        int audioSessionId = audioRecord.AudioSessionId;
+        
+        if (NoiseSuppressor.IsAvailable)
+        {
+            _noiseSuppressor = NoiseSuppressor.Create(audioSessionId);
+            _noiseSuppressor?.SetEnabled(true);
+        }
+
+        if (AcousticEchoCanceler.IsAvailable)
+        {
+            _echoCanceler = AcousticEchoCanceler.Create(audioSessionId);
+            _echoCanceler?.SetEnabled(true);
+        }
+
+        return audioRecord;
 #pragma warning restore CA1416
     }
 
@@ -121,6 +182,23 @@ public class AudioRecorder : IDisposable
         _audioRecord?.Release();
         _audioRecord?.Dispose();
         _audioRecord = null;
+
+        // Cleanup audio enhancements
+        if (_noiseSuppressor != null)
+        {
+            _noiseSuppressor.SetEnabled(false);
+            _noiseSuppressor.Release();
+            _noiseSuppressor.Dispose();
+            _noiseSuppressor = null;
+        }
+
+        if (_echoCanceler != null)
+        {
+            _echoCanceler.SetEnabled(false);
+            _echoCanceler.Release();
+            _echoCanceler.Dispose();
+            _echoCanceler = null;
+        }
 
         _disposed = true;
     }
