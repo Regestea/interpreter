@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+﻿﻿using Microsoft.Extensions.Logging;
 
 namespace interpreter.Maui
 {
@@ -15,7 +15,10 @@ namespace interpreter.Maui
                 });
 
 #if DEBUG
-    		builder.Logging.AddDebug();
+            // AddDebug() can cause ANR during debugger attachment on Android
+            // Use filtered logging to reduce overhead
+            builder.Logging.SetMinimumLevel(LogLevel.Warning);
+            builder.Logging.AddDebug();
 #endif
 
             return builder;
