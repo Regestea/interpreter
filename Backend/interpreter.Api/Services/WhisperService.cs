@@ -35,8 +35,23 @@ namespace interpreter.Api.Services
 
             _logger.LogInformation("Initializing Whisper service with model: {ModelPath}, Language: {Language}",
                 _settings.ModelPath, _settings.Language);
-
-            _factory = WhisperFactory.FromPath(_settings.ModelPath);
+            
+            var modelPath = Path.Combine(AppContext.BaseDirectory, _settings.ModelPath);
+            
+            if (!File.Exists(modelPath))
+            {
+                var errorMessage = $"Whisper model file not found at: {modelPath}\n" +
+                    $"Please download a Whisper model file (e.g., ggml-large-v3.bin) from https://huggingface.co/ggerganov/whisper.cpp/tree/main\n" +
+                    $"and place it in the '{Path.GetDirectoryName(modelPath)}' directory.\n" +
+                    $"Update the 'Whisper:ModelPath' setting in appsettings.json if you use a different model.";
+                
+                _logger.LogError("Whisper model file not found at: {ModelPath}", modelPath);
+                _logger.LogError("Download instructions: {Instructions}", errorMessage);
+                throw new FileNotFoundException(errorMessage, modelPath);
+            }
+            
+            _logger.LogDebug("Loading Whisper model from: {ModelPath}", modelPath);
+            _factory = WhisperFactory.FromPath(modelPath);
             _processorPool = new ConcurrentBag<WhisperProcessor>();
             _poolSemaphore = new SemaphoreSlim(MaxPoolSize, MaxPoolSize);
 
