@@ -22,14 +22,30 @@ public class RecordingForegroundService : Service
     private volatile bool _isRecordingInternal;
     private string? _filePath;
     
-    private readonly AudioRecordingConfiguration _config = new AudioRecordingConfiguration();
-    private RecordingNotificationManager? _notificationManager;
-    private AudioRecorder? _audioRecorder;
+    private AudioRecordingConfiguration? _config;
+    private IRecordingNotificationManager? _notificationManager;
+    private IAudioRecorder? _audioRecorder;
 
     public override IBinder? OnBind(Intent? intent) => null;
 
     public override StartCommandResult OnStartCommand(Intent? intent, StartCommandFlags flags, int startId)
     {
+        // Initialize dependencies
+        if (_config == null)
+        {
+            // Try to get configuration from DI, fallback to default
+            try
+            {
+                var app = Microsoft.Maui.ApplicationModel.Platform.CurrentActivity?.Application as IPlatformApplication;
+                var sp = app?.Services;
+                _config = sp?.GetService<AudioRecordingConfiguration>() ?? new AudioRecordingConfiguration();
+            }
+            catch
+            {
+                _config = new AudioRecordingConfiguration();
+            }
+        }
+        
         _notificationManager ??= new RecordingNotificationManager(this);
         _audioRecorder ??= new AudioRecorder(_config);
         

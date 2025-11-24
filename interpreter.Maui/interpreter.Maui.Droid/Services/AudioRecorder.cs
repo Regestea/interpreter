@@ -8,7 +8,7 @@ namespace interpreter.Maui.Services;
 /// <summary>
 /// Handles audio recording operations using Android AudioRecord.
 /// </summary>
-public class AudioRecorder : IDisposable
+public class AudioRecorder : IAudioRecorder
 {
     private readonly AudioRecordingConfiguration _config;
     private readonly AudioManager? _audioManager;

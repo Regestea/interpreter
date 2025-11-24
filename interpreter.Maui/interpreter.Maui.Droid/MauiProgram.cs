@@ -22,6 +22,15 @@ namespace interpreter.Maui
             // Platform services
             builder.Services.AddSingleton<IAudioRecordingService, AndroidAudioRecordingService>();
             builder.Services.AddSingleton<IAudioPlaybackService, AndroidAudioPlaybackService>();
+            
+            // Audio recording infrastructure services
+            // Note: These are registered for testability and consistency,
+            // but RecordingForegroundService may instantiate them directly
+            // since Android Services are created by the system, not the DI container
+            builder.Services.AddSingleton<AudioRecordingConfiguration>();
+            builder.Services.AddTransient<IAudioRecorder, AudioRecorder>();
+            // RecordingNotificationManager requires Service instance in constructor,
+            // so it cannot be injected in RecordingForegroundService via DI
 
 #if DEBUG
             // AddDebug() can cause ANR during debugger attachment on Android

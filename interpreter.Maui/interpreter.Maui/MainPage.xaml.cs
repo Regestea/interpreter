@@ -17,19 +17,15 @@ namespace interpreter.Maui
         private readonly IAudioPlaybackService? _audioPlaybackService;
         private readonly IModalService _modalService;
 
-        // Default constructor for XAML - creates services manually
-        public MainPage() 
-            : this(new MainViewModel(), new AnimationService(), new ThemeService(), new ButtonStateService(), new ModalService())
-        {
-        }
-
-        // Constructor with dependency injection for testability (Dependency Inversion Principle)
+        // Constructor with dependency injection (Dependency Inversion Principle)
         public MainPage(
             MainViewModel viewModel,
             IAnimationService animationService,
             IThemeService themeService,
             IButtonStateService buttonStateService,
-            IModalService modalService)
+            IModalService modalService,
+            IAudioRecordingService? audioRecordingService = null,
+            IAudioPlaybackService? audioPlaybackService = null)
         {
             InitializeComponent();
             
@@ -38,6 +34,8 @@ namespace interpreter.Maui
             _themeService = themeService ?? throw new ArgumentNullException(nameof(themeService));
             _buttonStateService = buttonStateService ?? throw new ArgumentNullException(nameof(buttonStateService));
             _modalService = modalService ?? throw new ArgumentNullException(nameof(modalService));
+            _audioRecordingService = audioRecordingService;
+            _audioPlaybackService = audioPlaybackService;
 
             BindingContext = _viewModel;
             
@@ -45,21 +43,6 @@ namespace interpreter.Maui
             if (_modalService is ModalService concreteModalService)
             {
                 concreteModalService.Initialize(ModalContainer, ModalContentBorder);
-            }
-            
-            // Try resolve platform audio services when available (Android)
-            try
-            {
-                var sp = Application.Current?.Handler?.MauiContext?.Services;
-                if (sp != null)
-                {
-                    _audioRecordingService = sp.GetService<IAudioRecordingService>();
-                    _audioPlaybackService = sp.GetService<IAudioPlaybackService>();
-                }
-            }
-            catch
-            {
-                // ignore DI resolve failures
             }
 
             SubscribeToViewModelEvents();

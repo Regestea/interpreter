@@ -1,4 +1,6 @@
 ﻿﻿using Microsoft.Extensions.Logging;
+using interpreter.Maui.Services;
+using interpreter.Maui.ViewModels;
 
 namespace interpreter.Maui
 {
@@ -13,6 +15,18 @@ namespace interpreter.Maui
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
                 });
+
+            // Register shared services
+            builder.Services.AddSingleton<IAnimationService, AnimationService>();
+            builder.Services.AddSingleton<IThemeService, ThemeService>();
+            builder.Services.AddSingleton<IButtonStateService, ButtonStateService>();
+            builder.Services.AddSingleton<IModalService, ModalService>();
+            
+            // Register ViewModels
+            builder.Services.AddTransient<MainViewModel>();
+            
+            // Register Pages
+            builder.Services.AddTransient<MainPage>();
 
 
 

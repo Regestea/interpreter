@@ -9,7 +9,7 @@ namespace interpreter.Maui.Services;
 /// <summary>
 /// Manages the creation and display of recording notifications.
 /// </summary>
-public class RecordingNotificationManager
+public class RecordingNotificationManager : IRecordingNotificationManager
 {
     private const int NotificationId = 1001;
     private const string ChannelId = "recording_channel";
