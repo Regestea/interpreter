@@ -501,6 +501,46 @@
                 </Border>
             </VerticalStackLayout>
         </Border>
+
+        <!-- Modal Overlay -->
+        <Grid x:Name="ModalContainer"
+              IsVisible="False"
+              Opacity="0"
+              BackgroundColor="#80000000"
+              ZIndex="1000"
+              HorizontalOptions="Fill"
+              VerticalOptions="Fill">
+            <Grid.GestureRecognizers>
+                <TapGestureRecognizer Tapped="OnModalBackgroundTapped"/>
+            </Grid.GestureRecognizers>
+            
+            <Border x:Name="ModalContentBorder"
+                    BackgroundColor="White"
+                    StrokeThickness="1"
+                    Stroke="#40FFFFFF"
+                    HorizontalOptions="Center"
+                    VerticalOptions="Center"
+                    MaximumWidthRequest="400"
+                    Scale="0.9"
+                    Margin="20">
+                <Border.Padding>
+                    <OnIdiom x:TypeArguments="Thickness"
+                             Phone="20"
+                             Tablet="24"
+                             Desktop="24"/>
+                </Border.Padding>
+                <Border.Shadow>
+                    <Shadow Brush="#60000000"
+                            Offset="0,10"
+                            Radius="40"
+                            Opacity="0.5"/>
+                </Border.Shadow>
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="24"/>
+                </Border.StrokeShape>
+                <!-- Content will be set dynamically -->
+            </Border>
+        </Grid>
     </Grid>
 
 </ContentPage>

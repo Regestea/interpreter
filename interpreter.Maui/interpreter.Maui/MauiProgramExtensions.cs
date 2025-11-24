@@ -14,6 +14,8 @@ namespace interpreter.Maui
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
                 });
 
+
+
 #if DEBUG
             // AddDebug() can cause ANR during debugger attachment on Android
             // Use filtered logging to reduce overhead

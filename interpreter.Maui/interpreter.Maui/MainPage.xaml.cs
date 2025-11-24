@@ -1,6 +1,5 @@
 ﻿using interpreter.Maui.ViewModels;
 using interpreter.Maui.Services;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace interpreter.Maui
 {
@@ -16,10 +15,11 @@ namespace interpreter.Maui
         private readonly IButtonStateService _buttonStateService;
         private readonly IAudioRecordingService? _audioRecordingService;
         private readonly IAudioPlaybackService? _audioPlaybackService;
+        private readonly IModalService _modalService;
 
         // Default constructor for XAML - creates services manually
         public MainPage() 
-            : this(new MainViewModel(), new AnimationService(), new ThemeService(), new ButtonStateService())
+            : this(new MainViewModel(), new AnimationService(), new ThemeService(), new ButtonStateService(), new ModalService())
         {
         }
 
@@ -28,7 +28,8 @@ namespace interpreter.Maui
             MainViewModel viewModel,
             IAnimationService animationService,
             IThemeService themeService,
-            IButtonStateService buttonStateService)
+            IButtonStateService buttonStateService,
+            IModalService modalService)
         {
             InitializeComponent();
             
@@ -36,8 +37,15 @@ namespace interpreter.Maui
             _animationService = animationService ?? throw new ArgumentNullException(nameof(animationService));
             _themeService = themeService ?? throw new ArgumentNullException(nameof(themeService));
             _buttonStateService = buttonStateService ?? throw new ArgumentNullException(nameof(buttonStateService));
+            _modalService = modalService ?? throw new ArgumentNullException(nameof(modalService));
 
             BindingContext = _viewModel;
+            
+            // Initialize modal service
+            if (_modalService is ModalService concreteModalService)
+            {
+                concreteModalService.Initialize(ModalContainer, ModalContentBorder);
+            }
             
             // Try resolve platform audio services when available (Android)
             try
@@ -174,6 +182,27 @@ namespace interpreter.Maui
         private async void OnNoiseAdjustClicked(object? sender, EventArgs e)
         {
             await _animationService.AnimateButtonPressAsync(NoiseButton);
+           
+            // Create simple text modal content
+            var modalContent = CreateNoiseAdjustModalContent();
+            
+            // Configure modal options with theme-aware colors
+            var options = new ModalOptions
+            {
+                ShowCloseButton = true,              // Show close button
+                AutoCloseDurationSeconds = 5,     // No auto-close
+                CloseOnBackgroundTap = true,         // Close when clicking outside
+                ContentBackgroundColor = _viewModel.IsDarkTheme 
+                    ? Color.FromArgb("#2C2C2C")      // Dark theme: dark gray
+                    : Colors.White,                   // Light theme: white
+                CloseButtonColor = _viewModel.IsDarkTheme
+                    ? Colors.White                    // Dark theme: white X button
+                    : Color.FromArgb("#666666")       // Light theme: gray X button
+            };
+            
+            // Show the modal
+            await _modalService.ShowModalAsync(modalContent, options);
+            
             _viewModel.NoiseAdjustCommand.Execute(null);
         }
 
@@ -195,6 +224,37 @@ namespace interpreter.Maui
         #endregion
 
         #region Helper Methods
+
+        /// <summary>
+        /// Creates the content for the noise adjust modal
+        /// </summary>
+        private View CreateNoiseAdjustModalContent()
+        {
+            // Simple text label with theme-aware color
+            var label = new Label
+            {
+                Text = "🔇 Noise Control Settings",
+                FontSize = 18,
+                FontAttributes = FontAttributes.Bold,
+                HorizontalOptions = LayoutOptions.Center,
+                VerticalOptions = LayoutOptions.Center,
+                TextColor = _viewModel.IsDarkTheme 
+                    ? Colors.White                   // Dark theme: white text
+                    : Color.FromArgb("#333333"),     // Light theme: dark text
+                Padding = new Thickness(20)
+            };
+
+            return label;
+        }
+
+        /// <summary>
+        /// Handle tap on modal background
+        /// </summary>
+        private async void OnModalBackgroundTapped(object? sender, EventArgs e)
+        {
+            // Only close if tapped on the background grid itself, not on the content
+            await _modalService.CloseModalAsync();
+        }
 
         /// <summary>
         /// Factory method to create theme elements DTO
