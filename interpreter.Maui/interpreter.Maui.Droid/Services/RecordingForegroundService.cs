@@ -25,6 +25,12 @@ public class RecordingForegroundService : Service
     private AudioRecordingConfiguration? _config;
     private IRecordingNotificationManager? _notificationManager;
     private IAudioRecorder? _audioRecorder;
+    private AudioCalibration? _calibration;
+    private SilenceDetector? _silenceDetector;
+    private AudioChunkBuffer? _chunkBuffer;
+    private int _chunkCounter;
+    private bool _chunkFinalizedForCurrentSilence;
+    private bool _hasDetectedSpeech;
 
     public override IBinder? OnBind(Intent? intent) => null;
 
@@ -39,10 +45,12 @@ public class RecordingForegroundService : Service
                 var app = Microsoft.Maui.ApplicationModel.Platform.CurrentActivity?.Application as IPlatformApplication;
                 var sp = app?.Services;
                 _config = sp?.GetService<AudioRecordingConfiguration>() ?? new AudioRecordingConfiguration();
+                _calibration = sp?.GetService<AudioCalibration>() ?? new AudioCalibration();
             }
             catch
             {
                 _config = new AudioRecordingConfiguration();
+                _calibration = new AudioCalibration();
             }
         }
         
@@ -62,14 +70,8 @@ public class RecordingForegroundService : Service
         {
             StopRecording();
             
-            // Example: Enqueue the recorded file for processing
-            if (!string.IsNullOrEmpty(_filePath))
-            {
-                AudioProcessQueue.Instance.Enqueue(new AudioProcess 
-                { 
-                    Name = Path.GetFileName(_filePath) 
-                });
-            }
+            // Finalize any remaining audio chunk
+            FinalizeRemainingChunk();
             
             StopForeground(true);
             StopSelf();
@@ -86,7 +88,15 @@ public class RecordingForegroundService : Service
         // Create AudioRecord using the recorder
         _audioRecord = _audioRecorder!.CreateAudioRecord(out int minBufferSize);
 
-        // Open output stream and write WAV header placeholder
+        // Initialize silence detector and chunk buffer
+        _calibration ??= new AudioCalibration();
+        _silenceDetector = new SilenceDetector(_calibration, _config!.SampleRate, TimeSpan.FromSeconds(2));
+        _chunkBuffer = new AudioChunkBuffer(_config.SampleRate, _config.ChannelCount, _config.BitsPerSample);
+        _chunkCounter = 0;
+        _chunkFinalizedForCurrentSilence = false;
+        _hasDetectedSpeech = false;
+
+        // Open output stream and write WAV header placeholder (for backup/full recording)
         _outputStream = new FileStream(_filePath, FileMode.Create, FileAccess.ReadWrite, FileShare.None);
         WavFileHandler.WriteWavHeader(_outputStream, _config.SampleRate, _config.ChannelCount, _config.BitsPerSample);
 
@@ -110,7 +120,11 @@ public class RecordingForegroundService : Service
                             ApplyGain(buffer, read, _config.GainMultiplier);
                         }
                         
+                        // Write to backup file
                         _outputStream?.Write(buffer, 0, read);
+                        
+                        // Process audio for silence detection and chunking
+                        ProcessAudioChunk(buffer, 0, read);
                     }
                 }
             }
@@ -186,6 +200,104 @@ public class RecordingForegroundService : Service
             buffer[i] = (byte)(amplified & 0xFF);
             buffer[i + 1] = (byte)((amplified >> 8) & 0xFF);
         }
+    }
+
+    /// <summary>
+    /// Processes audio chunk for silence detection and streaming.
+    /// </summary>
+    private void ProcessAudioChunk(byte[] buffer, int offset, int length)
+    {
+        if (_silenceDetector == null || _chunkBuffer == null)
+            return;
+
+        // Always append data to the current chunk
+        _chunkBuffer.AppendData(buffer, offset, length);
+
+        // Calculate audio level for logging
+        double rms = SilenceDetector.CalculateRms(buffer, offset, length);
+        double dbfs = SilenceDetector.RmsToDbfs(rms);
+        
+        // Check for silence
+        bool isSilent = _silenceDetector.IsSilence(buffer, offset, length);
+        double silenceDuration = _silenceDetector.GetSilenceDuration();
+
+        // Track if we've detected any speech (not silent)
+        if (!isSilent)
+        {
+            _hasDetectedSpeech = true;
+            _chunkFinalizedForCurrentSilence = false;
+        }
+
+        // Log every ~1 second (assuming ~100ms buffers, log every 10th call)
+        if (_chunkCounter % 10 == 0)
+        {
+            Android.Util.Log.Debug("RecordingService", 
+                $"Audio: {dbfs:F1} dBFS, Silent: {isSilent}, Duration: {silenceDuration:F2}s, HasSpeech: {_hasDetectedSpeech}, EnvNoise: {_calibration?.EnvironmentalNoiseDbfs}");
+        }
+
+        // Only finalize if:
+        // 1. We've detected speech (not just initial silence)
+        // 2. Current audio is silent for 2+ seconds
+        // 3. We haven't already finalized for this silence period
+        if (_hasDetectedSpeech && isSilent && _silenceDetector.HasSilenceThresholdExceeded() && !_chunkFinalizedForCurrentSilence)
+        {
+            Android.Util.Log.Info("RecordingService", 
+                $"⚡ 2s SILENCE DETECTED! dBFS: {dbfs:F1}, Finalizing chunk...");
+            
+            // 2 seconds of silence detected - finalize the current chunk
+            FinalizeCurrentChunk();
+            
+            // Mark that we've finalized for this silence period
+            _chunkFinalizedForCurrentSilence = true;
+            
+            // Reset speech detection flag for next chunk
+            _hasDetectedSpeech = false;
+        }
+    }
+
+    /// <summary>
+    /// Finalizes the current audio chunk and enqueues it for processing.
+    /// </summary>
+    private void FinalizeCurrentChunk()
+    {
+        if (_chunkBuffer == null || !_chunkBuffer.HasData)
+            return;
+
+        var chunkStream = _chunkBuffer.FinalizeChunk();
+        if (chunkStream != null && chunkStream.Length > 0)
+        {
+            _chunkCounter++;
+            var chunkName = $"chunk_{DateTime.Now:yyyyMMdd_HHmmss}_{_chunkCounter}.wav";
+            
+            Android.Util.Log.Info("RecordingForegroundService", 
+                $"Finalizing audio chunk: {chunkName}, Size: {chunkStream.Length} bytes, Silence duration: {_silenceDetector?.GetSilenceDuration():F2}s");
+
+            // Enqueue the chunk for processing
+            AudioProcessQueue.Instance.Enqueue(new AudioProcess
+            {
+                Name = chunkName,
+                AudioStream = chunkStream,
+                Timestamp = DateTime.Now
+            });
+
+            // Reset silence detector for the next chunk
+            _silenceDetector?.Reset();
+        }
+    }
+
+    /// <summary>
+    /// Finalizes any remaining audio chunk when recording stops.
+    /// </summary>
+    private void FinalizeRemainingChunk()
+    {
+        if (_chunkBuffer != null && _chunkBuffer.HasData)
+        {
+            FinalizeCurrentChunk();
+        }
+
+        _chunkBuffer?.Dispose();
+        _chunkBuffer = null;
+        _silenceDetector = null;
     }
 }
 

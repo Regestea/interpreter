@@ -15,7 +15,7 @@ public class AudioCalibration
     /// Environmental noise level in dBFS (decibels relative to full scale).
     /// Clamped to integer range between -55 and -20.
     /// </summary>
-    public int EnvironmentalNoiseDbfs { get; set; } = -55;
+    public int EnvironmentalNoiseDbfs { get; set; } = -50;
 
     /// <summary>
     /// Threshold for voice detection based on environmental noise.

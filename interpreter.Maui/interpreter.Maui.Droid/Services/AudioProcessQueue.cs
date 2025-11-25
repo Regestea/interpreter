@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Android.OS;
@@ -38,7 +39,8 @@ public sealed class AudioProcessQueue
             throw new ArgumentNullException(nameof(audioProcess));
 
         _queue.Add(audioProcess);
-        Log.Info(TAG, $"Enqueued audio process: {audioProcess.Name}");
+        
+        Debug.WriteLine(TAG, $"Enqueued audio process: {audioProcess.Name}");
     }
 
     /// <summary>
@@ -46,7 +48,7 @@ public sealed class AudioProcessQueue
     /// </summary>
     private async Task ProcessQueueAsync()
     {
-        Log.Info(TAG, "Audio process queue started");
+        Debug.WriteLine(TAG," Starting audio process queue");
 
         try
         {
@@ -77,14 +79,80 @@ public sealed class AudioProcessQueue
     /// </summary>
     private async Task ProcessAudioAsync(AudioProcess audioProcess)
     {
-    
         Debug.WriteLine($"Processing audio: {audioProcess.Name}");
-        // For now, just log the name
-        // TODO: Add actual audio processing logic here
         
-        await Task.Delay(100); // Simulate some processing
-        
-        Log.Info(TAG, $"Completed processing audio: {audioProcess.Name}");
+        try
+        {
+            if (audioProcess.AudioStream != null)
+            {
+                // Calculate audio duration from stream size
+                // WAV format: 44 bytes header + PCM data
+                // Sample rate: 44100 Hz, Channels: 1 (Mono), Bits per sample: 16
+                long streamSize = audioProcess.AudioStream.Length;
+                long audioDataSize = streamSize - 44; // Subtract WAV header
+                
+                const int sampleRate = 44100;
+                const int channels = 1;
+                const int bitsPerSample = 16;
+                int bytesPerSecond = sampleRate * channels * (bitsPerSample / 8);
+                
+                double durationSeconds = audioDataSize > 0 
+                    ? (double)audioDataSize / bytesPerSecond 
+                    : 0;
+                
+                // Process stream-based audio (from chunked recording)
+                Debug.WriteLine($"Processing audio stream chunk: {audioProcess.Name}, Size: {streamSize} bytes, Duration: {durationSeconds:F2}s");
+                Debug.WriteLine(TAG, $"Audio chunk duration: {durationSeconds:F2}s ({audioDataSize} bytes of audio data)");
+                
+                // Save audio chunk to debug folder for inspection
+                try
+                {
+                    // Use app's internal cache directory (no permissions needed)
+                    var context = Android.App.Application.Context;
+                    var debugFolder = Path.Combine(context.CacheDir!.AbsolutePath, "AudioChunks");
+                    Directory.CreateDirectory(debugFolder);
+                    
+                    var debugFilePath = Path.Combine(debugFolder, audioProcess.Name);
+                    
+                    // Reset stream position and copy to file
+                    audioProcess.AudioStream.Position = 0;
+                    using (var fileStream = File.Create(debugFilePath))
+                    {
+                        await audioProcess.AudioStream.CopyToAsync(fileStream);
+                    }
+                    
+                    // Reset stream position for further processing
+                    audioProcess.AudioStream.Position = 0;
+                    
+                    Log.Info(TAG, $"Saved audio chunk to: {debugFilePath}");
+                }
+                catch (Exception ex)
+                {
+                    Log.Warn(TAG, $"Failed to save debug audio chunk: {ex.Message}");
+                }
+                
+                // TODO: Add actual audio processing logic here (e.g., send to Whisper API)
+                await Task.Delay(100); // Simulate some processing
+                
+                // Dispose the stream after processing
+                audioProcess.AudioStream.Dispose();
+            }
+            else
+            {
+                // Process file-based audio (legacy path)
+                Debug.WriteLine($"Processing audio file: {audioProcess.Name}");
+                
+                // TODO: Add actual audio processing logic here
+                await Task.Delay(100); // Simulate some processing
+            }
+            
+            Log.Info(TAG, $"Completed processing audio: {audioProcess.Name}");
+        }
+        finally
+        {
+            // Ensure stream is disposed even if processing fails
+            audioProcess.AudioStream?.Dispose();
+        }
     }
 
     /// <summary>
