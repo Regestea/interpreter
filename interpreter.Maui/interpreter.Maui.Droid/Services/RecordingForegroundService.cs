@@ -61,6 +61,16 @@ public class RecordingForegroundService : Service
         else if (action == ActionStop)
         {
             StopRecording();
+            
+            // Example: Enqueue the recorded file for processing
+            if (!string.IsNullOrEmpty(_filePath))
+            {
+                AudioProcessQueue.Instance.Enqueue(new AudioProcess 
+                { 
+                    Name = Path.GetFileName(_filePath) 
+                });
+            }
+            
             StopForeground(true);
             StopSelf();
         }
