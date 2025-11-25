@@ -94,6 +94,12 @@ public class RecordingForegroundService : Service
                     int read = _audioRecord.Read(buffer, 0, buffer.Length);
                     if (read > 0)
                     {
+                        // Apply software gain amplification for distant audio
+                        if (Math.Abs(_config.GainMultiplier - 1.0f) > 0.001f)
+                        {
+                            ApplyGain(buffer, read, _config.GainMultiplier);
+                        }
+                        
                         _outputStream?.Write(buffer, 0, read);
                     }
                 }
@@ -146,6 +152,29 @@ public class RecordingForegroundService : Service
         {
             RecordingState.IsRecording = false;
             RecordingState.LastFilePath = _filePath;
+        }
+    }
+
+    /// <summary>
+    /// Applies gain amplification to PCM16 audio data.
+    /// </summary>
+    private void ApplyGain(byte[] buffer, int length, float gain)
+    {
+        for (int i = 0; i < length; i += 2)
+        {
+            // Read 16-bit PCM sample (little-endian)
+            short sample = (short)(buffer[i] | (buffer[i + 1] << 8));
+            
+            // Apply gain and clamp to prevent clipping
+            int amplified = (int)(sample * gain);
+            if (amplified > short.MaxValue)
+                amplified = short.MaxValue;
+            else if (amplified < short.MinValue)
+                amplified = short.MinValue;
+            
+            // Write back amplified sample
+            buffer[i] = (byte)(amplified & 0xFF);
+            buffer[i + 1] = (byte)((amplified >> 8) & 0xFF);
         }
     }
 }

@@ -17,6 +17,7 @@ public class AudioRecorder : IAudioRecorder
     private AudioRecord? _audioRecord;
     private NoiseSuppressor? _noiseSuppressor;
     private AcousticEchoCanceler? _echoCanceler;
+    private AutomaticGainControl? _automaticGainControl;
     private bool _disposed;
 
     public AudioRecorder(AudioRecordingConfiguration config, AudioManager? audioManager = null)
@@ -71,22 +72,32 @@ public class AudioRecorder : IAudioRecorder
         int minBufferSize = AudioRecord.GetMinBufferSize(_config.SampleRate, channelConfig, audioFormat);
         if (minBufferSize <= 0)
             minBufferSize = _config.SampleRate * _config.ChannelCount * (_config.BitsPerSample / 8); // 1 second fallback
+        
+        // Use larger buffer for better distant audio capture
+        int bufferSize = minBufferSize * 2;
 
         AudioRecord? audioRecord = null;
         NoiseSuppressor? noiseSuppressor = null;
         AcousticEchoCanceler? echoCanceler = null;
+        AutomaticGainControl? automaticGainControl = null;
         MemoryStream outputStream = new MemoryStream();
 
         try
         {
+            // Use voice recognition source for better distant pickup if configured
+            var audioSource = _config.UseVoiceRecognitionSource 
+                ? AudioSource.VoiceRecognition 
+                : AudioSource.Mic;
+            
             // Configure AudioRecord
             audioRecord = new AudioRecord(
-                AudioSource.Mic,
+                audioSource,
                 _config.SampleRate,
                 channelConfig,
                 audioFormat,
-                minBufferSize
+                bufferSize
             );
+            
             // Apply audio enhancements
             int audioSessionId = audioRecord.AudioSessionId;
             
@@ -95,6 +106,13 @@ public class AudioRecorder : IAudioRecorder
                 noiseSuppressor = NoiseSuppressor.Create(audioSessionId);
                 noiseSuppressor?.SetEnabled(true);
             }
+            
+            // Enable Automatic Gain Control for distant audio
+            if (_config.EnableAutomaticGainControl && AutomaticGainControl.IsAvailable)
+            {
+                automaticGainControl = AutomaticGainControl.Create(audioSessionId);
+                automaticGainControl?.SetEnabled(true);
+            }
 
             // Write WAV header placeholder
             WavFileHandler.WriteWavHeader(outputStream, _config.SampleRate, _config.ChannelCount, _config.BitsPerSample);
@@ -102,7 +120,7 @@ public class AudioRecorder : IAudioRecorder
             // Start recording
             audioRecord.StartRecording();
 
-            var buffer = new byte[minBufferSize];
+            var buffer = new byte[bufferSize];
             var startTime = DateTime.Now;
 
             // Record for specified duration
@@ -111,6 +129,12 @@ public class AudioRecorder : IAudioRecorder
                 int read = audioRecord.Read(buffer, 0, buffer.Length);
                 if (read > 0)
                 {
+                    // Apply software gain amplification for distant audio
+                    if (Math.Abs(_config.GainMultiplier - 1.0f) > 0.001f)
+                    {
+                        ApplyGain(buffer, read, _config.GainMultiplier);
+                    }
+                    
                     outputStream.Write(buffer, 0, read);
                 }
             }
@@ -137,6 +161,14 @@ public class AudioRecorder : IAudioRecorder
                 echoCanceler.Dispose();
                 echoCanceler = null;
             }
+            
+            if (automaticGainControl != null)
+            {
+                automaticGainControl.SetEnabled(false);
+                automaticGainControl.Release();
+                automaticGainControl.Dispose();
+                automaticGainControl = null;
+            }
 
             // Finalize WAV header
             WavFileHandler.UpdateWavHeader(outputStream);
@@ -157,6 +189,9 @@ public class AudioRecorder : IAudioRecorder
             echoCanceler?.Release();
             echoCanceler?.Dispose();
             
+            automaticGainControl?.Release();
+            automaticGainControl?.Dispose();
+            
             outputStream.Dispose();
             throw;
         }
@@ -175,14 +210,21 @@ public class AudioRecorder : IAudioRecorder
         int minBufferSize = AudioRecord.GetMinBufferSize(_config.SampleRate, channelConfig, audioFormat);
         if (minBufferSize <= 0)
             minBufferSize = _config.SampleRate * _config.ChannelCount * (_config.BitsPerSample / 8); // 1 second fallback
-        bufferSize = minBufferSize;
+        
+        // Use larger buffer for better distant audio capture
+        bufferSize = minBufferSize * 2;
+
+        // Use voice recognition source for better distant pickup if configured
+        var audioSource = _config.UseVoiceRecognitionSource 
+            ? AudioSource.VoiceRecognition 
+            : AudioSource.Mic;
 
         var audioRecord = new AudioRecord(
-            AudioSource.Mic,
+            audioSource,
             _config.SampleRate,
             channelConfig,
             audioFormat,
-            minBufferSize
+            bufferSize
         );
 
         // Apply audio enhancements
@@ -193,9 +235,39 @@ public class AudioRecorder : IAudioRecorder
             _noiseSuppressor = NoiseSuppressor.Create(audioSessionId);
             _noiseSuppressor?.SetEnabled(true);
         }
+        
+        // Enable Automatic Gain Control for distant audio
+        if (_config.EnableAutomaticGainControl && AutomaticGainControl.IsAvailable)
+        {
+            _automaticGainControl = AutomaticGainControl.Create(audioSessionId);
+            _automaticGainControl?.SetEnabled(true);
+        }
 
         return audioRecord;
 #pragma warning restore CA1416
+    }
+
+    /// <summary>
+    /// Applies gain amplification to PCM16 audio data.
+    /// </summary>
+    private void ApplyGain(byte[] buffer, int length, float gain)
+    {
+        for (int i = 0; i < length; i += 2)
+        {
+            // Read 16-bit PCM sample (little-endian)
+            short sample = (short)(buffer[i] | (buffer[i + 1] << 8));
+            
+            // Apply gain and clamp to prevent clipping
+            int amplified = (int)(sample * gain);
+            if (amplified > short.MaxValue)
+                amplified = short.MaxValue;
+            else if (amplified < short.MinValue)
+                amplified = short.MinValue;
+            
+            // Write back amplified sample
+            buffer[i] = (byte)(amplified & 0xFF);
+            buffer[i + 1] = (byte)((amplified >> 8) & 0xFF);
+        }
     }
 
     public void Dispose()
@@ -222,6 +294,14 @@ public class AudioRecorder : IAudioRecorder
             _echoCanceler.Release();
             _echoCanceler.Dispose();
             _echoCanceler = null;
+        }
+        
+        if (_automaticGainControl != null)
+        {
+            _automaticGainControl.SetEnabled(false);
+            _automaticGainControl.Release();
+            _automaticGainControl.Dispose();
+            _automaticGainControl = null;
         }
 
         _disposed = true;
