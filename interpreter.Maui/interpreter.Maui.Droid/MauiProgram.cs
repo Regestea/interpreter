@@ -22,6 +22,10 @@ namespace interpreter.Maui
             // Platform services
             builder.Services.AddSingleton<IAudioRecordingService, AndroidAudioRecordingService>();
             builder.Services.AddSingleton<IAudioPlaybackService, AndroidAudioPlaybackService>();
+            builder.Services.AddSingleton<IAdjustmentService, AdjustmentService>();
+            
+            // Audio calibration
+            builder.Services.AddSingleton<AudioCalibration>();
             
             // Audio recording infrastructure services
             // Note: These are registered for testability and consistency,

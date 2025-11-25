@@ -1,7 +1,9 @@
 ﻿using Android.Media;
 using System;
+using System.Diagnostics;
 using System.IO;
 using Android.Media.Audiofx;
+using Android.Util;
 
 namespace interpreter.Maui.Services;
 
@@ -85,7 +87,6 @@ public class AudioRecorder : IAudioRecorder
                 audioFormat,
                 minBufferSize
             );
-            
             // Apply audio enhancements
             int audioSessionId = audioRecord.AudioSessionId;
             
@@ -93,12 +94,6 @@ public class AudioRecorder : IAudioRecorder
             {
                 noiseSuppressor = NoiseSuppressor.Create(audioSessionId);
                 noiseSuppressor?.SetEnabled(true);
-            }
-
-            if (AcousticEchoCanceler.IsAvailable)
-            {
-                echoCanceler = AcousticEchoCanceler.Create(audioSessionId);
-                echoCanceler?.SetEnabled(true);
             }
 
             // Write WAV header placeholder
@@ -197,12 +192,6 @@ public class AudioRecorder : IAudioRecorder
         {
             _noiseSuppressor = NoiseSuppressor.Create(audioSessionId);
             _noiseSuppressor?.SetEnabled(true);
-        }
-
-        if (AcousticEchoCanceler.IsAvailable)
-        {
-            _echoCanceler = AcousticEchoCanceler.Create(audioSessionId);
-            _echoCanceler?.SetEnabled(true);
         }
 
         return audioRecord;

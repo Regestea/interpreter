@@ -1,4 +1,5 @@
-﻿using interpreter.Maui.ViewModels;
+﻿using Android.Util;
+using interpreter.Maui.ViewModels;
 using interpreter.Maui.Services;
 
 namespace interpreter.Maui
@@ -16,6 +17,7 @@ namespace interpreter.Maui
         private readonly IAudioRecordingService? _audioRecordingService;
         private readonly IAudioPlaybackService? _audioPlaybackService;
         private readonly IModalService _modalService;
+        private readonly IAdjustmentService _adjustmentService;
 
         // Constructor with dependency injection (Dependency Inversion Principle)
         public MainPage(
@@ -23,8 +25,7 @@ namespace interpreter.Maui
             IAnimationService animationService,
             IThemeService themeService,
             IButtonStateService buttonStateService,
-            IModalService modalService,
-            IAudioRecordingService? audioRecordingService = null,
+            IModalService modalService, IAdjustmentService adjustmentService, IAudioRecordingService? audioRecordingService = null,
             IAudioPlaybackService? audioPlaybackService = null)
         {
             InitializeComponent();
@@ -34,6 +35,7 @@ namespace interpreter.Maui
             _themeService = themeService ?? throw new ArgumentNullException(nameof(themeService));
             _buttonStateService = buttonStateService ?? throw new ArgumentNullException(nameof(buttonStateService));
             _modalService = modalService ?? throw new ArgumentNullException(nameof(modalService));
+            _adjustmentService = adjustmentService;
             _audioRecordingService = audioRecordingService;
             _audioPlaybackService = audioPlaybackService;
 
@@ -185,6 +187,8 @@ namespace interpreter.Maui
             
             // Show the modal
             await _modalService.ShowModalAsync(modalContent, options);
+
+            await _adjustmentService.AdjustEnvironmentalNoise();
             
             _viewModel.NoiseAdjustCommand.Execute(null);
         }
