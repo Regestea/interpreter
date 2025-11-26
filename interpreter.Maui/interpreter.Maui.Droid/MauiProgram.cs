@@ -1,6 +1,7 @@
 ﻿using interpreter.Maui.ServiceDefaults;
 using interpreter.Maui.Services;
 using Microsoft.Extensions.Logging;
+using Opus.Services;
 
 namespace interpreter.Maui
 {

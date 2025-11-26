@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Android.OS;
 using Android.Util;
+using Opus.Services;
 using Debug = System.Diagnostics.Debug;
 using OperationCanceledException = System.OperationCanceledException;
 
@@ -15,6 +16,7 @@ namespace interpreter.Maui.Services;
 /// </summary>
 public sealed class AudioProcessQueue
 {
+    private readonly IOpusCodecService _opusCodecService;
     private static readonly Lazy<AudioProcessQueue> _instance = new(() => new AudioProcessQueue());
     private readonly BlockingCollection<AudioProcess> _queue;
     private readonly CancellationTokenSource _cts;
@@ -25,6 +27,7 @@ public sealed class AudioProcessQueue
 
     private AudioProcessQueue()
     {
+        _opusCodecService = new OpusCodecService();
         _queue = new BlockingCollection<AudioProcess>();
         _cts = new CancellationTokenSource();
         _processingTask = Task.Run(ProcessQueueAsync);
@@ -107,24 +110,10 @@ public sealed class AudioProcessQueue
                 // Save audio chunk to debug folder for inspection
                 try
                 {
-                    // Use app's internal cache directory (no permissions needed)
-                    var context = Android.App.Application.Context;
-                    var debugFolder = Path.Combine(context.CacheDir!.AbsolutePath, "AudioChunks");
-                    Directory.CreateDirectory(debugFolder);
+
+                    var encodedAudio= await _opusCodecService.EncodeAsync(audioProcess.AudioStream);
                     
-                    var debugFilePath = Path.Combine(debugFolder, audioProcess.Name);
-                    
-                    // Reset stream position and copy to file
-                    audioProcess.AudioStream.Position = 0;
-                    using (var fileStream = File.Create(debugFilePath))
-                    {
-                        await audioProcess.AudioStream.CopyToAsync(fileStream);
-                    }
-                    
-                    // Reset stream position for further processing
-                    audioProcess.AudioStream.Position = 0;
-                    
-                    Log.Info(TAG, $"Saved audio chunk to: {debugFilePath}");
+                  
                 }
                 catch (Exception ex)
                 {

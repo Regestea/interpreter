@@ -17,6 +17,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\interpreter.Maui.ServiceDefaults\interpreter.Maui.ServiceDefaults.csproj" />
+		<ProjectReference Include="..\..\Shared\Opus\Opus.csproj" />
 		<ProjectReference Include="..\interpreter.Maui\interpreter.Maui.csproj" />
 	</ItemGroup>
 
