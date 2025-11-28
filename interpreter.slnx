@@ -4,6 +4,8 @@
     <Project Path="Backend/interpreter.Api/interpreter.Api.csproj" />
     <Project Path="Backend/Piper.Tests/Piper.Tests.csproj" />
     <Project Path="Backend/Piper/Piper.csproj" />
+    <Project Path="Backend/SpeechBrain.Tests/SpeechBrain.Tests.csproj" />
+    <Project Path="Backend/SpeechBrain/SpeechBrain.csproj" />
   </Folder>
   <Folder Name="/Shared/">
     <Project Path="Shared/Opus.Tests/Opus.Tests.csproj" />
