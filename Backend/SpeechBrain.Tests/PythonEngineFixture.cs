@@ -9,7 +9,7 @@ public class PythonEngineFixture : IDisposable
         // Set Python DLL before any test runs
         if (!PythonEngine.IsInitialized)
         {
-            Runtime.PythonDLL = "python310.dll"; // Adjust to your Python version
+            Runtime.PythonDLL = "C:\\Users\\Regestea\\AppData\\Local\\Programs\\Python\\Python310\\python310.dll"; // Adjust to your Python version
         }
     }
 

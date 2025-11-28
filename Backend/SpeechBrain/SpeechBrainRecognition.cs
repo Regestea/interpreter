@@ -26,7 +26,7 @@ public class SpeechBrainRecognition : IDisposable
                 // Set Python DLL before any initialization
                 if (!PythonEngine.IsInitialized)
                 {
-                    Runtime.PythonDLL = "python310.dll"; // Adjust to your Python version
+                    Runtime.PythonDLL = "C:\\Users\\Regestea\\AppData\\Local\\Programs\\Python\\Python310\\python310.dll"; // Adjust to your Python version
                 }
                 
                 // Initialize Python engine
@@ -68,23 +68,38 @@ public class SpeechBrainRecognition : IDisposable
                 throw new FileNotFoundException($"SpeechBrainMain.py not found at {pythonScriptPath}");
             }
 
-            // Add the script directory to Python path
+            // Add the script directory to Python path safely
             dynamic sys = Py.Import("sys");
             string? scriptDir = Path.GetDirectoryName(pythonScriptPath);
-            
-            if (scriptDir != null && !((IEnumerable<dynamic>)sys.path).Any(p => p.ToString() == scriptDir))
+
+            if (scriptDir != null)
             {
-                sys.path.append(scriptDir);
+                bool alreadyInPath = false;
+
+                foreach (PyObject p in sys.path)
+                {
+                    if (p.ToString() == scriptDir)
+                    {
+                        alreadyInPath = true;
+                        break;
+                    }
+                }
+
+                if (!alreadyInPath)
+                {
+                    sys.path.append(scriptDir);
+                }
             }
 
             // Import the module
             _pythonModule = Py.Import("SpeechBrainMain");
-            
+
             // Initialize the model
             _pythonModule.init();
             _initialized = true;
         }
     }
+
 
     /// <summary>
     /// Compares two audio byte arrays and returns a similarity score
