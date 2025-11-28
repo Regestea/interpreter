@@ -132,40 +132,7 @@ public class SpeechBrainRecognition : IDisposable
             };
         }
     }
-
-    /// <summary>
-    /// Gets embedding for an audio byte array
-    /// </summary>
-    /// <param name="audioBytes">Audio file as byte array</param>
-    /// <returns>Audio embedding as float array</returns>
-    public float[] GetEmbedding(byte[] audioBytes)
-    {
-        if (!_initialized || _pythonModule == null)
-        {
-            throw new InvalidOperationException("SpeechBrain model not initialized. Call Initialize() first.");
-        }
-
-        using (Py.GIL())
-        {
-            // Load audio
-            using var pyAudioBytes = PyObject.FromManagedObject(audioBytes);
-            dynamic sig = _pythonModule.load_audio_bytes(pyAudioBytes);
-
-            // Get embedding
-            dynamic embedding = _pythonModule.get_embedding(sig);
-
-            // Convert to C# array
-            using var numpyArray = embedding.numpy();
-            var list = new List<float>();
-            
-            foreach (dynamic item in numpyArray)
-            {
-                list.Add((float)item);
-            }
-
-            return list.ToArray();
-        }
-    }
+    
 
     public void Dispose()
     {

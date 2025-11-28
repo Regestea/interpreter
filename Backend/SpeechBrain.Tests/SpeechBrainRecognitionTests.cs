@@ -57,17 +57,7 @@ public class SpeechBrainRecognitionTests : IDisposable
             uninitializedRecognition.CompareAudio(audio1, audio2));
     }
 
-    [Fact]
-    public void GetEmbedding_WithoutInitialization_ShouldThrowInvalidOperationException()
-    {
-        // Arrange
-        using var uninitializedRecognition = new SpeechBrainRecognition();
-        byte[] audio = new byte[] { 0x01, 0x02, 0x03 };
 
-        // Act & Assert
-        Assert.Throws<InvalidOperationException>(() =>
-            uninitializedRecognition.GetEmbedding(audio));
-    }
 
     [Fact]
     public void CompareAudio_SamePerson_ShouldReturnHighSimilarityScore()
@@ -169,81 +159,7 @@ public class SpeechBrainRecognitionTests : IDisposable
         
         _testOutputHelper.WriteLine("✓ Test passed");
     }
-
-    [Fact]
-    public void GetEmbedding_ShouldReturnNonEmptyArray()
-    {
-        // Arrange
-        _recognition.Initialize();
-        var audioPath = Path.Combine(_audioSamplesPath, "P1.wav");
-        Assert.True(File.Exists(audioPath), $"Audio file not found: {audioPath}");
-        
-        byte[] audio = File.ReadAllBytes(audioPath);
-
-        // Act
-        var embedding = _recognition.GetEmbedding(audio);
-
-        // Assert
-        Assert.NotNull(embedding);
-        Assert.NotEmpty(embedding);
-        Assert.All(embedding, value => Assert.True(!float.IsNaN(value) && !float.IsInfinity(value)));
-    }
-
-    [Fact]
-    public void GetEmbedding_SameAudio_ShouldReturnConsistentEmbeddings()
-    {
-        // Arrange
-        _recognition.Initialize();
-        var audioPath = Path.Combine(_audioSamplesPath, "P1.wav");
-        Assert.True(File.Exists(audioPath), $"Audio file not found: {audioPath}");
-        
-        byte[] audio = File.ReadAllBytes(audioPath);
-
-        // Act
-        var embedding1 = _recognition.GetEmbedding(audio);
-        var embedding2 = _recognition.GetEmbedding(audio);
-
-        // Assert
-        Assert.Equal(embedding1.Length, embedding2.Length);
-        for (int i = 0; i < embedding1.Length; i++)
-        {
-            Assert.Equal(embedding1[i], embedding2[i], precision: 5);
-        }
-    }
-
-    [Fact]
-    public void GetEmbedding_DifferentAudio_ShouldReturnDifferentEmbeddings()
-    {
-        // Arrange
-        _recognition.Initialize();
-        var audio1Path = Path.Combine(_audioSamplesPath, "P1.wav");
-        var audio2Path = Path.Combine(_audioSamplesPath, "B1.wav");
-        
-        Assert.True(File.Exists(audio1Path), $"Audio file not found: {audio1Path}");
-        Assert.True(File.Exists(audio2Path), $"Audio file not found: {audio2Path}");
-        
-        byte[] audio1 = File.ReadAllBytes(audio1Path);
-        byte[] audio2 = File.ReadAllBytes(audio2Path);
-
-        // Act
-        var embedding1 = _recognition.GetEmbedding(audio1);
-        var embedding2 = _recognition.GetEmbedding(audio2);
-
-        // Assert
-        Assert.Equal(embedding1.Length, embedding2.Length);
-        
-        // Embeddings should be different for different speakers
-        bool hasDifferences = false;
-        for (int i = 0; i < embedding1.Length; i++)
-        {
-            if (Math.Abs(embedding1[i] - embedding2[i]) > 0.001f)
-            {
-                hasDifferences = true;
-                break;
-            }
-        }
-        Assert.True(hasDifferences, "Embeddings for different speakers should be different");
-    }
+    
 
     [Fact]
     public void ComparisonResult_ShouldHaveCorrectProperties()
