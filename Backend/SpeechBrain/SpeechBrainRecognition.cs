@@ -102,12 +102,11 @@ public class SpeechBrainRecognition : IDisposable
 
 
     /// <summary>
-    /// Compares two audio byte arrays and returns a similarity score
+    /// Sets the main audio model embedding that will be used for comparison
     /// </summary>
-    /// <param name="audio1">First audio file as byte array</param>
-    /// <param name="audio2">Second audio file as byte array</param>
-    /// <returns>Comparison result containing score and match status</returns>
-    public ComparisonResult CompareAudio(byte[] audio1, byte[] audio2)
+    /// <param name="mainAudio">Main audio file as byte array</param>
+    /// <returns>Result indicating success or failure</returns>
+    public ComparisonResult SetMainModelEmbedding(byte[] mainAudio)
     {
         if (!_initialized || _pythonModule == null)
         {
@@ -116,19 +115,88 @@ public class SpeechBrainRecognition : IDisposable
 
         using (Py.GIL())
         {
-            // Convert C# byte arrays to Python bytes
-            using var pyAudio1 = PyObject.FromManagedObject(audio1);
-            using var pyAudio2 = PyObject.FromManagedObject(audio2);
+            // Convert C# byte array to Python bytes
+            using var pyAudio = PyObject.FromManagedObject(mainAudio);
 
             // Call the Python function
-            dynamic result = _pythonModule.compare_bytes(pyAudio1, pyAudio2);
+            dynamic result = _pythonModule.set_main_model_embedding(pyAudio);
+
+            // Extract message if it exists
+            string? message = null;
+            try
+            {
+                message = (string)result["message"];
+            }
+            catch
+            {
+                // Message key doesn't exist
+            }
+
+            // Extract results
+            return new ComparisonResult
+            {
+                Score = 0.0,
+                IsMatch = false,
+                Status = (string)result["status"],
+                Message = message
+            };
+        }
+    }
+
+    /// <summary>
+    /// Compares an audio byte array with the main model embedding
+    /// </summary>
+    /// <param name="audio">Audio file as byte array to compare</param>
+    /// <returns>Comparison result containing score and match status</returns>
+    public ComparisonResult CompareAudio(byte[] audio)
+    {
+        if (!_initialized || _pythonModule == null)
+        {
+            throw new InvalidOperationException("SpeechBrain model not initialized. Call Initialize() first.");
+        }
+
+        using (Py.GIL())
+        {
+            // Convert C# byte array to Python bytes
+            using var pyAudio = PyObject.FromManagedObject(audio);
+
+            // Call the Python function
+            dynamic result = _pythonModule.compare_bytes(pyAudio);
+
+            // Check for error status
+            string status = (string)result["status"];
+            if (status == "error")
+            {
+                string errorMessage = "Unknown error";
+                try
+                {
+                    errorMessage = (string)result["message"];
+                }
+                catch
+                {
+                    // Message key doesn't exist
+                }
+                throw new InvalidOperationException(errorMessage);
+            }
+
+            // Extract message if it exists
+            string? message = null;
+            try
+            {
+                message = (string)result["message"];
+            }
+            catch
+            {
+                // Message key doesn't exist
+            }
 
             // Extract results
             return new ComparisonResult
             {
                 Score = (double)result["score"],
                 IsMatch = (bool)result["is_match"],
-                Status = (string)result["status"]
+                Status = status,
+                Message = message
             };
         }
     }
