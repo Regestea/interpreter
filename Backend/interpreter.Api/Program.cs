@@ -3,7 +3,6 @@ using interpreter.Api.Models;
 using interpreter.Api.Services;
 using Opus.Services;
 using PiperSharp;
-using PiperSharp;
 
 namespace interpreter.Api
 {
@@ -47,6 +46,9 @@ namespace interpreter.Api
             
             // Register OpusCodecService as scoped
             builder.Services.AddScoped<IOpusCodecService, OpusCodecService>();
+            
+            // Register VoiceFileService as scoped
+            builder.Services.AddScoped<IVoiceFileService, VoiceFileService>();
             
             // Register HttpClient factory and TranslationService
             builder.Services.AddHttpClient("GoogleTranslate");

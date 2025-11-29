@@ -1,4 +1,4 @@
-﻿﻿namespace Opus.Services;
+﻿namespace Opus.Services;
 
 public interface IOpusCodecService
 {
