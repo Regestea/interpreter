@@ -1,8 +1,10 @@
 using interpreter.ServiceDefaults;
 using interpreter.Api.Models;
 using interpreter.Api.Services;
+using interpreter.Api.Data;
 using Opus.Services;
 using PiperSharp;
+using Microsoft.EntityFrameworkCore;
 
 namespace interpreter.Api
 {
@@ -30,6 +32,11 @@ namespace interpreter.Api
             }
 
             // Add services to the container.
+            
+            // Configure SQLite DbContext
+            builder.Services.AddDbContext<AppDbContext>(options =>
+                options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+            
             // Configure Whisper settings from appsettings.json
             builder.Services.Configure<WhisperSettings>(
                 builder.Configuration.GetSection("Whisper"));
