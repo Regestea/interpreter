@@ -102,11 +102,11 @@ public class SpeechBrainRecognition : IDisposable
 
 
     /// <summary>
-    /// Sets the main audio model embedding that will be used for comparison
+    /// Gets the audio embedding from the provided audio file
     /// </summary>
-    /// <param name="mainAudio">Main audio file as byte array</param>
-    /// <returns>Result indicating success or failure</returns>
-    public ComparisonResult SetMainModelEmbedding(byte[] mainAudio)
+    /// <param name="audioBytes">Audio file as byte array</param>
+    /// <returns>Audio embedding as a list of floats</returns>
+    public List<float> GetAudioEmbedding(byte[] audioBytes)
     {
         if (!_initialized || _pythonModule == null)
         {
@@ -116,39 +116,29 @@ public class SpeechBrainRecognition : IDisposable
         using (Py.GIL())
         {
             // Convert C# byte array to Python bytes
-            using var pyAudio = PyObject.FromManagedObject(mainAudio);
+            using var pyAudio = PyObject.FromManagedObject(audioBytes);
 
             // Call the Python function
-            dynamic result = _pythonModule.set_main_model_embedding(pyAudio);
+            dynamic result = _pythonModule.get_audio_embedding(pyAudio);
 
-            // Extract message if it exists
-            string? message = null;
-            try
+            // Convert Python list to C# List<float>
+            var embeddingList = new List<float>();
+            foreach (PyObject item in result)
             {
-                message = (string)result["message"];
-            }
-            catch
-            {
-                // Message key doesn't exist
+                embeddingList.Add(item.As<float>());
             }
 
-            // Extract results
-            return new ComparisonResult
-            {
-                Score = 0.0,
-                IsMatch = false,
-                Status = (string)result["status"],
-                Message = message
-            };
+            return embeddingList;
         }
     }
 
     /// <summary>
-    /// Compares an audio byte array with the main model embedding
+    /// Compares an audio byte array with the provided main audio embedding
     /// </summary>
-    /// <param name="audio">Audio file as byte array to compare</param>
+    /// <param name="audioBytes">Audio file as byte array to compare</param>
+    /// <param name="mainEmbedding">Main audio embedding obtained from GetAudioEmbedding</param>
     /// <returns>Comparison result containing score and match status</returns>
-    public ComparisonResult CompareAudio(byte[] audio)
+    public ComparisonResult CompareAudio(byte[] audioBytes, List<float> mainEmbedding)
     {
         if (!_initialized || _pythonModule == null)
         {
@@ -158,10 +148,13 @@ public class SpeechBrainRecognition : IDisposable
         using (Py.GIL())
         {
             // Convert C# byte array to Python bytes
-            using var pyAudio = PyObject.FromManagedObject(audio);
+            using var pyAudio = PyObject.FromManagedObject(audioBytes);
+            
+            // Convert C# List<float> to Python list
+            using var pyEmbedding = PyObject.FromManagedObject(mainEmbedding);
 
             // Call the Python function
-            dynamic result = _pythonModule.compare_bytes(pyAudio);
+            dynamic result = _pythonModule.compare_bytes(pyAudio, pyEmbedding);
 
             // Check for error status
             string status = (string)result["status"];

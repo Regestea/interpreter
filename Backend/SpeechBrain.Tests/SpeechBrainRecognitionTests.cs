@@ -50,14 +50,15 @@ public class SpeechBrainRecognitionTests : IDisposable
         // Arrange
         using var uninitializedRecognition = new SpeechBrainRecognition();
         byte[] audio = new byte[] { 0x01, 0x02, 0x03 };
+        var embedding = new List<float> { 0.1f, 0.2f };
 
         // Act & Assert
         Assert.Throws<InvalidOperationException>(() => 
-            uninitializedRecognition.CompareAudio(audio));
+            uninitializedRecognition.CompareAudio(audio, embedding));
     }
 
     [Fact]
-    public void SetMainModelEmbedding_WithoutInitialization_ShouldThrowInvalidOperationException()
+    public void GetAudioEmbedding_WithoutInitialization_ShouldThrowInvalidOperationException()
     {
         // Arrange
         using var uninitializedRecognition = new SpeechBrainRecognition();
@@ -65,14 +66,14 @@ public class SpeechBrainRecognitionTests : IDisposable
 
         // Act & Assert
         Assert.Throws<InvalidOperationException>(() => 
-            uninitializedRecognition.SetMainModelEmbedding(audio));
+            uninitializedRecognition.GetAudioEmbedding(audio));
     }
 
     [Fact]
-    public void SetMainModelEmbedding_ShouldSucceed()
+    public void GetAudioEmbedding_ShouldSucceed()
     {
         // Arrange
-        _testOutputHelper.WriteLine("=== SetMainModelEmbedding_ShouldSucceed ===");
+        _testOutputHelper.WriteLine("=== GetAudioEmbedding_ShouldSucceed ===");
         _recognition.Initialize();
         var audioPath = Path.Combine(_audioSamplesPath, "P1.wav");
         
@@ -83,20 +84,19 @@ public class SpeechBrainRecognitionTests : IDisposable
         _testOutputHelper.WriteLine($"Audio size: {audio.Length} bytes");
 
         // Act
-        _testOutputHelper.WriteLine("Setting main model embedding...");
+        _testOutputHelper.WriteLine("Getting audio embedding...");
         var stopwatch = Stopwatch.StartNew();
-        var result = _recognition.SetMainModelEmbedding(audio);
+        var embedding = _recognition.GetAudioEmbedding(audio);
         stopwatch.Stop();
-        _testOutputHelper.WriteLine($"SetMainModelEmbedding duration: {stopwatch.ElapsedMilliseconds} ms ({stopwatch.Elapsed.TotalSeconds:F3} seconds)");
+        _testOutputHelper.WriteLine($"GetAudioEmbedding duration: {stopwatch.ElapsedMilliseconds} ms ({stopwatch.Elapsed.TotalSeconds:F3} seconds)");
 
         // Assert
         _testOutputHelper.WriteLine($"Result:");
-        _testOutputHelper.WriteLine($"  - Status: {result.Status}");
-        _testOutputHelper.WriteLine($"  - Message: {result.Message}");
+        _testOutputHelper.WriteLine($"  - Embedding size: {embedding.Count}");
+        _testOutputHelper.WriteLine($"  - First few values: [{string.Join(", ", embedding.Take(5).Select(v => v.ToString("F4")))}...]");
         
-        Assert.NotNull(result);
-        Assert.Equal("success", result.Status);
-        Assert.NotNull(result.Message);
+        Assert.NotNull(embedding);
+        Assert.NotEmpty(embedding);
         
         _testOutputHelper.WriteLine("✓ Test passed");
     }
@@ -122,14 +122,15 @@ public class SpeechBrainRecognitionTests : IDisposable
         _testOutputHelper.WriteLine($"Main Audio size: {audio1.Length} bytes");
         _testOutputHelper.WriteLine($"Test Audio size: {audio2.Length} bytes");
 
-        // Set main embedding
-        _testOutputHelper.WriteLine("Setting main model embedding with P1...");
-        _recognition.SetMainModelEmbedding(audio1);
+        // Get main embedding
+        _testOutputHelper.WriteLine("Getting embedding from P1...");
+        var mainEmbedding = _recognition.GetAudioEmbedding(audio1);
+        _testOutputHelper.WriteLine($"Main embedding size: {mainEmbedding.Count}");
 
         // Act
         _testOutputHelper.WriteLine("Comparing P2 audio with main embedding...");
         var stopwatch = Stopwatch.StartNew();
-        var result = _recognition.CompareAudio(audio2);
+        var result = _recognition.CompareAudio(audio2, mainEmbedding);
         stopwatch.Stop();
         _testOutputHelper.WriteLine($"CompareAudio duration: {stopwatch.ElapsedMilliseconds} ms ({stopwatch.Elapsed.TotalSeconds:F3} seconds)");
 
@@ -151,34 +152,54 @@ public class SpeechBrainRecognitionTests : IDisposable
     public void CompareAudio_DifferentPerson_ShouldReturnLowSimilarityScore()
     {
         // Arrange
+        _testOutputHelper.WriteLine("=== CompareAudio_DifferentPerson_ShouldReturnLowSimilarityScore ===");
         _recognition.Initialize();
         var audio1Path = Path.Combine(_audioSamplesPath, "P1.wav");
         var audio2Path = Path.Combine(_audioSamplesPath, "B1.wav");
+        
+        _testOutputHelper.WriteLine($"Main Audio (P1): {audio1Path}");
+        _testOutputHelper.WriteLine($"Test Audio (B1): {audio2Path}");
         
         Assert.True(File.Exists(audio1Path), $"Audio file not found: {audio1Path}");
         Assert.True(File.Exists(audio2Path), $"Audio file not found: {audio2Path}");
         
         byte[] audio1 = File.ReadAllBytes(audio1Path);
         byte[] audio2 = File.ReadAllBytes(audio2Path);
+        
+        _testOutputHelper.WriteLine($"Main Audio size: {audio1.Length} bytes");
+        _testOutputHelper.WriteLine($"Test Audio size: {audio2.Length} bytes");
 
-        // Set main embedding with P1
-        _recognition.SetMainModelEmbedding(audio1);
+        // Get main embedding with P1
+        _testOutputHelper.WriteLine("Getting embedding from P1...");
+        var mainEmbedding = _recognition.GetAudioEmbedding(audio1);
+        _testOutputHelper.WriteLine($"Main embedding size: {mainEmbedding.Count}");
 
         // Act - Compare with B1 (different person)
-        var result = _recognition.CompareAudio(audio2);
+        _testOutputHelper.WriteLine("Comparing B1 audio with main embedding...");
+        var stopwatch = Stopwatch.StartNew();
+        var result = _recognition.CompareAudio(audio2, mainEmbedding);
+        stopwatch.Stop();
+        _testOutputHelper.WriteLine($"CompareAudio duration: {stopwatch.ElapsedMilliseconds} ms ({stopwatch.Elapsed.TotalSeconds:F3} seconds)");
 
         // Assert
+        _testOutputHelper.WriteLine($"ComparisonResult:");
+        _testOutputHelper.WriteLine($"  - Score: {result.Score:F4}");
+        _testOutputHelper.WriteLine($"  - IsMatch: {result.IsMatch}");
+        _testOutputHelper.WriteLine($"  - Status: {result.Status}");
+        
         Assert.NotNull(result);
         Assert.True(result.Score < 0.5, $"Expected similarity score < 0.5 for different person, but got {result.Score}");
         Assert.False(result.IsMatch, "Expected IsMatch to be false for different person");
         Assert.Equal("success", result.Status);
+        
+        _testOutputHelper.WriteLine("✓ Test passed");
     }
 
     [Fact]
-    public void SetMainModelEmbedding_CanBeChangedMultipleTimes()
+    public void GetAudioEmbedding_CanBeSwitchedBetweenDifferentAudios()
     {
         // Arrange
-        _testOutputHelper.WriteLine("=== SetMainModelEmbedding_CanBeChangedMultipleTimes ===");
+        _testOutputHelper.WriteLine("=== GetAudioEmbedding_CanBeSwitchedBetweenDifferentAudios ===");
         _recognition.Initialize();
         
         var audio1Path = Path.Combine(_audioSamplesPath, "P1.wav");
@@ -199,51 +220,47 @@ public class SpeechBrainRecognitionTests : IDisposable
         
         _testOutputHelper.WriteLine("");
 
-        // Act & Assert - Set main embedding to P1
-        _testOutputHelper.WriteLine("Step 1: Setting main embedding to P1...");
-        var result1 = _recognition.SetMainModelEmbedding(audio1);
-        Assert.Equal("success", result1.Status);
-        _testOutputHelper.WriteLine($"  Status: {result1.Status}, Message: {result1.Message}");
+        // Act & Assert - Get embedding from P1
+        _testOutputHelper.WriteLine("Step 1: Getting embedding from P1...");
+        var embedding1 = _recognition.GetAudioEmbedding(audio1);
+        Assert.NotNull(embedding1);
+        Assert.NotEmpty(embedding1);
+        _testOutputHelper.WriteLine($"  Embedding size: {embedding1.Count}");
         
-        // Compare P2 with P1 (should match - same person)
-        _testOutputHelper.WriteLine("Step 2: Comparing P2 with main embedding (P1)...");
-        var comparison1 = _recognition.CompareAudio(audio2);
+        // Compare P2 with P1 embedding (should match - same person)
+        _testOutputHelper.WriteLine("Step 2: Comparing P2 with P1 embedding...");
+        var comparison1 = _recognition.CompareAudio(audio2, embedding1);
         _testOutputHelper.WriteLine($"  Score: {comparison1.Score:F4}, IsMatch: {comparison1.IsMatch}");
         Assert.True(comparison1.IsMatch, "Expected P2 to match P1 (same person)");
         Assert.True(comparison1.Score > 0.5, $"Expected high score for same person, got {comparison1.Score}");
         
         _testOutputHelper.WriteLine("");
 
-        // Act & Assert - Change main embedding to B1
-        _testOutputHelper.WriteLine("Step 3: Changing main embedding to B1...");
-        var result2 = _recognition.SetMainModelEmbedding(audio3);
-        Assert.Equal("success", result2.Status);
-        _testOutputHelper.WriteLine($"  Status: {result2.Status}, Message: {result2.Message}");
+        // Act & Assert - Get embedding from B1
+        _testOutputHelper.WriteLine("Step 3: Getting embedding from B1...");
+        var embedding3 = _recognition.GetAudioEmbedding(audio3);
+        Assert.NotNull(embedding3);
+        Assert.NotEmpty(embedding3);
+        _testOutputHelper.WriteLine($"  Embedding size: {embedding3.Count}");
         
-        // Compare P2 with B1 (should NOT match - different person)
-        _testOutputHelper.WriteLine("Step 4: Comparing P2 with new main embedding (B1)...");
-        var comparison2 = _recognition.CompareAudio(audio2);
+        // Compare P2 with B1 embedding (should NOT match - different person)
+        _testOutputHelper.WriteLine("Step 4: Comparing P2 with B1 embedding...");
+        var comparison2 = _recognition.CompareAudio(audio2, embedding3);
         _testOutputHelper.WriteLine($"  Score: {comparison2.Score:F4}, IsMatch: {comparison2.IsMatch}");
         Assert.False(comparison2.IsMatch, "Expected P2 to NOT match B1 (different person)");
         Assert.True(comparison2.Score < 0.5, $"Expected low score for different person, got {comparison2.Score}");
         
         _testOutputHelper.WriteLine("");
 
-        // Act & Assert - Change main embedding back to P1
-        _testOutputHelper.WriteLine("Step 5: Changing main embedding back to P1...");
-        var result3 = _recognition.SetMainModelEmbedding(audio1);
-        Assert.Equal("success", result3.Status);
-        _testOutputHelper.WriteLine($"  Status: {result3.Status}, Message: {result3.Message}");
-        
-        // Compare P2 with P1 again (should match again)
-        _testOutputHelper.WriteLine("Step 6: Comparing P2 with main embedding (P1 again)...");
-        var comparison3 = _recognition.CompareAudio(audio2);
+        // Act & Assert - Use P1 embedding again
+        _testOutputHelper.WriteLine("Step 5: Comparing P2 with P1 embedding again...");
+        var comparison3 = _recognition.CompareAudio(audio2, embedding1);
         _testOutputHelper.WriteLine($"  Score: {comparison3.Score:F4}, IsMatch: {comparison3.IsMatch}");
         Assert.True(comparison3.IsMatch, "Expected P2 to match P1 again (same person)");
         Assert.True(comparison3.Score > 0.5, $"Expected high score for same person, got {comparison3.Score}");
         
         _testOutputHelper.WriteLine("");
-        _testOutputHelper.WriteLine("✓ Test passed - Main embedding can be changed multiple times");
+        _testOutputHelper.WriteLine("✓ Test passed - Embeddings can be obtained and reused for different comparisons");
     }
 
     [Fact]
@@ -260,14 +277,14 @@ public class SpeechBrainRecognitionTests : IDisposable
         byte[] audio = File.ReadAllBytes(audioPath);
         _testOutputHelper.WriteLine($"Audio size: {audio.Length} bytes");
 
-        // Set main embedding
-        _testOutputHelper.WriteLine("Setting main model embedding...");
-        _recognition.SetMainModelEmbedding(audio);
+        // Get main embedding
+        _testOutputHelper.WriteLine("Getting audio embedding...");
+        var mainEmbedding = _recognition.GetAudioEmbedding(audio);
 
         // Act
         _testOutputHelper.WriteLine("Comparing same file with itself...");
         var stopwatch = Stopwatch.StartNew();
-        var result = _recognition.CompareAudio(audio);
+        var result = _recognition.CompareAudio(audio, mainEmbedding);
         stopwatch.Stop();
         _testOutputHelper.WriteLine($"CompareAudio duration: {stopwatch.ElapsedMilliseconds} ms ({stopwatch.Elapsed.TotalSeconds:F3} seconds)");
 
@@ -298,14 +315,14 @@ public class SpeechBrainRecognitionTests : IDisposable
         byte[] audio = File.ReadAllBytes(audioPath);
         _testOutputHelper.WriteLine($"Audio size: {audio.Length} bytes");
 
-        // Set main embedding
-        _testOutputHelper.WriteLine("Setting main model embedding...");
-        _recognition.SetMainModelEmbedding(audio);
+        // Get main embedding
+        _testOutputHelper.WriteLine("Getting audio embedding...");
+        var mainEmbedding = _recognition.GetAudioEmbedding(audio);
 
         // Act
         _testOutputHelper.WriteLine("Comparing audio with itself...");
         var stopwatch = Stopwatch.StartNew();
-        var result = _recognition.CompareAudio(audio);
+        var result = _recognition.CompareAudio(audio, mainEmbedding);
         stopwatch.Stop();
         _testOutputHelper.WriteLine($"CompareAudio duration: {stopwatch.ElapsedMilliseconds} ms ({stopwatch.Elapsed.TotalSeconds:F3} seconds)");
 
@@ -353,9 +370,9 @@ public class SpeechBrainRecognitionTests : IDisposable
         _testOutputHelper.WriteLine($"Audio 3 size: {audio3.Length} bytes");
         _testOutputHelper.WriteLine("");
 
-        // Set main embedding with P1
-        _testOutputHelper.WriteLine("Setting main model embedding with P1...");
-        _recognition.SetMainModelEmbedding(audio1);
+        // Get main embedding with P1
+        _testOutputHelper.WriteLine("Getting embedding from P1...");
+        var mainEmbedding = _recognition.GetAudioEmbedding(audio1);
         _testOutputHelper.WriteLine("");
 
         const int iterations = 10;
@@ -371,7 +388,7 @@ public class SpeechBrainRecognitionTests : IDisposable
             byte[] audioToCompare = i % 3 == 0 ? audio3 : audio2;
             
             var stopwatch = Stopwatch.StartNew();
-            var result = _recognition.CompareAudio(audioToCompare);
+            var result = _recognition.CompareAudio(audioToCompare, mainEmbedding);
             stopwatch.Stop();
             
             durations.Add(stopwatch.ElapsedMilliseconds);
