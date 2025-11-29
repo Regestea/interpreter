@@ -47,6 +47,9 @@ namespace interpreter.Maui
                 concreteModalService.Initialize(ModalContainer, ModalContentBorder);
             }
 
+            // Apply dark theme immediately on page creation
+            _themeService.ApplyTheme(true, this, CreateThemeElements());
+
             SubscribeToViewModelEvents();
             Loaded += OnPageLoaded;
         }
@@ -177,12 +180,8 @@ namespace interpreter.Maui
                 ShowCloseButton = true,              // Show close button
                 AutoCloseDurationSeconds = 5,     // No auto-close
                 CloseOnBackgroundTap = true,         // Close when clicking outside
-                ContentBackgroundColor = _viewModel.IsDarkTheme 
-                    ? Color.FromArgb("#2C2C2C")      // Dark theme: dark gray
-                    : Colors.White,                   // Light theme: white
-                CloseButtonColor = _viewModel.IsDarkTheme
-                    ? Colors.White                    // Dark theme: white X button
-                    : Color.FromArgb("#666666")       // Light theme: gray X button
+                ContentBackgroundColor = Color.FromArgb("#121821"), // Dark surface
+                CloseButtonColor = Colors.White
             };
             
             // Show the modal
@@ -225,9 +224,7 @@ namespace interpreter.Maui
                 FontAttributes = FontAttributes.Bold,
                 HorizontalOptions = LayoutOptions.Center,
                 VerticalOptions = LayoutOptions.Center,
-                TextColor = _viewModel.IsDarkTheme 
-                    ? Colors.White                   // Dark theme: white text
-                    : Color.FromArgb("#333333"),     // Light theme: dark text
+                TextColor = Colors.White,
                 Padding = new Thickness(20)
             };
 

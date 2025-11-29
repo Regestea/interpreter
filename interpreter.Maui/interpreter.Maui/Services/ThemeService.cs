@@ -7,22 +7,16 @@ public class ThemeService : IThemeService
 {
     public void ApplyTheme(bool isDarkTheme, ContentPage page, ThemeElements elements)
     {
-        if (isDarkTheme)
-        {
-            ApplyDarkTheme(page, elements);
-        }
-        else
-        {
-            ApplyLightTheme(page, elements);
-        }
+        // Force modern dark theme regardless of input flag
+        ApplyDarkTheme(page, elements);
     }
 
     private void ApplyDarkTheme(ContentPage page, ThemeElements elements)
     {
         Application.Current.UserAppTheme = AppTheme.Dark;
         
-        elements.ThemeIcon.Text = "☀️";
-        elements.ThemeLabel.Text = "Light Theme";
+        elements.ThemeIcon.Text = "🌙";
+        elements.ThemeLabel.Text = "Dark Mode";
         
         page.Background = CreateDarkGradient();
         
@@ -30,32 +24,13 @@ public class ThemeService : IThemeService
         elements.MainBorder.Background = darkGlassBrush;
         elements.MainBorder.Stroke = Color.FromArgb("#50FFFFFF");
         
-        elements.MenuFlyout.BackgroundColor = Color.FromArgb("#40FFFFFF");
+        var darkSurface = GetResource<Color>("DarkSurface") ?? Color.FromArgb("#121821");
+        elements.MenuFlyout.BackgroundColor = darkSurface;
         
-        UpdateCardBackgrounds(elements, Color.FromArgb("#30FFFFFF"));
-        UpdateTextColors(elements, Color.FromArgb("#E0E0E0"));
-    }
-
-    private void ApplyLightTheme(ContentPage page, ThemeElements elements)
-    {
-        Application.Current.UserAppTheme = AppTheme.Light;
-        
-        elements.ThemeIcon.Text = "🌙";
-        elements.ThemeLabel.Text = "Dark Theme";
-        
-        page.Background = CreateLightGradient();
-        
-        var lightGlassBrush = GetResource<LinearGradientBrush>("GlassSurfaceBrush");
-        elements.MainBorder.Background = lightGlassBrush;
-        elements.MainBorder.Stroke = Color.FromArgb("#30FFFFFF");
-        
-        var glassWhite = GetResource<Color>("GlassWhite") ?? Color.FromArgb("#D0FFFFFF");
-        elements.MenuFlyout.BackgroundColor = glassWhite;
-        
-        UpdateCardBackgrounds(elements, glassWhite);
-        
-        var textDark = GetResource<Color>("AppTextDark") ?? Color.FromArgb("#2C3E50");
-        UpdateTextColors(elements, textDark);
+        var darkCard = GetResource<Color>("DarkCardBackground") ?? Color.FromArgb("#18202B");
+        UpdateCardBackgrounds(elements, darkCard);
+        var textPrimary = GetResource<Color>("DarkTextPrimary") ?? Color.FromArgb("#E6EDF3");
+        UpdateTextColors(elements, textPrimary);
     }
 
     private LinearGradientBrush CreateDarkGradient()
@@ -66,26 +41,9 @@ public class ThemeService : IThemeService
             EndPoint = new Point(1, 1),
             GradientStops = new GradientStopCollection
             {
-                new GradientStop { Color = Color.FromArgb("#1a1a2e"), Offset = 0.0f },
-                new GradientStop { Color = Color.FromArgb("#16213e"), Offset = 0.33f },
-                new GradientStop { Color = Color.FromArgb("#0f3460"), Offset = 0.66f },
-                new GradientStop { Color = Color.FromArgb("#1a1a2e"), Offset = 1.0f }
-            }
-        };
-    }
-
-    private LinearGradientBrush CreateLightGradient()
-    {
-        return new LinearGradientBrush
-        {
-            StartPoint = new Point(0, 0),
-            EndPoint = new Point(1, 1),
-            GradientStops = new GradientStopCollection
-            {
-                new GradientStop { Color = Color.FromArgb("#C8B5F0"), Offset = 0.0f },
-                new GradientStop { Color = Color.FromArgb("#B5E8D9"), Offset = 0.33f },
-                new GradientStop { Color = Color.FromArgb("#FFCFB5"), Offset = 0.66f },
-                new GradientStop { Color = Color.FromArgb("#B5DBF0"), Offset = 1.0f }
+                new GradientStop { Color = Color.FromArgb("#0B0F14"), Offset = 0.0f },
+                new GradientStop { Color = Color.FromArgb("#0C1220"), Offset = 0.5f },
+                new GradientStop { Color = Color.FromArgb("#0B0F14"), Offset = 1.0f }
             }
         };
     }

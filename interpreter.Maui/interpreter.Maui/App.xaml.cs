@@ -6,8 +6,8 @@
         {
             InitializeComponent();
             
-            // Set light theme as default on app start
-            UserAppTheme = AppTheme.Light;
+            // Enforce modern dark mode across the app
+            UserAppTheme = AppTheme.Dark;
         }
 
         protected override Window CreateWindow(IActivationState? activationState)

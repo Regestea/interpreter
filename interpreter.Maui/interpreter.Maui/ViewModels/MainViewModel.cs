@@ -10,7 +10,7 @@ namespace interpreter.Maui.ViewModels
     public class MainViewModel : INotifyPropertyChanged
     {
         private bool _isRecording;
-        private bool _isDarkTheme;
+        private bool _isDarkTheme = true; // Force dark theme by default
         private bool _isMenuVisible;
         private string _transcriptText = "Your transcription will appear here...";
 
@@ -55,7 +55,8 @@ namespace interpreter.Maui.ViewModels
             VoiceTuneCommand = new Command(OnVoiceTuneExecuted);
             NoiseAdjustCommand = new Command(OnNoiseAdjustExecuted);
             MenuToggleCommand = new Command(OnMenuToggleExecuted);
-            ThemeToggleCommand = new Command(OnThemeToggleExecuted);
+            // Theme toggle disabled in dark-only mode
+            ThemeToggleCommand = new Command(() => { /* no-op in dark-only theme */ });
         }
 
         private void OnActionButtonExecuted()
@@ -80,10 +81,7 @@ namespace interpreter.Maui.ViewModels
             IsMenuVisible = !IsMenuVisible;
         }
 
-        private void OnThemeToggleExecuted()
-        {
-            IsDarkTheme = !IsDarkTheme;
-        }
+        // Removed theme toggle behavior (dark-only)
 
         protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {

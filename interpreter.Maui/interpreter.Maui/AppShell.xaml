@@ -7,8 +7,8 @@
     Shell.FlyoutBehavior="Disabled"
     Title="interpreter.Maui"
     Shell.NavBarIsVisible="True"
-    Shell.BackgroundColor="{AppThemeBinding Light=White, Dark=#1a1a2e}"
-    Shell.ForegroundColor="{AppThemeBinding Light=#2C3E50, Dark=#E0E0E0}">
+    Shell.BackgroundColor="#0C1220"
+    Shell.ForegroundColor="#E6EDF3">
 
     <Shell.TitleView>
         <Grid ColumnDefinitions="Auto,*,Auto" Padding="10,0">
@@ -17,14 +17,14 @@
                    FontSize="20" 
                    FontAttributes="Bold"
                    VerticalOptions="Center"
-                   TextColor="{AppThemeBinding Light=#2C3E50, Dark=#E0E0E0}"/>
+                   TextColor="#E6EDF3"/>
             
             <!-- Menu Button -->
             <Border Grid.Column="2"
                     x:Name="ShellMenuButton"
-                    BackgroundColor="{AppThemeBinding Light=#D0FFFFFF, Dark=#40FFFFFF}"
+                    BackgroundColor="#1E2633"
                     StrokeThickness="1"
-                    Stroke="{AppThemeBinding Light=#40FFFFFF, Dark=#60FFFFFF}"
+                    Stroke="#60FFFFFF"
                     Padding="10"
                     WidthRequest="44"
                     HeightRequest="44"
@@ -42,7 +42,7 @@
                     <TapGestureRecognizer Tapped="OnMenuButtonClicked"/>
                 </Border.GestureRecognizers>
                 <Label Text="☰"
-                       TextColor="{AppThemeBinding Light=#7141d0, Dark=#C8B5F0}"
+                       TextColor="#C8D1FF"
                        FontSize="20"
                        HorizontalOptions="Center"
                        VerticalOptions="Center"
