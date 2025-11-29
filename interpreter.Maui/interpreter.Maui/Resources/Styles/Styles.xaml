@@ -3,18 +3,41 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
 
-    <!-- Removed light glass brush; dark theme only -->
+    <!-- Neon Gradient Brushes with Glow Effects -->
     <LinearGradientBrush x:Key="GlassSurfaceBrush" StartPoint="0,0" EndPoint="1,1">
-        <GradientStop Color="{StaticResource GlassLightDark}" Offset="0" />
-        <GradientStop Color="{StaticResource GlassWhiteDark}" Offset="0.45" />
-        <GradientStop Color="#30FFFFFF" Offset="1" />
+        <GradientStop Color="#25FFFFFF" Offset="0" />
+        <GradientStop Color="#15FFFFFF" Offset="0.45" />
+        <GradientStop Color="#10FFFFFF" Offset="1" />
     </LinearGradientBrush>
 
     <LinearGradientBrush x:Key="GlassSurfaceBrushDark" StartPoint="0,0" EndPoint="1,1">
-        <GradientStop Color="{StaticResource GlassLightDark}" Offset="0" />
-        <GradientStop Color="{StaticResource GlassWhiteDark}" Offset="0.45" />
-        <GradientStop Color="#30FFFFFF" Offset="1" />
+        <GradientStop Color="#25FFFFFF" Offset="0" />
+        <GradientStop Color="#15FFFFFF" Offset="0.45" />
+        <GradientStop Color="#10FFFFFF" Offset="1" />
     </LinearGradientBrush>
+    
+    <!-- Neon Gradient Backgrounds -->
+    <LinearGradientBrush x:Key="NeonPurpleGradient" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#BB00FF" Offset="0.0" />
+        <GradientStop Color="#7700BB" Offset="1.0" />
+    </LinearGradientBrush>
+    
+    <LinearGradientBrush x:Key="NeonCyanGradient" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#00FFFF" Offset="0.0" />
+        <GradientStop Color="#00BBBB" Offset="1.0" />
+    </LinearGradientBrush>
+    
+    <LinearGradientBrush x:Key="NeonGreenGradient" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#39FF14" Offset="0.0" />
+        <GradientStop Color="#28BB0F" Offset="1.0" />
+    </LinearGradientBrush>
+    
+    <RadialGradientBrush x:Key="NeonGlowRadial" Center="0.5,0.5" Radius="1.0">
+        <GradientStop Color="#BB00FF" Offset="0.0" />
+        <GradientStop Color="#7700BB" Offset="0.7" />
+        <GradientStop Color="#440066" Offset="1.0" />
+    </RadialGradientBrush>
+
 
     <Style TargetType="ActivityIndicator">
         <Setter Property="Color" Value="{StaticResource White}" />

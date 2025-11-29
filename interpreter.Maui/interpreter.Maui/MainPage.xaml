@@ -426,7 +426,7 @@
                 VerticalOptions="Start"
                 BackgroundColor="{StaticResource DarkSurface}"
                 StrokeThickness="1"
-                Stroke="#40FFFFFF">
+                Stroke="#40BB00FF">
                 <Border.Padding>
                     <OnIdiom x:TypeArguments="Thickness"
                              Phone="12"
@@ -446,7 +446,7 @@
                              Desktop="180"/>
                 </Border.MinimumWidthRequest>
                 <Border.Shadow>
-                <Shadow Brush="#40000000"
+                <Shadow Brush="#80BB00FF"
                         Offset="0,8"
                         Radius="25"
                         Opacity="0.35"/>
@@ -514,9 +514,9 @@
             </Grid.GestureRecognizers>
             
             <Border x:Name="ModalContentBorder"
-                    BackgroundColor="{StaticResource DarkSurface}"
-                    StrokeThickness="1"
-                    Stroke="#40FFFFFF"
+                    BackgroundColor="#0D0D18"
+                    StrokeThickness="2"
+                    Stroke="#7000FFFF"
                     HorizontalOptions="Center"
                     VerticalOptions="Center"
                     MaximumWidthRequest="400"
@@ -529,10 +529,10 @@
                              Desktop="24"/>
                 </Border.Padding>
                 <Border.Shadow>
-                    <Shadow Brush="#60000000"
-                            Offset="0,10"
-                            Radius="40"
-                            Opacity="0.5"/>
+                    <Shadow Brush="#9000FFFF"
+                            Offset="0,12"
+                            Radius="45"
+                            Opacity="0.7"/>
                 </Border.Shadow>
                 <Border.StrokeShape>
                     <RoundRectangle CornerRadius="24"/>

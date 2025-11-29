@@ -5,76 +5,103 @@
 
     <!-- Note: For Android please see also Platforms\Android\Resources\values\colors.xml -->
 
-    <!-- Modern Vibrant Theme Colors -->
-    <Color x:Key="AppPurple">#7141d0</Color>
-    <Color x:Key="AppMint">#7cc8a5</Color>
-    <Color x:Key="AppCoral">#ff916b</Color>
-    <Color x:Key="AppCyan">#72c9e4</Color>
+    <!-- Modern Neon Dark Mode Colors -->
+    <Color x:Key="NeonCyan">#00FFFF</Color>
+    <Color x:Key="NeonMagenta">#FF00FF</Color>
+    <Color x:Key="NeonPurple">#BB00FF</Color>
+    <Color x:Key="NeonBlue">#00D4FF</Color>
+    <Color x:Key="NeonGreen">#39FF14</Color>
+    <Color x:Key="NeonPink">#FF006E</Color>
+    <Color x:Key="NeonOrange">#FF9500</Color>
+    <Color x:Key="ElectricBlue">#7DF9FF</Color>
     
-    <!-- Glassmorphism Colors (Semi-transparent) -->
-    <Color x:Key="GlassPurple">#B07141d0</Color>
-    <Color x:Key="GlassMint">#B07cc8a5</Color>
-    <Color x:Key="GlassCoral">#B0ff916b</Color>
-    <Color x:Key="GlassCyan">#B072c9e4</Color>
-    <Color x:Key="GlassWhite">#D0FFFFFF</Color>
-    <Color x:Key="GlassLight">#E0FFFFFF</Color>
-    <Color x:Key="GlassDark">#40000000</Color>
+    <!-- Neon Glow Variants (Semi-transparent for effects) -->
+    <Color x:Key="GlowCyan">#8000FFFF</Color>
+    <Color x:Key="GlowMagenta">#80FF00FF</Color>
+    <Color x:Key="GlowPurple">#80BB00FF</Color>
+    <Color x:Key="GlowBlue">#8000D4FF</Color>
+    <Color x:Key="GlowGreen">#8039FF14</Color>
     
-    <!-- Dark Theme Glassmorphism -->
-    <Color x:Key="GlassWhiteDark">#40FFFFFF</Color>
-    <Color x:Key="GlassLightDark">#30FFFFFF</Color>
-    <Color x:Key="GlassDarkTheme">#B0000000</Color>
+    <!-- Modern Vibrant Theme Colors (Updated to Neon) -->
+    <Color x:Key="AppPurple">#BB00FF</Color>
+    <Color x:Key="AppMint">#39FF14</Color>
+    <Color x:Key="AppCoral">#FF006E</Color>
+    <Color x:Key="AppCyan">#00FFFF</Color>
     
-    <!-- Light Theme Colors -->
-    <Color x:Key="AppBackground">#F8F9FA</Color>
-    <Color x:Key="AppCardBackground">#FFFFFF</Color>
-    <Color x:Key="AppLightPurple">#E8E0F7</Color>
-    <Color x:Key="AppLightMint">#E0F5ED</Color>
-    <Color x:Key="AppLightCoral">#FFE8E0</Color>
-    <Color x:Key="AppLightCyan">#E0F3F9</Color>
+    <!-- Glassmorphism Colors (Semi-transparent with neon tints) -->
+    <Color x:Key="GlassPurple">#40BB00FF</Color>
+    <Color x:Key="GlassMint">#4039FF14</Color>
+    <Color x:Key="GlassCoral">#40FF006E</Color>
+    <Color x:Key="GlassCyan">#4000FFFF</Color>
+    <Color x:Key="GlassWhite">#20FFFFFF</Color>
+    <Color x:Key="GlassLight">#30FFFFFF</Color>
+    <Color x:Key="GlassDark">#60000000</Color>
     
-    <!-- Dark accents -->
-    <Color x:Key="AppDark">#1A1A1A</Color>
-    <Color x:Key="AppDarkSecondary">#2A2A2A</Color>
-    <Color x:Key="AppDarkTertiary">#1E1E1E</Color>
+    <!-- Dark Theme Glassmorphism (Enhanced for Neon) -->
+    <Color x:Key="GlassWhiteDark">#25FFFFFF</Color>
+    <Color x:Key="GlassLightDark">#15FFFFFF</Color>
+    <Color x:Key="GlassDarkTheme">#D0000000</Color>
+    
+    <!-- Neon Dark Theme Backgrounds -->
+    <Color x:Key="AppBackground">#0A0A0F</Color>
+    <Color x:Key="AppCardBackground">#151520</Color>
+    <Color x:Key="AppLightPurple">#1A0D2E</Color>
+    <Color x:Key="AppLightMint">#0D2E1A</Color>
+    <Color x:Key="AppLightCoral">#2E0D1A</Color>
+    <Color x:Key="AppLightCyan">#0D1A2E</Color>
+    
+    <!-- Dark accents (Deeper for Neon contrast) -->
+    <Color x:Key="AppDark">#050508</Color>
+    <Color x:Key="AppDarkSecondary">#151520</Color>
+    <Color x:Key="AppDarkTertiary">#0F0F18</Color>
     <Color x:Key="AppTextLight">#FFFFFF</Color>
-    <Color x:Key="AppTextDark">#2C3E50</Color>
-    <Color x:Key="AppTextGray">#6C757D</Color>
+    <Color x:Key="AppTextDark">#E0E0E0</Color>
+    <Color x:Key="AppTextGray">#8A8A9E</Color>
     
-    <!-- Dark Theme Specific -->
-    <Color x:Key="DarkBackground">#121212</Color>
-    <Color x:Key="DarkSurface">#1E1E1E</Color>
-    <Color x:Key="DarkCardBackground">#2A2A2A</Color>
-    <Color x:Key="DarkTextPrimary">#E0E0E0</Color>
-    <Color x:Key="DarkTextSecondary">#A0A0A0</Color>
+    <!-- Dark Theme Specific (Neon optimized) -->
+    <Color x:Key="DarkBackground">#0A0A0F</Color>
+    <Color x:Key="DarkSurface">#151520</Color>
+    <Color x:Key="DarkCardBackground">#1A1A28</Color>
+    <Color x:Key="DarkTextPrimary">#F0F0F5</Color>
+    <Color x:Key="DarkTextSecondary">#B0B0C0</Color>
     
-    <!-- Legacy Colors (kept for compatibility) -->
-    <Color x:Key="AppOrange">#ff916b</Color>
-    <Color x:Key="AppOrangeLight">#FFA500</Color>
-    <Color x:Key="AppLightGreen">#7cc8a5</Color>
+    <!-- Legacy Colors (Updated to Neon theme) -->
+    <Color x:Key="AppOrange">#FF9500</Color>
+    <Color x:Key="AppOrangeLight">#FFB84D</Color>
+    <Color x:Key="AppLightGreen">#39FF14</Color>
     
-    <Color x:Key="Primary">#512BD4</Color>
-    <Color x:Key="PrimaryDark">#ac99ea</Color>
-    <Color x:Key="PrimaryDarkText">#242424</Color>
-    <Color x:Key="Secondary">#DFD8F7</Color>
-    <Color x:Key="SecondaryDarkText">#9880e5</Color>
-    <Color x:Key="Tertiary">#2B0B98</Color>
+    <Color x:Key="Primary">#BB00FF</Color>
+    <Color x:Key="PrimaryDark">#FF00FF</Color>
+    <Color x:Key="PrimaryDarkText">#F0F0F5</Color>
+    <Color x:Key="Secondary">#00FFFF</Color>
+    <Color x:Key="SecondaryDarkText">#00D4FF</Color>
+    <Color x:Key="Tertiary">#39FF14</Color>
 
     <Color x:Key="White">White</Color>
     <Color x:Key="Black">Black</Color>
-    <Color x:Key="Magenta">#D600AA</Color>
-    <Color x:Key="MidnightBlue">#190649</Color>
-    <Color x:Key="OffBlack">#1f1f1f</Color>
+    <Color x:Key="Magenta">#FF00FF</Color>
+    <Color x:Key="MidnightBlue">#0A0A1F</Color>
+    <Color x:Key="OffBlack">#0F0F18</Color>
 
-    <Color x:Key="Gray100">#E1E1E1</Color>
-    <Color x:Key="Gray200">#C8C8C8</Color>
-    <Color x:Key="Gray300">#ACACAC</Color>
-    <Color x:Key="Gray400">#919191</Color>
-    <Color x:Key="Gray500">#6E6E6E</Color>
-    <Color x:Key="Gray600">#404040</Color>
-    <Color x:Key="Gray900">#212121</Color>
-    <Color x:Key="Gray950">#141414</Color>
+    <Color x:Key="Gray100">#E1E1E8</Color>
+    <Color x:Key="Gray200">#C8C8D5</Color>
+    <Color x:Key="Gray300">#ACACBE</Color>
+    <Color x:Key="Gray400">#9191A8</Color>
+    <Color x:Key="Gray500">#6E6E88</Color>
+    <Color x:Key="Gray600">#404058</Color>
+    <Color x:Key="Gray900">#212130</Color>
+    <Color x:Key="Gray950">#141420</Color>
 
+    <!-- Neon Brushes -->
+    <SolidColorBrush x:Key="NeonCyanBrush" Color="{StaticResource NeonCyan}"/>
+    <SolidColorBrush x:Key="NeonMagentaBrush" Color="{StaticResource NeonMagenta}"/>
+    <SolidColorBrush x:Key="NeonPurpleBrush" Color="{StaticResource NeonPurple}"/>
+    <SolidColorBrush x:Key="NeonBlueBrush" Color="{StaticResource NeonBlue}"/>
+    <SolidColorBrush x:Key="NeonGreenBrush" Color="{StaticResource NeonGreen}"/>
+    <SolidColorBrush x:Key="NeonPinkBrush" Color="{StaticResource NeonPink}"/>
+    <SolidColorBrush x:Key="NeonOrangeBrush" Color="{StaticResource NeonOrange}"/>
+    
+    <!-- App Color Brushes -->
     <SolidColorBrush x:Key="AppPurpleBrush" Color="{StaticResource AppPurple}"/>
     <SolidColorBrush x:Key="AppMintBrush" Color="{StaticResource AppMint}"/>
     <SolidColorBrush x:Key="AppCoralBrush" Color="{StaticResource AppCoral}"/>
@@ -93,9 +120,9 @@
     <SolidColorBrush x:Key="AppTextGrayBrush" Color="{StaticResource AppTextGray}"/>
     
     <!-- Legacy Brushes -->
-    <SolidColorBrush x:Key="AppOrangeBrush" Color="{StaticResource AppCoral}"/>
-    <SolidColorBrush x:Key="AppOrangeLightBrush" Color="{StaticResource AppCoral}"/>
-    <SolidColorBrush x:Key="AppLightGreenBrush" Color="{StaticResource AppMint}"/>
+    <SolidColorBrush x:Key="AppOrangeBrush" Color="{StaticResource AppOrange}"/>
+    <SolidColorBrush x:Key="AppOrangeLightBrush" Color="{StaticResource AppOrangeLight}"/>
+    <SolidColorBrush x:Key="AppLightGreenBrush" Color="{StaticResource AppLightGreen}"/>
     
     <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource Primary}"/>
     <SolidColorBrush x:Key="SecondaryBrush" Color="{StaticResource Secondary}"/>
