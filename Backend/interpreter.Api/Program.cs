@@ -64,8 +64,6 @@ namespace interpreter.Api
             // Register OpusCodecService as scoped
             builder.Services.AddScoped<IOpusCodecService, OpusCodecService>();
             
-            // Register VoiceFileService as scoped
-            builder.Services.AddScoped<IVoiceFileService, VoiceFileService>();
             
             // Register HttpClient factory and TranslationService
             builder.Services.AddHttpClient("GoogleTranslate");

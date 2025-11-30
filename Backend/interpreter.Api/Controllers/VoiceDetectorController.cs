@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using interpreter.Api.Services;
 
 namespace interpreter.Api.Controllers;
 
@@ -7,14 +6,11 @@ namespace interpreter.Api.Controllers;
 [Route("api/[controller]")]
 public class VoiceDetectorController : ControllerBase
 {
-    private readonly IVoiceFileService _voiceFileService;
     private readonly ILogger<VoiceDetectorController> _logger;
 
     public VoiceDetectorController(
-        IVoiceFileService voiceFileService,
         ILogger<VoiceDetectorController> logger)
     {
-        _voiceFileService = voiceFileService;
         _logger = logger;
     }
 
@@ -29,16 +25,8 @@ public class VoiceDetectorController : ControllerBase
             if (file == null || file.Length == 0)
                 return BadRequest("File is required");
 
-            // Check if voice file already exists
-            if (await _voiceFileService.VoiceFileExistsAsync(name))
-                return Conflict($"Voice file with name '{name}' already exists");
-
-            // Decode OPUS and save as WAV
-            await using var opusStream = file.OpenReadStream();
-            var filePath = await _voiceFileService.SaveVoiceFileAsync(name, opusStream);
-
-            _logger.LogInformation("Voice file created: {Name} at {FilePath}", name, filePath);
-            return Ok(new { name, filePath });
+            // TODO: Implement create logic
+            return Ok(new { name });
         }
         catch (Exception ex)
         {
@@ -52,8 +40,8 @@ public class VoiceDetectorController : ControllerBase
     {
         try
         {
-            var voiceFiles = await _voiceFileService.GetVoiceFileNamesAsync();
-            return Ok(voiceFiles);
+            // TODO: Implement get list logic
+            return Ok(new string[] { });
         }
         catch (Exception ex)
         {
@@ -70,11 +58,7 @@ public class VoiceDetectorController : ControllerBase
             if (string.IsNullOrWhiteSpace(name))
                 return BadRequest("Name is required");
 
-            var deleted = await _voiceFileService.DeleteVoiceFileAsync(name);
-            
-            if (!deleted)
-                return NotFound($"Voice file with name '{name}' not found");
-
+            // TODO: Implement delete logic
             _logger.LogInformation("Voice file deleted: {Name}", name);
             return Ok(new { message = $"Voice file '{name}' deleted successfully" });
         }
