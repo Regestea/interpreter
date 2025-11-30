@@ -37,6 +37,16 @@ namespace interpreter.Api
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
             
+            // Add Memory Cache
+            builder.Services.AddMemoryCache(options =>
+            {
+                options.SizeLimit = 1024; // Optional: limit cache size
+                options.CompactionPercentage = 0.25; // Compact when 25% over limit
+            });
+            
+            // Register Cache Service for easy caching
+            builder.Services.AddSingleton<ICacheService, CacheService>();
+            
             // Configure Whisper settings from appsettings.json
             builder.Services.Configure<WhisperSettings>(
                 builder.Configuration.GetSection("Whisper"));
