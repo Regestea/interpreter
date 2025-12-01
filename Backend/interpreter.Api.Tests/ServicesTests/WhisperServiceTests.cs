@@ -4,20 +4,23 @@ using interpreter.Api.Tests.Fixture;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NSubstitute;
+using Xunit.Abstractions;
 
 namespace interpreter.Api.Tests.ServicesTests;
 
 [Collection("Whisper Collection")]
 public class WhisperServiceTests
 {
+    private readonly ITestOutputHelper _testOutputHelper;
     private readonly WhisperService? _whisperService;
     private readonly ILogger<WhisperService> _logger;
     private readonly WhisperSettings _settings;
     private readonly string _testAudioPath;
     private readonly string _modelPath;
 
-    public WhisperServiceTests(WhisperServiceFixture fixture)
+    public WhisperServiceTests(WhisperServiceFixture fixture, ITestOutputHelper testOutputHelper)
     {
+        _testOutputHelper = testOutputHelper;
         // Setup logger mock
         _logger = Substitute.For<ILogger<WhisperService>>();
 
@@ -76,21 +79,40 @@ public class WhisperServiceTests
     [Fact]
     public async Task TranscribeStreamAsync_WithValidStream_ShouldReturnTranscription()
     {
+        var testStopwatch = System.Diagnostics.Stopwatch.StartNew();
+        _testOutputHelper.WriteLine($"[TEST START] TranscribeStreamAsync_WithValidStream_ShouldReturnTranscription");
+        
         // Skip if test files don't exist
         if (!File.Exists(_modelPath) || !File.Exists(_testAudioPath))
         {
+            _testOutputHelper.WriteLine("Test skipped: Model or audio file not found");
             return;
         }
 
         // Arrange
+        var arrangeStopwatch = System.Diagnostics.Stopwatch.StartNew();
+        _testOutputHelper.WriteLine($"Opening audio file: {_testAudioPath}");
         await using var stream = File.OpenRead(_testAudioPath);
+        arrangeStopwatch.Stop();
+        _testOutputHelper.WriteLine($"File opened in {arrangeStopwatch.ElapsedMilliseconds}ms");
 
         // Act
-        var result = await _whisperService.TranscribeStreamAsync(stream);
+        var actStopwatch = System.Diagnostics.Stopwatch.StartNew();
+        _testOutputHelper.WriteLine("Starting transcription with WhisperService...");
+        
+        var language = await _whisperService.GetLanguage(stream);
+        
+        var result = await _whisperService.TranscribeStreamAsync(stream, language);
+        actStopwatch.Stop();
+        _testOutputHelper.WriteLine($"WhisperService.TranscribeStreamAsync completed in {actStopwatch.ElapsedMilliseconds}ms");
+        _testOutputHelper.WriteLine($"Transcription result: '{result}'");
 
         // Assert
         Assert.NotNull(result);
         Assert.NotEmpty(result);
+        
+        testStopwatch.Stop();
+        _testOutputHelper.WriteLine($"[TEST END] Total test duration: {testStopwatch.ElapsedMilliseconds}ms");
     }
 
     [Fact]
@@ -98,7 +120,7 @@ public class WhisperServiceTests
     {
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentNullException>(
-            async () => await _whisperService.TranscribeStreamAsync(null!));
+            async () => await _whisperService.TranscribeStreamAsync(null!, ""));
     }
 
     [Fact]
@@ -116,7 +138,7 @@ public class WhisperServiceTests
         // Act & Assert
         // Whisper.net requires a valid WAV format and throws CorruptedWaveException for invalid streams
         await Assert.ThrowsAnyAsync<Exception>(
-            async () => await _whisperService.TranscribeStreamAsync(emptyStream));
+            async () => await _whisperService.TranscribeStreamAsync(emptyStream, ""));
     }
 
     [Fact]
@@ -136,7 +158,47 @@ public class WhisperServiceTests
         // Act & Assert
         // TaskCanceledException is a subclass of OperationCanceledException
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
-            async () => await _whisperService.TranscribeStreamAsync(stream, cts.Token));
+            async () => await _whisperService.TranscribeStreamAsync(stream, "", cts.Token));
+    }
+
+    #endregion
+
+    #region GetLanguage Tests
+
+    [Fact]
+    public async Task GetLanguage_WithValidStream_ShouldReturnLanguageCode()
+    {
+        var testStopwatch = System.Diagnostics.Stopwatch.StartNew();
+        _testOutputHelper.WriteLine($"[TEST START] GetLanguage_WithValidStream_ShouldReturnLanguageCode");
+        
+        // Skip if test files don't exist
+        if (!File.Exists(_modelPath) || !File.Exists(_testAudioPath))
+        {
+            _testOutputHelper.WriteLine("Test skipped: Model or audio file not found");
+            return;
+        }
+
+        // Arrange
+        var arrangeStopwatch = System.Diagnostics.Stopwatch.StartNew();
+        _testOutputHelper.WriteLine($"Opening audio file: {_testAudioPath}");
+        await using var stream = File.OpenRead(_testAudioPath);
+        arrangeStopwatch.Stop();
+        _testOutputHelper.WriteLine($"File opened in {arrangeStopwatch.ElapsedMilliseconds}ms");
+       
+        // Act
+        var actStopwatch = System.Diagnostics.Stopwatch.StartNew();
+        _testOutputHelper.WriteLine("Detecting language with WhisperService...");
+        var result = await _whisperService.GetLanguage(stream);
+        actStopwatch.Stop();
+        _testOutputHelper.WriteLine($"WhisperService.GetLanguage completed in {actStopwatch.ElapsedMilliseconds}ms");
+        _testOutputHelper.WriteLine($"Detected language: '{result}'");
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.NotEmpty(result);
+        
+        testStopwatch.Stop();
+        _testOutputHelper.WriteLine($"[TEST END] Total test duration: {testStopwatch.ElapsedMilliseconds}ms");
     }
 
     #endregion
@@ -168,7 +230,7 @@ public class WhisperServiceTests
         Assert.Throws<ObjectDisposedException>(() =>
         {
             // Attempting to use disposed service should throw
-            service.TranscribeStreamAsync(new MemoryStream()).GetAwaiter().GetResult();
+            service.TranscribeStreamAsync(new MemoryStream(), "").GetAwaiter().GetResult();
         });
     }
 

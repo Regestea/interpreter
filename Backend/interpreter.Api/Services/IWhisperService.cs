@@ -9,9 +9,18 @@ public interface IWhisperService
     /// Transcribes an audio stream.
     /// </summary>
     /// <param name="audioStream">The audio stream to transcribe.</param>
+    /// <param name="language">The language code for transcription.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>The full transcription text.</returns>
-    Task<string> TranscribeStreamAsync(Stream audioStream, CancellationToken cancellationToken = default);
+    Task<string> TranscribeStreamAsync(Stream audioStream, string language, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets the language from an audio stream.
+    /// </summary>
+    /// <param name="audioStream">The audio stream to analyze.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>The detected or configured language code.</returns>
+    Task<string> GetLanguage(Stream audioStream, CancellationToken cancellationToken = default);
 }
 
 
