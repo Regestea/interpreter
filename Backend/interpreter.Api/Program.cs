@@ -5,6 +5,7 @@ using interpreter.Api.Data;
 using Opus.Services;
 using PiperSharp;
 using Microsoft.EntityFrameworkCore;
+using SpeechBrain;
 
 namespace interpreter.Api
 {
@@ -34,18 +35,21 @@ namespace interpreter.Api
             // Add services to the container.
             
             // Configure SQLite DbContext
-            builder.Services.AddDbContext<AppDbContext>(options =>
+            builder.Services.AddDbContext<InterpreterDbContext>(options =>
                 options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
             
             // Add Memory Cache
-            builder.Services.AddMemoryCache(options =>
-            {
-                options.SizeLimit = 1024; // Optional: limit cache size
-                options.CompactionPercentage = 0.25; // Compact when 25% over limit
-            });
+            builder.Services.AddMemoryCache();
             
             // Register Cache Service for easy caching
             builder.Services.AddSingleton<ICacheService, CacheService>();
+            
+            builder.Services.AddSingleton<ISpeechBrainRecognition,SpeechBrainRecognition>(x=>
+            {
+                var service=new SpeechBrainRecognition();
+                service.Initialize();
+                return service;
+            });
             
             // Configure Whisper settings from appsettings.json
             builder.Services.Configure<WhisperSettings>(

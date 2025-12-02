@@ -3,7 +3,7 @@ using System.Reflection;
 
 namespace SpeechBrain;
 
-public class SpeechBrainRecognition : IDisposable
+public class SpeechBrainRecognition : ISpeechBrainRecognition
 {
     private static readonly object _pythonLock = new object();
     private static bool _pythonEngineInitialized = false;

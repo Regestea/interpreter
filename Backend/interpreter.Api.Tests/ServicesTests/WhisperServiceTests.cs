@@ -100,7 +100,7 @@ public class WhisperServiceTests
         var actStopwatch = System.Diagnostics.Stopwatch.StartNew();
         _testOutputHelper.WriteLine("Starting transcription with WhisperService...");
         
-        var language = await _whisperService.GetLanguage(stream);
+        var language = await _whisperService.GetLanguageAsync(stream);
         
         var result = await _whisperService.TranscribeStreamAsync(stream, language);
         actStopwatch.Stop();
@@ -163,7 +163,7 @@ public class WhisperServiceTests
 
     #endregion
 
-    #region GetLanguage Tests
+    #region GetLanguageAsync Tests
 
     [Fact]
     public async Task GetLanguage_WithValidStream_ShouldReturnLanguageCode()
@@ -188,9 +188,9 @@ public class WhisperServiceTests
         // Act
         var actStopwatch = System.Diagnostics.Stopwatch.StartNew();
         _testOutputHelper.WriteLine("Detecting language with WhisperService...");
-        var result = await _whisperService.GetLanguage(stream);
+        var result = await _whisperService.GetLanguageAsync(stream);
         actStopwatch.Stop();
-        _testOutputHelper.WriteLine($"WhisperService.GetLanguage completed in {actStopwatch.ElapsedMilliseconds}ms");
+        _testOutputHelper.WriteLine($"WhisperService.GetLanguageAsync completed in {actStopwatch.ElapsedMilliseconds}ms");
         _testOutputHelper.WriteLine($"Detected language: '{result}'");
 
         // Assert

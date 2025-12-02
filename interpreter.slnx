@@ -8,6 +8,7 @@
     <Project Path="Backend/SpeechBrain/SpeechBrain.csproj" />
   </Folder>
   <Folder Name="/Shared/">
+    <Project Path="Shared/Models.Shared/Models.Shared.csproj" />
     <Project Path="Shared/Opus.Tests/Opus.Tests.csproj" />
     <Project Path="Shared/Opus/Opus.csproj" />
   </Folder>

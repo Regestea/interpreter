@@ -1,7 +1,13 @@
-﻿using System.Diagnostics;
+﻿using interpreter.Api.Data;
 using Microsoft.AspNetCore.Mvc;
 using interpreter.Api.Services;
+using Microsoft.EntityFrameworkCore;
+using Models.Shared.Enums;
+using Models.Shared.Extensions;
+using Models.Shared.Requests;
+using Models.Shared.Responses;
 using Opus.Services;
+using SpeechBrain;
 
 namespace interpreter.Api.Controllers;
 
@@ -14,330 +20,199 @@ public class InterpreterController : ControllerBase
     private readonly IOpusCodecService _opusCodecService;
     private readonly IPiperService _piperService;
     private readonly ITranslationService _translationService;
+    private readonly ISpeechBrainRecognition _speechBrainRecognition;
+    private readonly InterpreterDbContext _dbContext;
 
     public InterpreterController(
         ILogger<InterpreterController> logger,
         IWhisperService whisperService,
         IOpusCodecService opusCodecService,
         IPiperService piperService,
-        ITranslationService translationService)
+        ITranslationService translationService,
+        ISpeechBrainRecognition speechBrainRecognition,
+        InterpreterDbContext dbContext)
     {
         _logger = logger;
         _whisperService = whisperService;
         _opusCodecService = opusCodecService;
         _piperService = piperService;
         _translationService = translationService;
+        _speechBrainRecognition = speechBrainRecognition;
+        _dbContext = dbContext;
     }
 
-    /// <summary>
-    /// Upload a WAV audio file for interpretation
-    /// </summary>
-    /// <param name="file">The WAV audio file to upload</param>
-    /// <param name="targetLanguage">The target language code for translation (e.g., "en", "fa", "fr")</param>
-    /// <param name="cancellationToken">Cancellation token to cancel the request</param>
-    /// <returns>Result of the file processing with WAV translated audio</returns>
-    [HttpPost("UploadWavAudio")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> TranslateWavAudio(IFormFile file, [FromForm] string targetLanguage = "en", CancellationToken cancellationToken = default)
-    {
-        var overallStopwatch = Stopwatch.StartNew();
-        _logger.LogInformation("=== WAV Audio Translation Request Started ===");
-        _logger.LogInformation("Request received - File: {FileName}, Size: {FileSize} bytes, Target Language: {TargetLanguage}", 
-            file.FileName, file.Length, targetLanguage);
-
-        if (file.Length == 0)
-        {
-            _logger.LogWarning("Request validation failed: File is empty");
-            return BadRequest(new { error = "File is empty" });
-        }
-
-        // Validate that the file is a WAV file
-        var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
-        
-        if (string.IsNullOrEmpty(fileExtension) || fileExtension != ".wav")
-        {
-            _logger.LogWarning("Request validation failed: Invalid file extension '{Extension}'", fileExtension);
-            return BadRequest(new { error = "Invalid file extension. Only WAV files are supported." });
-        }
-
-        if (string.IsNullOrWhiteSpace(targetLanguage))
-        {
-            _logger.LogWarning("Request validation failed: Target language is required");
-            return BadRequest(new { error = "Target language is required" });
-        }
-
-        _logger.LogInformation("Request validation passed");
-
-        try
-        {
-            _logger.LogInformation("Starting WAV audio translation pipeline");
-
-            // Step 1: Process the WAV stream with Whisper (transcription)
-            _logger.LogInformation("Step 1: Starting audio transcription with Whisper");
-            var step1Stopwatch = Stopwatch.StartNew();
-            
-            await using var wavStream = file.OpenReadStream();
-            _logger.LogInformation("Audio stream opened, starting transcription...");
-            var transcription = await _whisperService.TranscribeStreamAsync(wavStream, cancellationToken);
-            
-            step1Stopwatch.Stop();
-            _logger.LogInformation("Step 1 completed in {ElapsedMs}ms ({ElapsedSeconds}s)", 
-                step1Stopwatch.ElapsedMilliseconds, step1Stopwatch.Elapsed.TotalSeconds);
-            
-            if (string.IsNullOrWhiteSpace(transcription))
-            {
-                _logger.LogWarning("Transcription returned empty result after {ElapsedMs}ms", step1Stopwatch.ElapsedMilliseconds);
-                return BadRequest(new { error = "No speech detected in audio" });
-            }
-            
-            _logger.LogInformation("Transcription successful - Length: {Length} characters, Text: {Transcription}", 
-                transcription.Length, transcription);
-
-            // Step 2: Translate the transcribed text
-            _logger.LogInformation("Step 2: Starting text translation to {TargetLanguage}", targetLanguage);
-            var step2Stopwatch = Stopwatch.StartNew();
-            
-            var translationResult = await _translationService.TranslateAsync(transcription, targetLanguage, cancellationToken);
-            
-            step2Stopwatch.Stop();
-            _logger.LogInformation("Step 2 completed in {ElapsedMs}ms ({ElapsedSeconds}s)", 
-                step2Stopwatch.ElapsedMilliseconds, step2Stopwatch.Elapsed.TotalSeconds);
-            
-            _logger.LogInformation("Translation successful - Detected Language: {DetectedLanguage}, Translated Text: {TranslatedText}", 
-                translationResult.DetectedLanguage, translationResult.TranslatedText);
-
-            // Step 3: Convert translated text to speech using Piper
-            _logger.LogInformation("Step 3: Starting text-to-speech conversion with Piper");
-            var step3Stopwatch = Stopwatch.StartNew();
-            
-            _logger.LogInformation("Converting text to speech: '{Text}'", translationResult.TranslatedText);
-            var piperAudioBytes = await _piperService.TextToSpeechAsync(
-                translationResult.TranslatedText, 
-                PiperSharp.Models.AudioOutputType.Wav, 
-                cancellationToken);
-            
-            step3Stopwatch.Stop();
-            _logger.LogInformation("Step 3 completed in {ElapsedMs}ms ({ElapsedSeconds}s)", 
-                step3Stopwatch.ElapsedMilliseconds, step3Stopwatch.Elapsed.TotalSeconds);
-            
-            _logger.LogInformation("Piper audio generated successfully - Size: {AudioSize} bytes", piperAudioBytes.Length);
-
-            overallStopwatch.Stop();
-            _logger.LogInformation("=== WAV Audio Translation Pipeline Completed Successfully ===");
-            _logger.LogInformation("Total execution time: {TotalMs}ms ({TotalSeconds}s)", 
-                overallStopwatch.ElapsedMilliseconds, overallStopwatch.Elapsed.TotalSeconds);
-            _logger.LogInformation("Timing breakdown - Step 1 (Transcription): {Step1Ms}ms, Step 2 (Translation): {Step2Ms}ms, Step 3 (TTS): {Step3Ms}ms",
-                step1Stopwatch.ElapsedMilliseconds, step2Stopwatch.ElapsedMilliseconds, step3Stopwatch.ElapsedMilliseconds);
-
-            // Step 4: Return the result with WAV audio
-            _logger.LogInformation("Preparing response - Output size: {OutputSize} bytes", piperAudioBytes.Length);
-            return Ok(new
-            {
-                message = "Audio translated successfully",
-                fileName = file.FileName,
-                inputFileSize = file.Length,
-                outputFileSize = piperAudioBytes.Length,
-                transcription,
-                detectedLanguage = translationResult.DetectedLanguage,
-                targetLanguage,
-                translatedText = translationResult.TranslatedText,
-                audioData = Convert.ToBase64String(piperAudioBytes),
-                timingMs = new
-                {
-                    total = overallStopwatch.ElapsedMilliseconds,
-                    transcription = step1Stopwatch.ElapsedMilliseconds,
-                    translation = step2Stopwatch.ElapsedMilliseconds,
-                    textToSpeech = step3Stopwatch.ElapsedMilliseconds
-                }
-            });
-        }
-        catch (Exception ex)
-        {
-            overallStopwatch.Stop();
-            _logger.LogError(ex, "Error processing file: {FileName} after {ElapsedMs}ms", file.FileName, overallStopwatch.ElapsedMilliseconds);
-            return StatusCode(StatusCodes.Status500InternalServerError, 
-                new { error = "An error occurred while processing the file", details = ex.Message });
-        }
-    }
 
     /// <summary>
     /// Upload an Opus-encoded audio file for interpretation
     /// </summary>
-    /// <param name="file">The Opus-encoded audio file to upload</param>
-    /// <param name="targetLanguage">The target language code for translation (e.g., "en", "fa", "fr")</param>
-    /// <param name="cancellationToken">Cancellation token to cancel the request</param>
+    /// <param name="request">The interpreter request containing audio file and configuration</param>
     /// <returns>Result of the file processing with Opus-encoded translated audio</returns>
     [HttpPost("UploadEncodeAudio")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(InterpreterResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> TranslateAudio(IFormFile file, [FromForm] string targetLanguage = "en", CancellationToken cancellationToken = default)
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> TranslateAudio(InterpreterRequest request)
     {
-        var overallStopwatch = Stopwatch.StartNew();
-        _logger.LogInformation("=== Opus Audio Translation Request Started ===");
-        _logger.LogInformation("Request received - File: {FileName}, Size: {FileSize} bytes, Target Language: {TargetLanguage}", 
-            file.FileName, file.Length, targetLanguage);
-
-        if (file.Length == 0)
-        {
-            _logger.LogWarning("Request validation failed: File is empty");
-            return BadRequest(new { error = "File is empty" });
-        }
-
-        // Validate that the file is an audio file
-        var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
-        
-        if (string.IsNullOrEmpty(fileExtension))
-        {
-            _logger.LogWarning("Request validation failed: Invalid file extension");
-            return BadRequest(new { error = "Invalid file extension" });
-        }
-
-        if (string.IsNullOrWhiteSpace(targetLanguage))
-        {
-            _logger.LogWarning("Request validation failed: Target language is required");
-            return BadRequest(new { error = "Target language is required" });
-        }
-
-        _logger.LogInformation("Request validation passed - File extension: {Extension}", fileExtension);
-
         try
         {
-            _logger.LogInformation("Starting Opus audio translation pipeline");
 
-            // Step 1: Decode the Opus stream to WAV format
-            _logger.LogInformation("Step 1: Starting Opus to WAV decoding");
-            var step1Stopwatch = Stopwatch.StartNew();
-            
-            await using var opusStream = file.OpenReadStream();
-            _logger.LogInformation("Opus stream opened, starting decoding...");
-            await using var decodedWavStream = await _opusCodecService.DecodeAsync(opusStream, cancellationToken);
-            
-            step1Stopwatch.Stop();
-            _logger.LogInformation("Step 1 completed in {ElapsedMs}ms ({ElapsedSeconds}s)", 
-                step1Stopwatch.ElapsedMilliseconds, step1Stopwatch.Elapsed.TotalSeconds);
-            _logger.LogInformation("Decoding successful - WAV stream size: {StreamSize} bytes", decodedWavStream.Length);
-            
-            // Step 2: Process the decoded WAV stream with Whisper (transcription)
-            _logger.LogInformation("Step 2: Starting audio transcription with Whisper");
-            var step2Stopwatch = Stopwatch.StartNew();
-            
-            var transcription = await _whisperService.TranscribeStreamAsync(decodedWavStream, cancellationToken);
-            
-            step2Stopwatch.Stop();
-            _logger.LogInformation("Step 2 completed in {ElapsedMs}ms ({ElapsedSeconds}s)", 
-                step2Stopwatch.ElapsedMilliseconds, step2Stopwatch.Elapsed.TotalSeconds);
-            
-            if (string.IsNullOrWhiteSpace(transcription))
+            if (string.IsNullOrWhiteSpace(request.UserVoiceDetectorName))
             {
-                _logger.LogWarning("Transcription returned empty result after {ElapsedMs}ms", step2Stopwatch.ElapsedMilliseconds);
-                return BadRequest(new { error = "No speech detected in audio" });
+                _logger.LogWarning("User voice detector name is missing");
+                return BadRequest(new { error = "User voice detector name is required" });
             }
-            
-            _logger.LogInformation("Transcription successful - Length: {Length} characters, Text: {Transcription}", 
-                transcription.Length, transcription);
 
-            // Step 3: Translate the transcribed text
-            _logger.LogInformation("Step 3: Starting text translation to {TargetLanguage}", targetLanguage);
-            var step3Stopwatch = Stopwatch.StartNew();
-            
-            var translationResult = await _translationService.TranslateAsync(transcription, targetLanguage, cancellationToken);
-            
-            step3Stopwatch.Stop();
-            _logger.LogInformation("Step 3 completed in {ElapsedMs}ms ({ElapsedSeconds}s)", 
-                step3Stopwatch.ElapsedMilliseconds, step3Stopwatch.Elapsed.TotalSeconds);
-            
-            _logger.LogInformation("Translation successful - Detected Language: {DetectedLanguage}, Translated Text: {TranslatedText}", 
-                translationResult.DetectedLanguage, translationResult.TranslatedText);
+            // Decode the Opus audio to PCM
+            _logger.LogInformation("Decoding audio file");
+            var decodedAudio = await _opusCodecService.DecodeAsync(request.AudioFile);
 
-            // Step 4: Convert translated text to speech using Piper
-            _logger.LogInformation("Step 4: Starting text-to-speech conversion with Piper");
-            var step4Stopwatch = Stopwatch.StartNew();
-            
-            _logger.LogInformation("Converting text to speech: '{Text}'", translationResult.TranslatedText);
-            var piperAudioBytes = await _piperService.TextToSpeechAsync(
-                translationResult.TranslatedText, 
-                PiperSharp.Models.AudioOutputType.Wav, 
-                cancellationToken);
-            
-            step4Stopwatch.Stop();
-            _logger.LogInformation("Step 4 completed in {ElapsedMs}ms ({ElapsedSeconds}s)", 
-                step4Stopwatch.ElapsedMilliseconds, step4Stopwatch.Elapsed.TotalSeconds);
-            
-            _logger.LogInformation("Piper audio generated successfully - Size: {AudioSize} bytes", piperAudioBytes.Length);
-
-            // Step 5: Encode the Piper WAV output to Opus format
-            _logger.LogInformation("Step 5: Starting WAV to Opus encoding");
-            var step5Stopwatch = Stopwatch.StartNew();
-            
-            await using var piperWavStream = new MemoryStream(piperAudioBytes);
-            _logger.LogInformation("WAV stream created, starting Opus encoding...");
-            await using var encodedOpusStream = await _opusCodecService.EncodeAsync(piperWavStream, cancellationToken);
-            
-            step5Stopwatch.Stop();
-            _logger.LogInformation("Step 5 completed in {ElapsedMs}ms ({ElapsedSeconds}s)", 
-                step5Stopwatch.ElapsedMilliseconds, step5Stopwatch.Elapsed.TotalSeconds);
-            _logger.LogInformation("Encoding successful - Opus stream size: {StreamSize} bytes", encodedOpusStream.Length);
-            
-            // Read the encoded stream to a byte array for response
-            _logger.LogInformation("Reading encoded Opus stream to byte array...");
-            var readStopwatch = Stopwatch.StartNew();
-            
-            encodedOpusStream.Position = 0;
-            var encodedOpusBytes = new byte[encodedOpusStream.Length];
-            var totalBytesRead = 0;
-            while (totalBytesRead < encodedOpusBytes.Length)
+            // Determine the source language
+            string sourceLanguage;
+            if (request.CurrentAudioLanguages == CurrentAudioLanguages.AutoDetect)
             {
-                var bytesRead = await encodedOpusStream.ReadAsync(
-                    encodedOpusBytes.AsMemory(totalBytesRead, encodedOpusBytes.Length - totalBytesRead), 
-                    cancellationToken);
-                if (bytesRead == 0) break;
-                totalBytesRead += bytesRead;
+                _logger.LogInformation("Auto-detecting language from audio");
+                sourceLanguage = await _whisperService.GetLanguageAsync(decodedAudio);
+                _logger.LogInformation("Auto-detected language: {Language}", sourceLanguage);
             }
-            
-            readStopwatch.Stop();
-            _logger.LogInformation("Stream read completed in {ElapsedMs}ms - Total bytes read: {BytesRead}", 
-                readStopwatch.ElapsedMilliseconds, totalBytesRead);
-            
-            overallStopwatch.Stop();
-            _logger.LogInformation("=== Opus Audio Translation Pipeline Completed Successfully ===");
-            _logger.LogInformation("Total execution time: {TotalMs}ms ({TotalSeconds}s)", 
-                overallStopwatch.ElapsedMilliseconds, overallStopwatch.Elapsed.TotalSeconds);
-            _logger.LogInformation("Timing breakdown - Step 1 (Decode): {Step1Ms}ms, Step 2 (Transcription): {Step2Ms}ms, Step 3 (Translation): {Step3Ms}ms, Step 4 (TTS): {Step4Ms}ms, Step 5 (Encode): {Step5Ms}ms",
-                step1Stopwatch.ElapsedMilliseconds, step2Stopwatch.ElapsedMilliseconds, step3Stopwatch.ElapsedMilliseconds, 
-                step4Stopwatch.ElapsedMilliseconds, step5Stopwatch.ElapsedMilliseconds);
-
-            // Step 6: Return the result with Opus-encoded audio
-            _logger.LogInformation("Preparing response - Output size: {OutputSize} bytes", encodedOpusBytes.Length);
-            return Ok(new
+            else
             {
-                message = "Audio translated successfully",
-                fileName = file.FileName,
-                inputFileSize = file.Length,
-                outputFileSize = encodedOpusBytes.Length,
-                transcription,
-                detectedLanguage = translationResult.DetectedLanguage,
-                targetLanguage,
-                translatedText = translationResult.TranslatedText,
-                audioData = Convert.ToBase64String(encodedOpusBytes),
-                timingMs = new
+                sourceLanguage = request.CurrentAudioLanguages.ToValue();
+                _logger.LogInformation("Using specified language: {Language}", sourceLanguage);
+            }
+
+            var targetLanguage = request.OutputLanguages.ToValue();
+
+            // Check if source and target languages are the same
+            if (sourceLanguage == targetLanguage)
+            {
+                _logger.LogInformation("Source and target languages are the same ({Language}), no translation needed", sourceLanguage);
+                return Ok(new InterpreterResponse
                 {
-                    total = overallStopwatch.ElapsedMilliseconds,
-                    opusDecode = step1Stopwatch.ElapsedMilliseconds,
-                    transcription = step2Stopwatch.ElapsedMilliseconds,
-                    translation = step3Stopwatch.ElapsedMilliseconds,
-                    textToSpeech = step4Stopwatch.ElapsedMilliseconds,
-                    opusEncode = step5Stopwatch.ElapsedMilliseconds
+                    AudioInputLanguage = sourceLanguage
+                });
+            }
+
+            // Perform voice recognition
+            _logger.LogInformation("Performing voice recognition for user: {UserName}", request.UserVoiceDetectorName);
+            var mainEmbedding = await _dbContext.VoiceEmbeddings
+                .FirstOrDefaultAsync(x => x.Name == request.UserVoiceDetectorName);
+
+            if (mainEmbedding == null)
+            {
+                _logger.LogWarning("Voice embedding not found for user: {UserName}", request.UserVoiceDetectorName);
+                return BadRequest(new { error = $"Voice embedding '{request.UserVoiceDetectorName}' not found" });
+            }
+
+            bool isMainUser;
+            using (var ms = new MemoryStream())
+            {
+                decodedAudio.Position = 0; // Reset stream position
+                await decodedAudio.CopyToAsync(ms);
+                isMainUser = _speechBrainRecognition.CompareAudio(ms.ToArray(), mainEmbedding.Embedding).IsMatch;
+            }
+            
+            _logger.LogInformation("Voice recognition result - IsMainUser: {IsMainUser}", isMainUser);
+
+            // Handle "IgnoreMyTalks" mode - skip processing if main user is talking
+            if (request.Modes == Modes.IgnoreMyTalks && isMainUser)
+            {
+                _logger.LogInformation("Ignoring main user's talk as per IgnoreMyTalks mode");
+                return Ok(new InterpreterResponse());
+            }
+
+            // Handle "HelpMeToTalk" mode - only translate if main user is NOT speaking target language
+            if (request.Modes == Modes.HelpMeToTalk)
+            {
+                if (isMainUser && sourceLanguage == targetLanguage)
+                {
+                    _logger.LogInformation("Main user already speaking in target language ({Language}) in HelpMeToTalk mode", targetLanguage);
+                    return Ok(new InterpreterResponse());
                 }
-            });
+                
+                // Skip if not the main user in HelpMeToTalk mode
+                if (!isMainUser)
+                {
+                    _logger.LogInformation("Skipping non-main user audio in HelpMeToTalk mode");
+                    return Ok(new InterpreterResponse());
+                }
+            }
+
+            // Transcribe the audio
+            _logger.LogInformation("Transcribing audio to text");
+            decodedAudio.Position = 0; // Reset stream position
+            var audioText = await _whisperService.TranscribeStreamAsync(decodedAudio, sourceLanguage);
+            _logger.LogInformation("Transcribed text: {Text}", audioText);
+
+            if (string.IsNullOrWhiteSpace(audioText))
+            {
+                _logger.LogWarning("No text could be transcribed from audio");
+                return Ok(new InterpreterResponse());
+            }
+
+            // Translate the text
+            _logger.LogInformation("Translating text from {SourceLang} to {TargetLang}", sourceLanguage, targetLanguage);
+            var translatedText = await _translationService.TranslateAsync(audioText, targetLanguage);
+            _logger.LogInformation("Translated text: {Text}", translatedText.TranslatedText);
+
+            if (string.IsNullOrWhiteSpace(translatedText.TranslatedText))
+            {
+                _logger.LogWarning("Translation resulted in empty text");
+                return Ok(new InterpreterResponse());
+            }
+
+            // Generate speech from translated text
+            _logger.LogInformation("Generating speech from translated text");
+            byte[] audioBytes;
+            if (request.OutputLanguages == OutputLanguages.English)
+            {
+                var piperVoiceModel = request.EnglishVoiceModels.ToValue();
+                _logger.LogInformation("Using English voice model: {Model}", piperVoiceModel);
+                _piperService.SetModel(piperVoiceModel);
+                audioBytes = await _piperService.TextToSpeechAsync(translatedText.TranslatedText);
+            }
+            else if (request.OutputLanguages == OutputLanguages.Persian)
+            {
+                _logger.LogInformation("Using Persian voice model: fa_IR-gyro-medium");
+                _piperService.SetModel("fa_IR-gyro-medium");
+                audioBytes = await _piperService.TextToSpeechAsync(translatedText.TranslatedText);
+            }
+            else
+            {
+                _logger.LogWarning("Unsupported output language: {Language}", request.OutputLanguages);
+                return BadRequest(new { error = $"Unsupported output language: {request.OutputLanguages}" });
+            }
+
+            // Encode the audio to Opus
+            _logger.LogInformation("Encoding audio to Opus format");
+            byte[] encodedAudioBytes;
+            using (var audioMemory = new MemoryStream(audioBytes))
+            {
+                var encodedAudioStream = await _opusCodecService.EncodeAsync(audioMemory);
+                using (var outputMemory = new MemoryStream())
+                {
+                    await encodedAudioStream.CopyToAsync(outputMemory);
+                    encodedAudioBytes = outputMemory.ToArray();
+                }
+            }
+
+            _logger.LogInformation("Translation completed successfully");
+            
+            // Return the complete response with all translation data
+            var response = new InterpreterResponse
+            {
+                TranslatedAudio = encodedAudioBytes,
+                OriginalText = audioText,
+                TranslatedText = translatedText.TranslatedText,
+                AudioInputLanguage = sourceLanguage
+            };
+            
+            return Ok(response);
         }
         catch (Exception ex)
         {
-            overallStopwatch.Stop();
-            _logger.LogError(ex, "Error processing file: {FileName} after {ElapsedMs}ms", file.FileName, overallStopwatch.ElapsedMilliseconds);
+            _logger.LogError(ex, "Error processing audio translation");
             return StatusCode(StatusCodes.Status500InternalServerError, 
-                new { error = "An error occurred while processing the file", details = ex.Message });
+                new { error = "An error occurred while processing the audio", details = ex.Message });
         }
     }
-
 }

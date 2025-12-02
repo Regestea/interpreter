@@ -19,8 +19,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\interpreter.ServiceDefaults\interpreter.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\Shared\Models.Shared\Models.Shared.csproj" />
     <ProjectReference Include="..\..\Shared\Opus\Opus.csproj" />
     <ProjectReference Include="..\Piper\Piper.csproj" />
+    <ProjectReference Include="..\SpeechBrain\SpeechBrain.csproj" />
   </ItemGroup>
 
   <ItemGroup>

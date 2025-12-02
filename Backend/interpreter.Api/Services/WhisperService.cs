@@ -155,7 +155,7 @@ namespace interpreter.Api.Services
         /// <param name="audioStream">The audio stream to analyze.</param>
         /// <param name="cancellationToken">A cancellation token.</param>
         /// <returns>The detected or configured language code.</returns>
-        public async Task<string> GetLanguage(Stream audioStream, CancellationToken cancellationToken = default)
+        public async Task<string> GetLanguageAsync(Stream audioStream, CancellationToken cancellationToken = default)
         {
             if (audioStream == null)
             {
