@@ -51,7 +51,7 @@ public class InterpreterController : ControllerBase
     [ProducesResponseType(typeof(InterpreterResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> TranslateAudio(InterpreterRequest request)
+    public async Task<IActionResult> TranslateAudio([FromBody] InterpreterRequest request)
     {
         try
         {
@@ -62,9 +62,11 @@ public class InterpreterController : ControllerBase
                 return BadRequest(new { error = "User voice detector name is required" });
             }
 
+            var streamAudio = new MemoryStream(request.GetAudioBytes());
+            
             // Decode the Opus audio to PCM
             _logger.LogInformation("Decoding audio file");
-            var decodedAudio = await _opusCodecService.DecodeAsync(request.AudioFile);
+            var decodedAudio = await _opusCodecService.DecodeAsync(streamAudio);
 
             // Determine the source language
             string sourceLanguage;
@@ -93,23 +95,23 @@ public class InterpreterController : ControllerBase
             }
 
             // Perform voice recognition
-            _logger.LogInformation("Performing voice recognition for user: {UserName}", request.UserVoiceDetectorName);
-            var mainEmbedding = await _dbContext.VoiceEmbeddings
-                .FirstOrDefaultAsync(x => x.Name == request.UserVoiceDetectorName);
+            // _logger.LogInformation("Performing voice recognition for user: {UserName}", request.UserVoiceDetectorName);
+            // var mainEmbedding = await _dbContext.VoiceEmbeddings
+            //     .FirstOrDefaultAsync(x => x.Name == request.UserVoiceDetectorName);
 
-            if (mainEmbedding == null)
-            {
-                _logger.LogWarning("Voice embedding not found for user: {UserName}", request.UserVoiceDetectorName);
-                return BadRequest(new { error = $"Voice embedding '{request.UserVoiceDetectorName}' not found" });
-            }
+            // if (mainEmbedding == null)
+            // {
+            //     _logger.LogWarning("Voice embedding not found for user: {UserName}", request.UserVoiceDetectorName);
+            //     return BadRequest(new { error = $"Voice embedding '{request.UserVoiceDetectorName}' not found" });
+            // }
 
-            bool isMainUser;
-            using (var ms = new MemoryStream())
-            {
-                decodedAudio.Position = 0; // Reset stream position
-                await decodedAudio.CopyToAsync(ms);
-                isMainUser = _speechBrainRecognition.CompareAudio(ms.ToArray(), mainEmbedding.Embedding).IsMatch;
-            }
+            bool isMainUser=false;
+            // using (var ms = new MemoryStream())
+            // {
+            //     decodedAudio.Position = 0; // Reset stream position
+            //     await decodedAudio.CopyToAsync(ms);
+            //     isMainUser = _speechBrainRecognition.CompareAudio(ms.ToArray(), mainEmbedding.Embedding).IsMatch;
+            // }
             
             _logger.LogInformation("Voice recognition result - IsMainUser: {IsMainUser}", isMainUser);
 
@@ -214,5 +216,16 @@ public class InterpreterController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, 
                 new { error = "An error occurred while processing the audio", details = ex.Message });
         }
+    }
+
+    /// <summary>
+    /// Test action endpoint
+    /// </summary>
+    /// <returns>Ok result</returns>
+    [HttpGet("test")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public IActionResult TestAction()
+    {
+        return Ok(new { message = "Test action successful" });
     }
 }

@@ -6,7 +6,7 @@ namespace Models.Shared.Requests;
 public class InterpreterRequest
 {
     [Required]
-    public required FileStream AudioFile { get; set; }
+    public required string AudioFile { get; set; }
 
     public CurrentAudioLanguages CurrentAudioLanguages { get; set; }
 
@@ -19,4 +19,8 @@ public class InterpreterRequest
     
     public Modes Modes { get; set; }
     
+    /// <summary>
+    /// Gets the audio file as a byte array by decoding the base64 string
+    /// </summary>
+    public byte[] GetAudioBytes() => Convert.FromBase64String(AudioFile);
 }

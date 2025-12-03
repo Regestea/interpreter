@@ -20,6 +20,19 @@ namespace interpreter.Maui
                 .UseSharedMauiApp();
             builder.AddServiceDefaults();
 
+            // Backend API base address for Android emulator -> host machine
+            // Matches interpreter.Api launchSettings: http://localhost:5021
+            builder.Services.AddHttpClient<IApiClient, ApiClient>(client =>
+            {
+                client.BaseAddress = new Uri("https://regestea.ir/");
+            });
+
+            // HttpClient used for auth; same base address
+            builder.Services.AddHttpClient<IAuthService, AuthService>(client =>
+            {
+                client.BaseAddress = new Uri("https://regestea.ir/");
+            });
+
             // Platform services
             builder.Services.AddSingleton<IAudioRecordingService, AndroidAudioRecordingService>();
             builder.Services.AddSingleton<IAudioPlaybackService, AndroidAudioPlaybackService>();

@@ -391,7 +391,7 @@ public class InterpreterControllerTests : IDisposable
 
         var request = new InterpreterRequest
         {
-            AudioFile = new FileStream(_testAudioPath, FileMode.Open, FileAccess.Read),
+            AudioFile = GetAudioFileAsBase64(),
             UserVoiceDetectorName = "custom-user",
             CurrentAudioLanguages = CurrentAudioLanguages.English,
             OutputLanguages = OutputLanguages.Persian, // Different from source to trigger voice recognition

@@ -73,7 +73,19 @@ namespace interpreter.Api
             builder.Services.AddHttpClient("GoogleTranslate");
             builder.Services.AddScoped<ITranslationService, TranslationService>();
             
-            builder.Services.AddControllers();
+            builder.Services.AddControllers()
+                .AddJsonOptions(options =>
+                {
+                    // Increase the max depth for JSON deserialization
+                    options.JsonSerializerOptions.MaxDepth = 64;
+                });
+            
+            // Configure Kestrel to allow larger request bodies
+            builder.Services.Configure<Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions>(options =>
+            {
+                options.Limits.MaxRequestBodySize = 52428800; // 50 MB
+            });
+            
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
             

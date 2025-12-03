@@ -1,8 +1,9 @@
-﻿using System.Threading.Tasks;
+﻿using System.IO;
+using System.Threading.Tasks;
 
 namespace interpreter.Maui.Services;
 
 public interface IAudioPlaybackService
 {
-    Task PlayAsync(string filePath);
+    Task PlayAsync(Stream audioStream);
 }

@@ -31,19 +31,22 @@ public class RecordingForegroundService : Service
     private int _chunkCounter;
     private bool _chunkFinalizedForCurrentSilence;
     private bool _hasDetectedSpeech;
+    
 
     public override IBinder? OnBind(Intent? intent) => null;
 
     public override StartCommandResult OnStartCommand(Intent? intent, StartCommandFlags flags, int startId)
     {
         // Initialize dependencies
+        var app = Microsoft.Maui.ApplicationModel.Platform.CurrentActivity?.Application as IPlatformApplication;
+        var sp = app?.Services;
+        
         if (_config == null)
         {
             // Try to get configuration from DI, fallback to default
             try
             {
-                var app = Microsoft.Maui.ApplicationModel.Platform.CurrentActivity?.Application as IPlatformApplication;
-                var sp = app?.Services;
+               
                 _config = sp?.GetService<AudioRecordingConfiguration>() ?? new AudioRecordingConfiguration();
                 _calibration = sp?.GetService<AudioCalibration>() ?? new AudioCalibration();
             }
@@ -79,7 +82,7 @@ public class RecordingForegroundService : Service
         return StartCommandResult.Sticky;
     }
 
-    private void StartRecording()
+    private async Task StartRecording()
     {
         Directory.CreateDirectory(CacheDir.AbsolutePath);
         _filePath = Path.Combine(CacheDir.AbsolutePath, $"rec_{DateTime.Now:yyyyMMdd_HHmmss}.wav");

@@ -130,15 +130,7 @@ namespace interpreter.Maui
                     NoiseButton);
 
                 _buttonStateService.UpdateToStartState(ActionButton, ActionIcon, ActionText);
-
-                if (_audioRecordingService != null)
-                {
-                    var file = await _audioRecordingService.StopAsync();
-                    if (!string.IsNullOrWhiteSpace(file) && _audioPlaybackService != null)
-                    {
-                        await _audioPlaybackService.PlayAsync(file);
-                    }
-                }
+                
             }
         }
 

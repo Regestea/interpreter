@@ -15,7 +15,7 @@ public class VoiceDetectorController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] string name, [FromBody] IFormFile file)
+    public async Task<IActionResult> Create([FromQuery] string name, [FromBody] IFormFile file)
     {
         try
         {
