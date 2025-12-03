@@ -25,11 +25,12 @@ namespace interpreter.Maui
             IAnimationService animationService,
             IThemeService themeService,
             IButtonStateService buttonStateService,
-            IModalService modalService, IAdjustmentService adjustmentService, IAudioRecordingService? audioRecordingService = null,
+            IModalService modalService, IAdjustmentService adjustmentService,
+            IAudioRecordingService? audioRecordingService = null,
             IAudioPlaybackService? audioPlaybackService = null)
         {
             InitializeComponent();
-            
+
             _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
             _animationService = animationService ?? throw new ArgumentNullException(nameof(animationService));
             _themeService = themeService ?? throw new ArgumentNullException(nameof(themeService));
@@ -40,7 +41,7 @@ namespace interpreter.Maui
             _audioPlaybackService = audioPlaybackService;
 
             BindingContext = _viewModel;
-            
+
             // Initialize modal service
             if (_modalService is ModalService concreteModalService)
             {
@@ -103,6 +104,7 @@ namespace interpreter.Maui
                         await _audioRecordingService.StartAsync();
                     }
                 }
+
                 await _animationService.AnimateToRecordingStateAsync(
                     InitialStateLayout,
                     RecordingStateLayout,
@@ -111,16 +113,16 @@ namespace interpreter.Maui
                     ChartBorder);
 
                 _buttonStateService.UpdateToStopState(ActionButton, ActionIcon, ActionText);
-                
+
                 // Start pulse animation
                 _ = _animationService.AnimatePulseAsync(
-                    ActionButton, 
+                    ActionButton,
                     () => _viewModel.IsRecording && RecordingStateLayout.IsVisible);
             }
             else
             {
                 await _animationService.AnimateButtonPressAsync(ActionButton, 0.9);
-                
+
                 await _animationService.AnimateToInitialStateAsync(
                     RecordingStateLayout,
                     InitialStateLayout,
@@ -130,7 +132,10 @@ namespace interpreter.Maui
                     NoiseButton);
 
                 _buttonStateService.UpdateToStartState(ActionButton, ActionIcon, ActionText);
-                
+                if (_audioRecordingService != null)
+                {
+                    await _audioRecordingService.StopAsync();
+                }
             }
         }
 
@@ -162,25 +167,25 @@ namespace interpreter.Maui
         private async void OnNoiseAdjustClicked(object? sender, EventArgs e)
         {
             await _animationService.AnimateButtonPressAsync(NoiseButton);
-           
+
             // Create simple text modal content
             var modalContent = CreateNoiseAdjustModalContent();
-            
+
             // Configure modal options with theme-aware colors
             var options = new ModalOptions
             {
-                ShowCloseButton = true,              // Show close button
-                AutoCloseDurationSeconds = 5,     // No auto-close
-                CloseOnBackgroundTap = true,         // Close when clicking outside
+                ShowCloseButton = true, // Show close button
+                AutoCloseDurationSeconds = 5, // No auto-close
+                CloseOnBackgroundTap = true, // Close when clicking outside
                 ContentBackgroundColor = Color.FromArgb("#121821"), // Dark surface
                 CloseButtonColor = Colors.White
             };
-            
+
             // Show the modal
             await _modalService.ShowModalAsync(modalContent, options);
 
             await _adjustmentService.AdjustEnvironmentalNoise();
-            
+
             _viewModel.NoiseAdjustCommand.Execute(null);
         }
 
@@ -256,4 +261,3 @@ namespace interpreter.Maui
         #endregion
     }
 }
-
