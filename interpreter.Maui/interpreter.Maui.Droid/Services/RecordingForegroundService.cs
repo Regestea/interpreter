@@ -26,10 +26,9 @@ public class RecordingForegroundService : Service
     private IRecordingNotificationManager? _notificationManager;
     private IAudioRecorder? _audioRecorder;
     private AudioCalibration? _calibration;
-    private SilenceDetector? _silenceDetector;
+    private VoiceActivityDetector? _vad;
     private AudioChunkBuffer? _chunkBuffer;
     private int _chunkCounter;
-    private bool _chunkFinalizedForCurrentSilence;
     private bool _hasDetectedSpeech;
     
 
@@ -91,12 +90,33 @@ public class RecordingForegroundService : Service
         // Create AudioRecord using the recorder
         _audioRecord = _audioRecorder!.CreateAudioRecord(out int minBufferSize);
 
-        // Initialize silence detector and chunk buffer
+        // Initialize Voice Activity Detector (VAD) with configuration
         _calibration ??= new AudioCalibration();
-        _silenceDetector = new SilenceDetector(_calibration, _config!.SampleRate, TimeSpan.FromSeconds(2));
+        
+        // Configure VAD based on audio configuration and calibration
+        var vadConfig = new VadConfiguration
+        {
+            SampleRate = _config!.SampleRate,
+            FrameMs = 30,  // 30ms frames for good balance
+            AttackFrames = 4,  // ~120ms to trigger speech (prevents false positives)
+            ReleaseFrames = 25,  // ~750ms silence to end speech (smoother than 2s)
+            PreRollMs = 200,  // 200ms pre-roll to capture speech onset
+            PostRollMs = 300,  // 300ms post-roll to capture speech tail
+            AbsMinRaw = 300f,  // Minimum absolute threshold
+            StartFactor = 3.0f,  // Start threshold = 3x ambient noise
+            EndFactor = 2.0f,   // End threshold = 2x ambient noise
+            AmbientCalibrationSeconds = 1.0f,  // 1 second initial calibration
+            MaxMemoryStorageBytes = 50 * 1024 * 1024  // 50MB before file fallback
+        };
+        
+        _vad = new VoiceActivityDetector(vadConfig);
+        
+        // Subscribe to VAD events
+        _vad.OnSegmentStarted += OnSpeechSegmentStarted;
+        _vad.OnSegmentEnded += OnSpeechSegmentEnded;
+        
         _chunkBuffer = new AudioChunkBuffer(_config.SampleRate, _config.ChannelCount, _config.BitsPerSample);
         _chunkCounter = 0;
-        _chunkFinalizedForCurrentSilence = false;
         _hasDetectedSpeech = false;
 
         // Open output stream and write WAV header placeholder (for backup/full recording)
@@ -206,56 +226,102 @@ public class RecordingForegroundService : Service
     }
 
     /// <summary>
-    /// Processes audio chunk for silence detection and streaming.
+    /// Processes audio chunk for VAD and streaming.
     /// </summary>
     private void ProcessAudioChunk(byte[] buffer, int offset, int length)
     {
-        if (_silenceDetector == null || _chunkBuffer == null)
+        if (_vad == null || _chunkBuffer == null)
             return;
 
         // Always append data to the current chunk
         _chunkBuffer.AppendData(buffer, offset, length);
 
-        // Calculate audio level for logging
-        double rms = SilenceDetector.CalculateRms(buffer, offset, length);
-        double dbfs = SilenceDetector.RmsToDbfs(rms);
-        
-        // Check for silence
-        bool isSilent = _silenceDetector.IsSilence(buffer, offset, length);
-        double silenceDuration = _silenceDetector.GetSilenceDuration();
-
-        // Track if we've detected any speech (not silent)
-        if (!isSilent)
+        // Feed audio to VAD for speech detection
+        try
         {
-            _hasDetectedSpeech = true;
-            _chunkFinalizedForCurrentSilence = false;
+            _vad.ProcessAudioChunk(buffer, offset, length, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            Android.Util.Log.Error("RecordingService", $"VAD processing error: {ex.Message}");
         }
 
-        // Log every ~1 second (assuming ~100ms buffers, log every 10th call)
+        // Calculate audio level for logging
+        double rms = CalculateRms(buffer, offset, length);
+        double dbfs = RmsToDbfs(rms);
+
+        // Log VAD state every ~1 second (assuming ~100ms buffers, log every 10th call)
+        _chunkCounter++;
         if (_chunkCounter % 10 == 0)
         {
             Android.Util.Log.Debug("RecordingService", 
-                $"Audio: {dbfs:F1} dBFS, Silent: {isSilent}, Duration: {silenceDuration:F2}s, HasSpeech: {_hasDetectedSpeech}, EnvNoise: {_calibration?.EnvironmentalNoiseDbfs}");
+                $"Audio: {dbfs:F1} dBFS, InSpeech: {_vad.IsInSpeech}, Calibrated: {_vad.IsCalibrated}, " +
+                $"Ambient: {_vad.AmbientNoiseRms:F0}, StartThresh: {_vad.StartThreshold:F0}, EndThresh: {_vad.EndThreshold:F0}");
+        }
+    }
+
+    /// <summary>
+    /// Calculates RMS for logging purposes.
+    /// </summary>
+    private static double CalculateRms(byte[] buffer, int offset, int length)
+    {
+        if (buffer == null || length <= 0)
+            return 0.0;
+
+        long sumOfSquares = 0;
+        int sampleCount = 0;
+
+        for (int i = offset; i < offset + length && i < buffer.Length - 1; i += 2)
+        {
+            short sample = (short)(buffer[i] | (buffer[i + 1] << 8));
+            sumOfSquares += (long)sample * sample;
+            sampleCount++;
         }
 
-        // Only finalize if:
-        // 1. We've detected speech (not just initial silence)
-        // 2. Current audio is silent for 2+ seconds
-        // 3. We haven't already finalized for this silence period
-        if (_hasDetectedSpeech && isSilent && _silenceDetector.HasSilenceThresholdExceeded() && !_chunkFinalizedForCurrentSilence)
-        {
-            Android.Util.Log.Info("RecordingService", 
-                $"⚡ 2s SILENCE DETECTED! dBFS: {dbfs:F1}, Finalizing chunk...");
-            
-            // 2 seconds of silence detected - finalize the current chunk
-            FinalizeCurrentChunk();
-            
-            // Mark that we've finalized for this silence period
-            _chunkFinalizedForCurrentSilence = true;
-            
-            // Reset speech detection flag for next chunk
-            _hasDetectedSpeech = false;
-        }
+        if (sampleCount == 0)
+            return 0.0;
+
+        double meanSquare = (double)sumOfSquares / sampleCount;
+        return Math.Sqrt(meanSquare);
+    }
+
+    /// <summary>
+    /// Converts RMS to dBFS for logging.
+    /// </summary>
+    private static double RmsToDbfs(double rms)
+    {
+        if (rms <= 0)
+            return -100;
+
+        const double fullScale = 32767.0;
+        double dbfs = 20 * Math.Log10(rms / fullScale);
+        return Math.Max(-100, Math.Min(0, dbfs));
+    }
+
+    /// <summary>
+    /// Called when VAD detects speech segment start.
+    /// </summary>
+    private void OnSpeechSegmentStarted(TimeSpan start)
+    {
+        _hasDetectedSpeech = true;
+        Android.Util.Log.Info("RecordingService", 
+            $"🎤 SPEECH STARTED at {start.TotalSeconds:F2}s");
+    }
+
+    /// <summary>
+    /// Called when VAD detects speech segment end - finalize the chunk.
+    /// </summary>
+    private void OnSpeechSegmentEnded(TimeSpan start, TimeSpan end)
+    {
+        var duration = end - start;
+        Android.Util.Log.Info("RecordingService", 
+            $"⚡ SPEECH ENDED: {start.TotalSeconds:F2}s - {end.TotalSeconds:F2}s (duration: {duration.TotalSeconds:F2}s)");
+        
+        // Finalize the current chunk when speech ends
+        FinalizeCurrentChunk();
+        
+        // Reset for next chunk
+        _hasDetectedSpeech = false;
     }
 
     /// <summary>
@@ -269,11 +335,10 @@ public class RecordingForegroundService : Service
         var chunkStream = _chunkBuffer.FinalizeChunk();
         if (chunkStream != null && chunkStream.Length > 0)
         {
-            _chunkCounter++;
             var chunkName = $"chunk_{DateTime.Now:yyyyMMdd_HHmmss}_{_chunkCounter}.wav";
             
             Android.Util.Log.Info("RecordingForegroundService", 
-                $"Finalizing audio chunk: {chunkName}, Size: {chunkStream.Length} bytes, Silence duration: {_silenceDetector?.GetSilenceDuration():F2}s");
+                $"✅ Finalizing audio chunk: {chunkName}, Size: {chunkStream.Length} bytes");
 
             // Enqueue the chunk for processing
             AudioProcessQueue.Instance.Enqueue(new AudioProcess
@@ -282,9 +347,6 @@ public class RecordingForegroundService : Service
                 AudioStream = chunkStream,
                 Timestamp = DateTime.Now
             });
-
-            // Reset silence detector for the next chunk
-            _silenceDetector?.Reset();
         }
     }
 
@@ -293,14 +355,20 @@ public class RecordingForegroundService : Service
     /// </summary>
     private void FinalizeRemainingChunk()
     {
+        // Force end any ongoing speech detection
+        _vad?.ForceEndSpeech();
+        
+        // Finalize any remaining buffered audio
         if (_chunkBuffer != null && _chunkBuffer.HasData)
         {
             FinalizeCurrentChunk();
         }
 
+        // Cleanup
+        _vad?.Dispose();
+        _vad = null;
         _chunkBuffer?.Dispose();
         _chunkBuffer = null;
-        _silenceDetector = null;
     }
 }
 

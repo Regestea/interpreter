@@ -1,4 +1,5 @@
-﻿using interpreter.Api.Data;
+﻿using System.Diagnostics;
+using interpreter.Api.Data;
 using Microsoft.AspNetCore.Mvc;
 using interpreter.Api.Services;
 using Microsoft.EntityFrameworkCore;
@@ -53,6 +54,17 @@ public class InterpreterController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> TranslateAudio([FromBody] InterpreterRequest request)
     {
+        long bytes = request.GetAudioBytes().Length;
+
+        double sizeInKB = bytes / 1024.0;
+        double sizeInMB = bytes / (1024.0 * 1024.0);
+
+        Console.WriteLine($"Size: {sizeInKB:F2} KB");
+        Console.WriteLine($"Size: {sizeInMB:F2} MB");
+        
+        
+        var st = new Stopwatch();
+        st.Start();
         try
         {
 
@@ -207,7 +219,8 @@ public class InterpreterController : ControllerBase
                 TranslatedText = translatedText.TranslatedText,
                 AudioInputLanguage = sourceLanguage
             };
-            
+            st.Stop();
+            _logger.LogError("it takes aobut :"+st.ElapsedMilliseconds);
             return Ok(response);
         }
         catch (Exception ex)
