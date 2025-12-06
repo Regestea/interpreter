@@ -16,6 +16,7 @@ namespace interpreter.Api.Controllers;
 [Route("api/[controller]")]
 public class InterpreterController : ControllerBase
 {
+    private static int _audioFileCounter = 0;
     private readonly ILogger<InterpreterController> _logger;
     private readonly IWhisperService _whisperService;
     private readonly IOpusCodecService _opusCodecService;
@@ -79,6 +80,19 @@ public class InterpreterController : ControllerBase
             // Decode the Opus audio to PCM
             _logger.LogInformation("Decoding audio file");
             var decodedAudio = await _opusCodecService.DecodeAsync(streamAudio);
+
+            // Save decoded audio to file for debugging
+            var fileNumber = Interlocked.Increment(ref _audioFileCounter);
+            var debugAudioFolder = Path.Combine(Directory.GetCurrentDirectory(), "DecodedAudioFiles");
+            Directory.CreateDirectory(debugAudioFolder);
+            var debugFilePath = Path.Combine(debugAudioFolder, $"{fileNumber}.wav");
+            decodedAudio.Position = 0;
+            using (var fileStream = new FileStream(debugFilePath, FileMode.Create, FileAccess.Write))
+            {
+                await decodedAudio.CopyToAsync(fileStream);
+            }
+            decodedAudio.Position = 0;
+            _logger.LogInformation("Saved decoded audio to: {FilePath}", debugFilePath);
 
             // Determine the source language
             string sourceLanguage;

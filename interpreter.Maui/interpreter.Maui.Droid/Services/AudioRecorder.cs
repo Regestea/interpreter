@@ -78,7 +78,6 @@ public class AudioRecorder : IAudioRecorder
 
         AudioRecord? audioRecord = null;
         NoiseSuppressor? noiseSuppressor = null;
-        AcousticEchoCanceler? echoCanceler = null;
         AutomaticGainControl? automaticGainControl = null;
         MemoryStream outputStream = new MemoryStream();
 
@@ -154,13 +153,7 @@ public class AudioRecorder : IAudioRecorder
                 noiseSuppressor = null;
             }
 
-            if (echoCanceler != null)
-            {
-                echoCanceler.SetEnabled(false);
-                echoCanceler.Release();
-                echoCanceler.Dispose();
-                echoCanceler = null;
-            }
+
             
             if (automaticGainControl != null)
             {
@@ -186,8 +179,6 @@ public class AudioRecorder : IAudioRecorder
             noiseSuppressor?.Release();
             noiseSuppressor?.Dispose();
             
-            echoCanceler?.Release();
-            echoCanceler?.Dispose();
             
             automaticGainControl?.Release();
             automaticGainControl?.Dispose();

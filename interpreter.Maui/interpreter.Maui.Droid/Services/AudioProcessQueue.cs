@@ -26,6 +26,8 @@ public sealed class AudioProcessQueue
     private readonly CancellationTokenSource _cts;
     private readonly Task _processingTask;
     private const string TAG = "AudioProcessQueue";
+    private int _audioFileCounter = 0;
+    private readonly string _debugAudioFolder;
 
     public static AudioProcessQueue Instance => _instance.Value;
 
@@ -34,6 +36,14 @@ public sealed class AudioProcessQueue
         _opusCodecService = new OpusCodecService();
         _queue = new BlockingCollection<AudioProcess>();
         _cts = new CancellationTokenSource();
+        
+        // Initialize debug audio folder
+        _debugAudioFolder = Path.Combine(Android.App.Application.Context.GetExternalFilesDir(null)?.AbsolutePath ?? "", "DebugAudio");
+        if (!Directory.Exists(_debugAudioFolder))
+        {
+            Directory.CreateDirectory(_debugAudioFolder);
+        }
+        
         _processingTask = Task.Run(ProcessQueueAsync);
     }
 
@@ -114,40 +124,58 @@ public sealed class AudioProcessQueue
                 // Save audio chunk to debug folder for inspection
                 try
                 {
+                    // Increment counter and save audio file with number in name
+                    int fileNumber = Interlocked.Increment(ref _audioFileCounter);
+                    string fileName = $"audio_{fileNumber:D4}.wav";
+                    string filePath = Path.Combine(_debugAudioFolder, fileName);
+                    
+                    // Reset stream position to beginning before saving
+                    audioProcess.AudioStream.Position = 0;
+                    
+                    using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+                    {
+                        await audioProcess.AudioStream.CopyToAsync(fileStream);
+                    }
+                    
+                    // Reset stream position for further processing if needed
+                    audioProcess.AudioStream.Position = 0;
+                    
+                    Debug.WriteLine($"Saved audio file: {filePath}");
+                    Log.Info(TAG, $"Saved audio chunk #{fileNumber} to: {filePath}");
 
                     var app = Microsoft.Maui.ApplicationModel.Platform.CurrentActivity?.Application as IPlatformApplication;
                     var sp = app?.Services;
                     
-                    var apiClient= sp?.GetService<IApiClient>() ?? throw new InvalidOperationException("IApiClient not registered in DI.");
-                    var encodedAudio= await _opusCodecService.EncodeAsync(audioProcess.AudioStream);
-
-                    var memoryStream=new MemoryStream();
-                    await encodedAudio.CopyToAsync(memoryStream);
-                   
-                    var request = new InterpreterRequest()
-                    {
-                        AudioFile = Convert.ToBase64String(memoryStream.ToArray()),
-                        CurrentAudioLanguages = CurrentAudioLanguages.English,
-                        EnglishVoiceModels = EnglishVoiceModels.EnUsHfcFemaleMedium,
-                        Modes = Modes.IgnoreMyTalks,
-                        OutputLanguages = OutputLanguages.Persian,
-                        UserVoiceDetectorName = "test"
-                    };
-                    
-                    var result=await apiClient.SendAsync("api/Interpreter/UploadEncodeAudio", HttpMethod.Post,request,false);
-
-                    var jsonOptions = new JsonSerializerOptions
-                    {
-                        PropertyNameCaseInsensitive = true
-                    };
-                    var interpreterResponse = JsonSerializer.Deserialize<InterpreterResponse>(result.Content, jsonOptions);
-
-                    var streamMemory = new MemoryStream(interpreterResponse.TranslatedAudio);
-                    var decodedAudioStream=await _opusCodecService.DecodeAsync(streamMemory);
-                    
-                    var player= sp?.GetService<IAudioPlaybackService>() ?? throw new InvalidOperationException("IApiClient not registered in DI.");
-                    
-                    await player.PlayAsync(decodedAudioStream);
+                    // var apiClient= sp?.GetService<IApiClient>() ?? throw new InvalidOperationException("IApiClient not registered in DI.");
+                    // var encodedAudio= await _opusCodecService.EncodeAsync(audioProcess.AudioStream);
+                    //
+                    // var memoryStream=new MemoryStream();
+                    // await encodedAudio.CopyToAsync(memoryStream);
+                    //
+                    // var request = new InterpreterRequest()
+                    // {
+                    //     AudioFile = Convert.ToBase64String(memoryStream.ToArray()),
+                    //     CurrentAudioLanguages = CurrentAudioLanguages.English,
+                    //     EnglishVoiceModels = EnglishVoiceModels.EnUsHfcFemaleMedium,
+                    //     Modes = Modes.IgnoreMyTalks,
+                    //     OutputLanguages = OutputLanguages.Persian,
+                    //     UserVoiceDetectorName = "test"
+                    // };
+                    //
+                    // var result=await apiClient.SendAsync("api/Interpreter/UploadEncodeAudio", HttpMethod.Post,request,false);
+                    //
+                    // var jsonOptions = new JsonSerializerOptions
+                    // {
+                    //     PropertyNameCaseInsensitive = true
+                    // };
+                    // var interpreterResponse = JsonSerializer.Deserialize<InterpreterResponse>(result.Content, jsonOptions);
+                    //
+                    // var streamMemory = new MemoryStream(interpreterResponse.TranslatedAudio);
+                    // var decodedAudioStream=await _opusCodecService.DecodeAsync(streamMemory);
+                    //
+                    // var player= sp?.GetService<IAudioPlaybackService>() ?? throw new InvalidOperationException("IApiClient not registered in DI.");
+                    //
+                    // await player.PlayAsync(decodedAudioStream);
                     
 
                 }

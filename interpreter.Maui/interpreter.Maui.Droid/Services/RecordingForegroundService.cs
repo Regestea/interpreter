@@ -7,6 +7,7 @@ using Android.OS;
 using Android.Runtime;
 using AndroidX.Core.App;
 using System.Threading;
+using System.Collections.Generic;
 
 namespace interpreter.Maui.Services;
 
@@ -18,18 +19,17 @@ public class RecordingForegroundService : Service
 
     private AudioRecord? _audioRecord;
     private Thread? _recordingThread;
-    private FileStream? _outputStream;
+    private MemoryStream? _audioBuffer; // Buffer all audio in memory for segment extraction
     private volatile bool _isRecordingInternal;
     private string? _filePath;
     
     private AudioRecordingConfiguration? _config;
     private IRecordingNotificationManager? _notificationManager;
     private IAudioRecorder? _audioRecorder;
-    private AudioCalibration? _calibration;
-    private VoiceActivityDetector? _vad;
-    private AudioChunkBuffer? _chunkBuffer;
-    private int _chunkCounter;
-    private bool _hasDetectedSpeech;
+    private SlidingWindowVad? _slidingWindowVad;
+    private int _logCounter;
+    private int _segmentCounter;
+    private readonly object _bufferLock = new();
     
 
     public override IBinder? OnBind(Intent? intent) => null;
@@ -45,14 +45,11 @@ public class RecordingForegroundService : Service
             // Try to get configuration from DI, fallback to default
             try
             {
-               
                 _config = sp?.GetService<AudioRecordingConfiguration>() ?? new AudioRecordingConfiguration();
-                _calibration = sp?.GetService<AudioCalibration>() ?? new AudioCalibration();
             }
             catch
             {
                 _config = new AudioRecordingConfiguration();
-                _calibration = new AudioCalibration();
             }
         }
         
@@ -72,16 +69,13 @@ public class RecordingForegroundService : Service
         {
             StopRecording();
             
-            // Finalize any remaining audio chunk
-            FinalizeRemainingChunk();
-            
             StopForeground(true);
             StopSelf();
         }
         return StartCommandResult.Sticky;
     }
 
-    private async Task StartRecording()
+    private void StartRecording()
     {
         Directory.CreateDirectory(CacheDir.AbsolutePath);
         _filePath = Path.Combine(CacheDir.AbsolutePath, $"rec_{DateTime.Now:yyyyMMdd_HHmmss}.wav");
@@ -90,38 +84,41 @@ public class RecordingForegroundService : Service
         // Create AudioRecord using the recorder
         _audioRecord = _audioRecorder!.CreateAudioRecord(out int minBufferSize);
 
-        // Initialize Voice Activity Detector (VAD) with configuration
-        _calibration ??= new AudioCalibration();
-        
-        // Configure VAD based on audio configuration and calibration
-        var vadConfig = new VadConfiguration
+        // Initialize SlidingWindowVad with optimized configuration for far-field detection
+        var vadConfig = new SlidingWindowVadConfiguration
         {
             SampleRate = _config!.SampleRate,
-            FrameMs = 30,  // 30ms frames for good balance
-            AttackFrames = 4,  // ~120ms to trigger speech (prevents false positives)
-            ReleaseFrames = 25,  // ~750ms silence to end speech (smoother than 2s)
-            PreRollMs = 200,  // 200ms pre-roll to capture speech onset
-            PostRollMs = 300,  // 300ms post-roll to capture speech tail
-            AbsMinRaw = 300f,  // Minimum absolute threshold
-            StartFactor = 3.0f,  // Start threshold = 3x ambient noise
-            EndFactor = 2.0f,   // End threshold = 2x ambient noise
-            AmbientCalibrationSeconds = 1.0f,  // 1 second initial calibration
-            MaxMemoryStorageBytes = 50 * 1024 * 1024  // 50MB before file fallback
+            WindowSizeMs = 3000,           // 3 second window
+            SampleIntervalMs = 300,        // Sample every 300ms (10 samples in window)
+            SpeechStartThreshold = 0.8f,   // 80% of window must be speech to START
+            SpeechEndThreshold = 0.5f,     // Below 50% to END speech
+            CalibrationDurationMs = 2000,  // 2 seconds calibration
+            SpeechRmsMultiplier = 1.5f,    // Reduced from 2.5 for better far-field detection
+            MinSpeechRmsMultiplier = 1.2f, // Adaptive minimum multiplier
+            MaxSpeechRmsMultiplier = 3.0f, // Adaptive maximum multiplier  
+            MinRmsThreshold = 100f,        // Reduced from 200 for better sensitivity
+            MaxRmsThreshold = 8000f,       // Maximum (for distant speakers)
+            PreRollMs = 500,               // 500ms before detected speech
+            PostRollMs = 500,              // 500ms after detected speech
+            MinSegmentDurationMs = 500,    // Ignore segments < 500ms
+            AdaptiveAlpha = 0.03f,         // Slow ambient tracking (more stable)
+            AdaptiveAlphaFast = 0.15f,     // Fast tracking for rising noise
+            RecentRmsHistorySize = 20,     // Track recent RMS for adaptive sensitivity
+            LowVolumeAdaptationThreshold = 0.7f // Threshold for increasing sensitivity
         };
         
-        _vad = new VoiceActivityDetector(vadConfig);
+        _slidingWindowVad = new SlidingWindowVad(vadConfig);
+        _logCounter = 0;
+        _segmentCounter = 0;
         
-        // Subscribe to VAD events
-        _vad.OnSegmentStarted += OnSpeechSegmentStarted;
-        _vad.OnSegmentEnded += OnSpeechSegmentEnded;
-        
-        _chunkBuffer = new AudioChunkBuffer(_config.SampleRate, _config.ChannelCount, _config.BitsPerSample);
-        _chunkCounter = 0;
-        _hasDetectedSpeech = false;
+        // Subscribe to debug events for logging
+        _slidingWindowVad.OnDebugInfo += OnVadDebugInfo;
+        _slidingWindowVad.OnSpeechStarted += (start) => 
+            Android.Util.Log.Info("Recording", $"🎤 Speech started at {start:mm\\:ss\\.ff}");
+        _slidingWindowVad.OnSpeechEnded += OnSpeechSegmentDetected;
 
-        // Open output stream and write WAV header placeholder (for backup/full recording)
-        _outputStream = new FileStream(_filePath, FileMode.Create, FileAccess.ReadWrite, FileShare.None);
-        WavFileHandler.WriteWavHeader(_outputStream, _config.SampleRate, _config.ChannelCount, _config.BitsPerSample);
+        // Initialize memory buffer for all audio data
+        _audioBuffer = new MemoryStream();
 
         _audioRecord.StartRecording();
         _isRecordingInternal = true;
@@ -143,11 +140,14 @@ public class RecordingForegroundService : Service
                             ApplyGain(buffer, read, _config.GainMultiplier);
                         }
                         
-                        // Write to backup file
-                        _outputStream?.Write(buffer, 0, read);
+                        // Store all audio in memory buffer (thread-safe)
+                        lock (_bufferLock)
+                        {
+                            _audioBuffer?.Write(buffer, 0, read);
+                        }
                         
-                        // Process audio for silence detection and chunking
-                        ProcessAudioChunk(buffer, 0, read);
+                        // Process audio through VAD - will trigger OnSpeechSegmentDetected when speech ends
+                        _slidingWindowVad?.ProcessAudio(buffer, 0, read);
                     }
                 }
             }
@@ -185,14 +185,11 @@ public class RecordingForegroundService : Service
                 _audioRecord = null;
             }
 
-            if (_outputStream != null)
-            {
-                // Finalize WAV header sizes
-                try { WavFileHandler.UpdateWavHeader(_outputStream); } catch { }
-                _outputStream.Flush();
-                _outputStream.Dispose();
-                _outputStream = null;
-            }
+            // Force end any ongoing speech detection (will trigger OnSpeechSegmentDetected if speech was active)
+            _slidingWindowVad?.ForceEndSpeech();
+            
+            // Cleanup VAD and audio buffer resources
+            CleanupVad();
         }
         catch (Exception) { }
         finally
@@ -200,6 +197,112 @@ public class RecordingForegroundService : Service
             RecordingState.IsRecording = false;
             RecordingState.LastFilePath = _filePath;
         }
+    }
+    
+    /// <summary>
+    /// VAD debug info callback for logging.
+    /// </summary>
+    private void OnVadDebugInfo(float rms, float threshold, bool isSpeech, float windowRatio)
+    {
+        _logCounter++;
+        // Log every ~1 second (approximately every 3rd call at 300ms intervals)
+        if (_logCounter % 3 == 0)
+        {
+            Android.Util.Log.Debug("Recording", 
+                $"VAD: RMS={rms:F0} Thresh={threshold:F0} Speech={isSpeech} Window={windowRatio:P0}");
+        }
+    }
+
+    /// <summary>
+    /// Called in real-time when a speech segment is detected.
+    /// Extracts the segment from the audio buffer and enqueues it for processing.
+    /// </summary>
+    private void OnSpeechSegmentDetected(SpeechTimeSegment segment)
+    {
+        try
+        {
+            Android.Util.Log.Info("Recording", $"🔇 Speech ended: {segment}");
+            
+            byte[] audioData;
+            lock (_bufferLock)
+            {
+                if (_audioBuffer == null || _audioBuffer.Length == 0)
+                {
+                    Android.Util.Log.Warn("Recording", "Audio buffer is empty, cannot extract segment");
+                    return;
+                }
+                
+                // Get a snapshot of current audio data
+                audioData = _audioBuffer.ToArray();
+            }
+            
+            // Extract this single segment from the audio buffer
+            var segmentList = new List<SpeechTimeSegment> { segment };
+            var extractedSegments = SpeechSegmentExtractor.ExtractIndividualSegments(
+                audioData,
+                _config!.SampleRate,
+                _config.ChannelCount,
+                _config.BitsPerSample,
+                segmentList);
+            
+            foreach (var (seg, wavStream) in extractedSegments)
+            {
+                var chunkName = $"speech_{DateTime.Now:yyyyMMdd_HHmmss}_{_segmentCounter++}.wav";
+                
+                Android.Util.Log.Info("Recording", 
+                    $"✅ Real-time extracted segment: {seg}, Size: {wavStream.Length} bytes");
+                
+                // Enqueue for processing immediately while still recording
+                AudioProcessQueue.Instance.Enqueue(new AudioProcess
+                {
+                    Name = chunkName,
+                    AudioStream = wavStream,
+                    Timestamp = DateTime.Now
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            Android.Util.Log.Error("Recording", $"Error extracting speech segment: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Save full audio as WAV file (for debugging purposes).
+    /// </summary>
+    private void SaveFullAudioWithMarkers(byte[] audioData, List<SpeechTimeSegment> segments)
+    {
+        try
+        {
+            using var fileStream = new FileStream(_filePath!, FileMode.Create, FileAccess.Write);
+            WavFileHandler.WriteWavHeader(fileStream, _config!.SampleRate, _config.ChannelCount, _config.BitsPerSample);
+            fileStream.Write(audioData, 0, audioData.Length);
+            WavFileHandler.UpdateWavHeader(fileStream);
+            
+            // Log segment info for reference
+            Android.Util.Log.Info("Recording", $"Saved full audio: {_filePath}");
+            Android.Util.Log.Info("Recording", $"Speech segments:");
+            foreach (var s in segments)
+            {
+                Android.Util.Log.Info("Recording", $"  - {s}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Android.Util.Log.Error("Recording", $"Error saving full audio: {ex.Message}");
+        }
+    }
+    
+    /// <summary>
+    /// Cleanup VAD resources.
+    /// </summary>
+    private void CleanupVad()
+    {
+        _slidingWindowVad?.Dispose();
+        _slidingWindowVad = null;
+        
+        _audioBuffer?.Dispose();
+        _audioBuffer = null;
     }
 
     /// <summary>
@@ -223,152 +326,6 @@ public class RecordingForegroundService : Service
             buffer[i] = (byte)(amplified & 0xFF);
             buffer[i + 1] = (byte)((amplified >> 8) & 0xFF);
         }
-    }
-
-    /// <summary>
-    /// Processes audio chunk for VAD and streaming.
-    /// </summary>
-    private void ProcessAudioChunk(byte[] buffer, int offset, int length)
-    {
-        if (_vad == null || _chunkBuffer == null)
-            return;
-
-        // Always append data to the current chunk
-        _chunkBuffer.AppendData(buffer, offset, length);
-
-        // Feed audio to VAD for speech detection
-        try
-        {
-            _vad.ProcessAudioChunk(buffer, offset, length, CancellationToken.None);
-        }
-        catch (Exception ex)
-        {
-            Android.Util.Log.Error("RecordingService", $"VAD processing error: {ex.Message}");
-        }
-
-        // Calculate audio level for logging
-        double rms = CalculateRms(buffer, offset, length);
-        double dbfs = RmsToDbfs(rms);
-
-        // Log VAD state every ~1 second (assuming ~100ms buffers, log every 10th call)
-        _chunkCounter++;
-        if (_chunkCounter % 10 == 0)
-        {
-            Android.Util.Log.Debug("RecordingService", 
-                $"Audio: {dbfs:F1} dBFS, InSpeech: {_vad.IsInSpeech}, Calibrated: {_vad.IsCalibrated}, " +
-                $"Ambient: {_vad.AmbientNoiseRms:F0}, StartThresh: {_vad.StartThreshold:F0}, EndThresh: {_vad.EndThreshold:F0}");
-        }
-    }
-
-    /// <summary>
-    /// Calculates RMS for logging purposes.
-    /// </summary>
-    private static double CalculateRms(byte[] buffer, int offset, int length)
-    {
-        if (buffer == null || length <= 0)
-            return 0.0;
-
-        long sumOfSquares = 0;
-        int sampleCount = 0;
-
-        for (int i = offset; i < offset + length && i < buffer.Length - 1; i += 2)
-        {
-            short sample = (short)(buffer[i] | (buffer[i + 1] << 8));
-            sumOfSquares += (long)sample * sample;
-            sampleCount++;
-        }
-
-        if (sampleCount == 0)
-            return 0.0;
-
-        double meanSquare = (double)sumOfSquares / sampleCount;
-        return Math.Sqrt(meanSquare);
-    }
-
-    /// <summary>
-    /// Converts RMS to dBFS for logging.
-    /// </summary>
-    private static double RmsToDbfs(double rms)
-    {
-        if (rms <= 0)
-            return -100;
-
-        const double fullScale = 32767.0;
-        double dbfs = 20 * Math.Log10(rms / fullScale);
-        return Math.Max(-100, Math.Min(0, dbfs));
-    }
-
-    /// <summary>
-    /// Called when VAD detects speech segment start.
-    /// </summary>
-    private void OnSpeechSegmentStarted(TimeSpan start)
-    {
-        _hasDetectedSpeech = true;
-        Android.Util.Log.Info("RecordingService", 
-            $"🎤 SPEECH STARTED at {start.TotalSeconds:F2}s");
-    }
-
-    /// <summary>
-    /// Called when VAD detects speech segment end - finalize the chunk.
-    /// </summary>
-    private void OnSpeechSegmentEnded(TimeSpan start, TimeSpan end)
-    {
-        var duration = end - start;
-        Android.Util.Log.Info("RecordingService", 
-            $"⚡ SPEECH ENDED: {start.TotalSeconds:F2}s - {end.TotalSeconds:F2}s (duration: {duration.TotalSeconds:F2}s)");
-        
-        // Finalize the current chunk when speech ends
-        FinalizeCurrentChunk();
-        
-        // Reset for next chunk
-        _hasDetectedSpeech = false;
-    }
-
-    /// <summary>
-    /// Finalizes the current audio chunk and enqueues it for processing.
-    /// </summary>
-    private void FinalizeCurrentChunk()
-    {
-        if (_chunkBuffer == null || !_chunkBuffer.HasData)
-            return;
-
-        var chunkStream = _chunkBuffer.FinalizeChunk();
-        if (chunkStream != null && chunkStream.Length > 0)
-        {
-            var chunkName = $"chunk_{DateTime.Now:yyyyMMdd_HHmmss}_{_chunkCounter}.wav";
-            
-            Android.Util.Log.Info("RecordingForegroundService", 
-                $"✅ Finalizing audio chunk: {chunkName}, Size: {chunkStream.Length} bytes");
-
-            // Enqueue the chunk for processing
-            AudioProcessQueue.Instance.Enqueue(new AudioProcess
-            {
-                Name = chunkName,
-                AudioStream = chunkStream,
-                Timestamp = DateTime.Now
-            });
-        }
-    }
-
-    /// <summary>
-    /// Finalizes any remaining audio chunk when recording stops.
-    /// </summary>
-    private void FinalizeRemainingChunk()
-    {
-        // Force end any ongoing speech detection
-        _vad?.ForceEndSpeech();
-        
-        // Finalize any remaining buffered audio
-        if (_chunkBuffer != null && _chunkBuffer.HasData)
-        {
-            FinalizeCurrentChunk();
-        }
-
-        // Cleanup
-        _vad?.Dispose();
-        _vad = null;
-        _chunkBuffer?.Dispose();
-        _chunkBuffer = null;
     }
 }
 
