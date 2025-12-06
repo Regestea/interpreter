@@ -84,27 +84,48 @@ public class RecordingForegroundService : Service
         // Create AudioRecord using the recorder
         _audioRecord = _audioRecorder!.CreateAudioRecord(out int minBufferSize);
 
-        // Initialize SlidingWindowVad with optimized configuration for far-field detection
+        // Initialize SlidingWindowVad with configuration optimized for dynamic environments
+        // The first 2 seconds are used for calibration to detect ambient noise level
         var vadConfig = new SlidingWindowVadConfiguration
         {
             SampleRate = _config!.SampleRate,
-            WindowSizeMs = 1500,           // 3 second window
-            SampleIntervalMs = 100,        // Sample every 300ms (10 samples in window)
-            SpeechStartThreshold = 0.7f,   // 80% of window must be speech to START
-            SpeechEndThreshold = 0.5f,     // Below 50% to END speech
-            CalibrationDurationMs = 2000,  // 2 seconds calibration
-            SpeechRmsMultiplier = 1.5f,    // Reduced from 2.5 for better far-field detection
-            MinSpeechRmsMultiplier = 1.2f, // Adaptive minimum multiplier
-            MaxSpeechRmsMultiplier = 3.0f, // Adaptive maximum multiplier  
-            MinRmsThreshold = 100f,        // Reduced from 200 for better sensitivity
-            MaxRmsThreshold = 8000f,       // Maximum (for distant speakers)
-            PreRollMs = 200,               // 500ms before detected speech
-            PostRollMs = 200,              // 500ms after detected speech
-            MinSegmentDurationMs = 500,    // Ignore segments < 500ms
-            AdaptiveAlpha = 0.03f,         // Slow ambient tracking (more stable)
-            AdaptiveAlphaFast = 0.15f,     // Fast tracking for rising noise
-            RecentRmsHistorySize = 20,     // Track recent RMS for adaptive sensitivity
-            LowVolumeAdaptationThreshold = 0.7f // Threshold for increasing sensitivity
+            
+            // Sliding window configuration
+            WindowSizeMs = 1500,           // 1.5 second window (15 samples)
+            SampleIntervalMs = 100,        // Sample every 100ms
+            
+            // Speech detection thresholds (ratio of window that must be speech)
+            SpeechStartThreshold = 0.70f,  // 70% of window must be speech to START
+            SpeechEndThreshold = 0.50f,    // Below 50% to END speech
+            
+            // Dynamic calibration - CRITICAL for different environments
+            // First 2 seconds: measure ambient noise (market vs quiet home)
+            CalibrationDurationMs = 2000,
+            
+            // RMS multiplier: speech must be this many times louder than ambient
+            // Lower = more sensitive (good for far/quiet), Higher = less false positives
+            SpeechRmsMultiplier = 1.8f,    // Start at 1.8x ambient noise
+            MinSpeechRmsMultiplier = 1.3f, // Can go down to 1.3x in quiet environments
+            MaxSpeechRmsMultiplier = 2.5f, // Can go up to 2.5x in noisy environments
+            
+            // Absolute RMS thresholds (regardless of calibration)
+            MinRmsThreshold = 80f,         // Minimum threshold (very quiet room)
+            MaxRmsThreshold = 10000f,      // Maximum threshold (very noisy market)
+            
+            // Pre/Post roll to capture full speech
+            PreRollMs = 200,               // 200ms before detected speech
+            PostRollMs = 200,              // 200ms after detected speech
+            
+            // Segment validation
+            MinSegmentDurationMs = 500,    // Ignore segments shorter than 500ms
+            
+            // Adaptive ambient noise tracking (after calibration)
+            AdaptiveAlpha = 0.02f,         // Very slow adaptation during silence
+            AdaptiveAlphaFast = 0.10f,     // Faster adaptation when noise rises
+            
+            // Adaptive sensitivity
+            RecentRmsHistorySize = 30,     // Track more samples for better adaptation
+            LowVolumeAdaptationThreshold = 0.6f // Increase sensitivity if volume drops to 60% of calibration
         };
         
         _slidingWindowVad = new SlidingWindowVad(vadConfig);

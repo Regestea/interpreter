@@ -352,17 +352,22 @@ public sealed class SlidingWindowVad : IDisposable
         if (_recentRmsHistory.Count < _config.RecentRmsHistorySize / 2)
             return;
         
-        // Find the max RMS in recent history (likely speech attempts)
+        // Find the max and average RMS in recent history
         float maxRecentRms = 0f;
+        float sumRms = 0f;
         foreach (var r in _recentRmsHistory)
         {
             if (r > maxRecentRms) maxRecentRms = r;
+            sumRms += r;
         }
+        float avgRecentRms = sumRms / _recentRmsHistory.Count;
         
         // Calculate the ratio of max recent to ambient
         float signalToNoise = _ambientNoiseRms > 0 ? maxRecentRms / _ambientNoiseRms : 1f;
         
-        // If signal levels are low compared to calibration, increase sensitivity
+        // Dynamic adjustment based on multiple factors:
+        
+        // 1. If signal levels are low compared to calibration, increase sensitivity
         if (_calibrationMaxRms > 0 && maxRecentRms < _calibrationMaxRms * _config.LowVolumeAdaptationThreshold)
         {
             // User seems to be speaking quietly or far from mic - reduce multiplier
@@ -371,11 +376,21 @@ public sealed class SlidingWindowVad : IDisposable
                 _config.MinSpeechRmsMultiplier
             );
         }
+        // 2. If average noise level has increased significantly, increase multiplier
+        else if (avgRecentRms > _ambientNoiseRms * 1.5f && signalToNoise < 2.0f)
+        {
+            // Background noise increased but no clear speech signal
+            _currentMultiplier = Math.Min(
+                _currentMultiplier * 1.02f, // Slowly increase
+                _config.MaxSpeechRmsMultiplier
+            );
+        }
+        // 3. Strong clear signal - can use standard multiplier
         else if (signalToNoise > 3.0f)
         {
             // Strong signal - can use higher multiplier for noise rejection
             _currentMultiplier = Math.Min(
-                _currentMultiplier * 1.01f, // Slowly increase
+                _currentMultiplier * 1.01f,
                 _config.MaxSpeechRmsMultiplier
             );
         }
@@ -401,28 +416,53 @@ public sealed class SlidingWindowVad : IDisposable
         {
             _ambientNoiseRms = _config.MinRmsThreshold;
             _calibrationMaxRms = _config.MinRmsThreshold * 2;
+            _currentMultiplier = _config.SpeechRmsMultiplier;
         }
         else
         {
-            // Use median to ignore outliers (like a cough during calibration)
+            // Sort values to analyze the distribution
             var sorted = new List<float>(_calibrationRmsValues);
             sorted.Sort();
+            
+            // Use median for ambient noise (ignores outliers like coughs)
             int mid = sorted.Count / 2;
-            _ambientNoiseRms = sorted.Count % 2 == 0 
+            float median = sorted.Count % 2 == 0 
                 ? (sorted[mid - 1] + sorted[mid]) / 2f 
                 : sorted[mid];
             
-            // Track the max for adaptive sensitivity reference
-            _calibrationMaxRms = sorted[sorted.Count - 1];
-            
-            // Also calculate the 90th percentile as a baseline for "normal" levels
+            // Also calculate percentiles for better understanding of environment
+            int p10Index = (int)(sorted.Count * 0.1f);
             int p90Index = (int)(sorted.Count * 0.9f);
+            float p10Rms = sorted[Math.Max(0, p10Index)];
             float p90Rms = sorted[Math.Min(p90Index, sorted.Count - 1)];
             
-            // If calibration shows very low levels, start with lower multiplier
-            if (p90Rms < _config.MinRmsThreshold * 2)
+            // Calculate ambient noise variance
+            float variance = p90Rms - p10Rms;
+            float varianceRatio = median > 0 ? variance / median : 0;
+            
+            // Use median as ambient noise baseline
+            _ambientNoiseRms = median;
+            _calibrationMaxRms = sorted[sorted.Count - 1];
+            
+            // Dynamically adjust multiplier based on environment:
+            // - High variance (noisy market): use higher multiplier to avoid false triggers
+            // - Low variance (quiet home): use lower multiplier for better sensitivity
+            if (varianceRatio > 0.5f)
             {
-                _currentMultiplier = _config.MinSpeechRmsMultiplier;
+                // Noisy environment - increase multiplier for noise rejection
+                _currentMultiplier = Math.Min(_config.SpeechRmsMultiplier * 1.2f, _config.MaxSpeechRmsMultiplier);
+                Android.Util.Log.Info("SlidingWindowVad", $"🔊 Noisy environment detected (variance ratio: {varianceRatio:F2})");
+            }
+            else if (varianceRatio < 0.15f && p90Rms < _config.MinRmsThreshold * 3)
+            {
+                // Very quiet environment - decrease multiplier for better sensitivity
+                _currentMultiplier = Math.Max(_config.SpeechRmsMultiplier * 0.8f, _config.MinSpeechRmsMultiplier);
+                Android.Util.Log.Info("SlidingWindowVad", $"🤫 Quiet environment detected (variance ratio: {varianceRatio:F2})");
+            }
+            else
+            {
+                // Normal environment
+                _currentMultiplier = _config.SpeechRmsMultiplier;
             }
         }
         
