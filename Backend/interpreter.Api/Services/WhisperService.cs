@@ -71,6 +71,7 @@ namespace interpreter.Api.Services
             _logger.LogDebug("Creating new WhisperProcessor instance");
             return _factory.CreateBuilder()
                 .WithLanguageDetection()
+                .WithTemperature(1f)
                 .WithLanguage(_settings.Language)
                 .Build();
         }

@@ -88,9 +88,9 @@ public class RecordingForegroundService : Service
         var vadConfig = new SlidingWindowVadConfiguration
         {
             SampleRate = _config!.SampleRate,
-            WindowSizeMs = 3000,           // 3 second window
-            SampleIntervalMs = 300,        // Sample every 300ms (10 samples in window)
-            SpeechStartThreshold = 0.8f,   // 80% of window must be speech to START
+            WindowSizeMs = 1500,           // 3 second window
+            SampleIntervalMs = 100,        // Sample every 300ms (10 samples in window)
+            SpeechStartThreshold = 0.7f,   // 80% of window must be speech to START
             SpeechEndThreshold = 0.5f,     // Below 50% to END speech
             CalibrationDurationMs = 2000,  // 2 seconds calibration
             SpeechRmsMultiplier = 1.5f,    // Reduced from 2.5 for better far-field detection
@@ -98,8 +98,8 @@ public class RecordingForegroundService : Service
             MaxSpeechRmsMultiplier = 3.0f, // Adaptive maximum multiplier  
             MinRmsThreshold = 100f,        // Reduced from 200 for better sensitivity
             MaxRmsThreshold = 8000f,       // Maximum (for distant speakers)
-            PreRollMs = 500,               // 500ms before detected speech
-            PostRollMs = 500,              // 500ms after detected speech
+            PreRollMs = 200,               // 500ms before detected speech
+            PostRollMs = 200,              // 500ms after detected speech
             MinSegmentDurationMs = 500,    // Ignore segments < 500ms
             AdaptiveAlpha = 0.03f,         // Slow ambient tracking (more stable)
             AdaptiveAlphaFast = 0.15f,     // Fast tracking for rising noise

@@ -184,19 +184,9 @@ public sealed class AudioProcessQueue
                     Log.Warn(TAG, $"Failed to save debug audio chunk: {ex.Message}");
                 }
                 
-                // TODO: Add actual audio processing logic here (e.g., send to Whisper API)
-                await Task.Delay(100); // Simulate some processing
                 
                 // Dispose the stream after processing
                 audioProcess.AudioStream.Dispose();
-            }
-            else
-            {
-                // Process file-based audio (legacy path)
-                Debug.WriteLine($"Processing audio file: {audioProcess.Name}");
-                
-                // TODO: Add actual audio processing logic here
-                await Task.Delay(100); // Simulate some processing
             }
             
             Log.Info(TAG, $"Completed processing audio: {audioProcess.Name}");
