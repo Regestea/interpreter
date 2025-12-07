@@ -43,6 +43,13 @@
                     Text="Voice Profiles"
                     Command="{Binding NavigateCommand}"
                     CommandParameter="//VoiceProfilesPage" />
+
+                <!-- Microphone Settings -->
+                <components:SettingsMenuItem
+                    Icon="🎙️"
+                    Text="Microphone Settings"
+                    Command="{Binding NavigateCommand}"
+                    CommandParameter="//MicrophoneManagerPage" />
             </VerticalStackLayout>
         </ScrollView>
     </Shell.FlyoutContent>
@@ -100,5 +107,11 @@
         Title="Voice Profiles"
         ContentTemplate="{DataTemplate pages:VoiceProfilesPage}"
         Route="VoiceProfilesPage" />
+
+    <!-- Microphone Manager Page -->
+    <ShellContent
+        Title="Microphone Settings"
+        ContentTemplate="{DataTemplate pages:MicrophoneManagerPage}"
+        Route="MicrophoneManagerPage" />
 
 </Shell>

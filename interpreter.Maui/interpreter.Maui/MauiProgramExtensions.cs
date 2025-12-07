@@ -26,11 +26,13 @@ namespace interpreter.Maui
             builder.Services.AddTransient<MainViewModel>();
             builder.Services.AddTransient<RecordingViewModel>();
             builder.Services.AddTransient<VoiceProfilesViewModel>();
+            builder.Services.AddTransient<MicrophoneManagerViewModel>();
             
             // Register Pages
             builder.Services.AddTransient<MainPage>();
             builder.Services.AddTransient<RecordingPage>();
             builder.Services.AddTransient<VoiceProfilesPage>();
+            builder.Services.AddTransient<MicrophoneManagerPage>();
 
 #if DEBUG
             // AddDebug() can cause ANR during debugger attachment on Android

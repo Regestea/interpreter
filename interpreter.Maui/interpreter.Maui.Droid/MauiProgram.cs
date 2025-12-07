@@ -49,6 +49,13 @@ namespace interpreter.Maui
             builder.Services.AddTransient<IAudioRecorderService, AudioRecorderService>();
             // RecordingNotificationManager requires Service instance in constructor,
             // so it cannot be injected in RecordingForegroundService via DI
+            
+            // Microphone management service
+            builder.Services.AddSingleton<IMicrophoneManagerService>(_ =>
+            {
+                var context = Android.App.Application.Context;
+                return new MicrophoneManagerService(context);
+            });
 
 #if DEBUG
             // AddDebug() can cause ANR during debugger attachment on Android

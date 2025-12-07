@@ -1,0 +1,252 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:interpreter.Maui.ViewModels"
+             xmlns:models="clr-namespace:interpreter.Maui.Models"
+             x:Class="interpreter.Maui.Pages.MicrophoneManagerPage"
+             x:DataType="viewmodels:MicrophoneManagerViewModel"
+             Title="Microphone Settings">
+    
+    <ContentPage.Background>
+        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#020617" Offset="0.0" />
+            <GradientStop Color="#020617" Offset="0.3" />
+            <GradientStop Color="#020617" Offset="1.0" />
+        </LinearGradientBrush>
+    </ContentPage.Background>
+
+    <ContentPage.Resources>
+        <!-- Core surfaces -->
+        <Color x:Key="ColorSurface">#0B1220</Color>
+        <Color x:Key="ColorSurfaceHigh">#111827</Color>
+        <Color x:Key="ColorSurfaceLow">#0B1020</Color>
+
+        <!-- Text colors -->
+        <Color x:Key="ColorTextPrimary">#F9FAFB</Color>
+        <Color x:Key="ColorTextSecondary">#9CA3AF</Color>
+
+        <!-- Accents -->
+        <Color x:Key="ColorAccentPrimary">#6366F1</Color>
+        <Color x:Key="ColorAccentSecondary">#818CF8</Color>
+        <Color x:Key="ColorSuccess">#10B981</Color>
+        <Color x:Key="ColorSelected">#7c86e3</Color>
+
+        <!-- Brushes -->
+        <SolidColorBrush x:Key="BrushSurface" Color="{StaticResource ColorSurface}" />
+        <SolidColorBrush x:Key="BrushSurfaceHigh" Color="{StaticResource ColorSurfaceHigh}" />
+        <SolidColorBrush x:Key="BrushAccentPrimary" Color="{StaticResource ColorAccentPrimary}" />
+        <SolidColorBrush x:Key="BrushAccentSecondary" Color="{StaticResource ColorAccentSecondary}" />
+
+        <!-- Main card style -->
+        <Style x:Key="MainCardBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource BrushSurface}" />
+            <Setter Property="StrokeThickness" Value="1.5" />
+            <Setter Property="Stroke" Value="{StaticResource BrushAccentSecondary}" />
+            <Setter Property="StrokeShape">
+                <Setter.Value>
+                    <RoundRectangle CornerRadius="22" />
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Shadow">
+                <Setter.Value>
+                    <Shadow Brush="#80000000" Offset="0,10" Radius="20" Opacity="0.35" />
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Microphone item style -->
+        <Style x:Key="MicrophoneItemBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource BrushSurfaceHigh}" />
+            <Setter Property="StrokeThickness" Value="1" />
+            <Setter Property="Stroke" Value="#374151" />
+            <Setter Property="Padding" Value="16,12" />
+            <Setter Property="StrokeShape">
+                <Setter.Value>
+                    <RoundRectangle CornerRadius="12" />
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Button style -->
+        <Style x:Key="ActionButtonStyle" TargetType="Button">
+            <Setter Property="BackgroundColor" Value="{StaticResource ColorAccentPrimary}" />
+            <Setter Property="TextColor" Value="{StaticResource ColorTextPrimary}" />
+            <Setter Property="FontAttributes" Value="Bold" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Padding" Value="16,12" />
+        </Style>
+    </ContentPage.Resources>
+
+    <ScrollView>
+        <Border Style="{StaticResource MainCardBorderStyle}">
+            <Border.Padding>
+                <OnIdiom x:TypeArguments="Thickness"
+                         Phone="16"
+                         Tablet="32"
+                         Desktop="32"/>
+            </Border.Padding>
+            <Border.Margin>
+                <OnIdiom x:TypeArguments="Thickness"
+                         Phone="8"
+                         Tablet="20"
+                         Desktop="20"/>
+            </Border.Margin>
+            
+            <VerticalStackLayout Spacing="20" Margin="0,10,0,20">
+                <!-- Page Header -->
+                <VerticalStackLayout Spacing="4" Margin="0,0,0,10">
+                    <Label Text="🎤 Microphone Settings"
+                           TextColor="{StaticResource ColorTextPrimary}"
+                           FontSize="24"
+                           FontAttributes="Bold"/>
+                    <Label Text="Select which microphone to use for recording"
+                           TextColor="{StaticResource ColorTextSecondary}"
+                           FontSize="14"/>
+                </VerticalStackLayout>
+
+                <!-- Status and Actions -->
+                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+                    <Label Text="{Binding StatusMessage}"
+                           TextColor="{StaticResource ColorTextSecondary}"
+                           FontSize="13"
+                           VerticalOptions="Center"/>
+                    
+                    <Button Grid.Column="1"
+                            Text="Reset"
+                            Command="{Binding ResetToDefaultCommand}"
+                            Style="{StaticResource ActionButtonStyle}"
+                            BackgroundColor="#374151"
+                            HeightRequest="40"/>
+                    
+                    <Button Grid.Column="2"
+                            Text="Refresh"
+                            Command="{Binding RefreshCommand}"
+                            Style="{StaticResource ActionButtonStyle}"
+                            HeightRequest="40"/>
+                </Grid>
+
+                <!-- Loading indicator -->
+                <ActivityIndicator IsRunning="{Binding IsLoading}"
+                                   IsVisible="{Binding IsLoading}"
+                                   Color="{StaticResource ColorAccentSecondary}"
+                                   HeightRequest="40"/>
+
+                <!-- Microphone List -->
+                <CollectionView ItemsSource="{Binding Microphones}"
+                                SelectionMode="Single"
+                                SelectedItem="{Binding SelectedMicrophone}">
+                    <CollectionView.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="VisualStateManager.VisualStateGroups">
+                                <VisualStateGroupList>
+                                    <VisualStateGroup x:Name="CommonStates">
+                                        <VisualState x:Name="Normal" />
+                                        <VisualState x:Name="Selected">
+                                            <VisualState.Setters>
+                                                <Setter Property="BackgroundColor" Value="Transparent" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                </VisualStateGroupList>
+                            </Setter>
+                        </Style>
+                    </CollectionView.Resources>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:MicrophoneDisplayModel">
+                            <Border Background="{StaticResource BrushSurfaceHigh}"
+                                    StrokeThickness="2"
+                                    Stroke="#374151"
+                                    Padding="16,12"
+                                    Margin="0,4">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="12" />
+                                </Border.StrokeShape>
+                                <Border.Triggers>
+                                    <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
+                                        <Setter Property="Stroke" Value="{StaticResource ColorSelected}" />
+                                    </DataTrigger>
+                                </Border.Triggers>
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                    <!-- Microphone icon -->
+                                    <Border Grid.Column="0"
+                                            BackgroundColor="{StaticResource ColorAccentPrimary}"
+                                            WidthRequest="44"
+                                            HeightRequest="44"
+                                            StrokeThickness="0">
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="22"/>
+                                        </Border.StrokeShape>
+                                        <Label Text="🎙️"
+                                               FontSize="20"
+                                               HorizontalOptions="Center"
+                                               VerticalOptions="Center"/>
+                                    </Border>
+                                    
+                                    <!-- Microphone info -->
+                                    <VerticalStackLayout Grid.Column="1" 
+                                                         Spacing="2"
+                                                         VerticalOptions="Center">
+                                        <Label Text="{Binding Name}"
+                                               TextColor="{StaticResource ColorTextPrimary}"
+                                               FontSize="15"
+                                               FontAttributes="Bold"
+                                               LineBreakMode="TailTruncation"/>
+                                        <HorizontalStackLayout Spacing="8">
+                                            <Label Text="{Binding DeviceType}"
+                                                   TextColor="{StaticResource ColorTextSecondary}"
+                                                   FontSize="12"/>
+                                            <Label Text="(Default)"
+                                                   TextColor="{StaticResource ColorSuccess}"
+                                                   FontSize="12"
+                                                   IsVisible="{Binding IsDefault}"/>
+                                        </HorizontalStackLayout>
+                                    </VerticalStackLayout>
+                                    
+                                    <!-- Selection indicator -->
+                                    <Border Grid.Column="2"
+                                            BackgroundColor="{StaticResource ColorSuccess}"
+                                            WidthRequest="24"
+                                            HeightRequest="24"
+                                            StrokeThickness="0"
+                                            IsVisible="{Binding IsSelected}"
+                                            VerticalOptions="Center">
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="12"/>
+                                        </Border.StrokeShape>
+                                        <Label Text="✓"
+                                               TextColor="White"
+                                               FontSize="14"
+                                               FontAttributes="Bold"
+                                               HorizontalOptions="Center"
+                                               VerticalOptions="Center"/>
+                                    </Border>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                    
+                    <CollectionView.EmptyView>
+                        <VerticalStackLayout Spacing="8" 
+                                             Padding="20"
+                                             VerticalOptions="Center"
+                                             HorizontalOptions="Center">
+                            <Label Text="🎤"
+                                   FontSize="48"
+                                   HorizontalOptions="Center"/>
+                            <Label Text="No microphones found"
+                                   TextColor="{StaticResource ColorTextSecondary}"
+                                   FontSize="16"
+                                   HorizontalOptions="Center"/>
+                            <Label Text="Tap Refresh to scan for available microphones"
+                                   TextColor="{StaticResource ColorTextSecondary}"
+                                   FontSize="13"
+                                   HorizontalOptions="Center"/>
+                        </VerticalStackLayout>
+                    </CollectionView.EmptyView>
+                </CollectionView>
+            </VerticalStackLayout>
+        </Border>
+    </ScrollView>
+
+</ContentPage>
+

@@ -97,6 +97,9 @@ public class AudioRecorderService : IAudioRecorderService
                 bufferSize
             );
             
+            // Set preferred microphone from MicrophoneSettings
+            ApplySelectedMicrophone(audioRecord);
+            
             // Apply audio enhancements
             int audioSessionId = audioRecord.AudioSessionId;
             
@@ -218,6 +221,9 @@ public class AudioRecorderService : IAudioRecorderService
             bufferSize
         );
 
+        // Set preferred microphone from MicrophoneSettings
+        ApplySelectedMicrophone(audioRecord);
+
         // Apply audio enhancements
         int audioSessionId = audioRecord.AudioSessionId;
         
@@ -259,6 +265,20 @@ public class AudioRecorderService : IAudioRecorderService
             buffer[i] = (byte)(amplified & 0xFF);
             buffer[i + 1] = (byte)((amplified >> 8) & 0xFF);
         }
+    }
+
+    /// <summary>
+    /// Applies the selected microphone from MicrophoneSettings to the AudioRecord instance.
+    /// </summary>
+    private void ApplySelectedMicrophone(AudioRecord audioRecord)
+    {
+#pragma warning disable CA1416
+        var selectedMic = MicrophoneSettings.Instance.SelectedMicrophone;
+        if (selectedMic?.AndroidDeviceInfo != null)
+        {
+            SetPreferredDevice(audioRecord, selectedMic.AndroidDeviceInfo);
+        }
+#pragma warning restore CA1416
     }
 
     public void Dispose()
