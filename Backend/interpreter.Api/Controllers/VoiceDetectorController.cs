@@ -1,4 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using interpreter.Api.Data;
+using interpreter.Api.Entities;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Models.Shared.Requests;
+using Models.Shared.Responses;
+using SpeechBrain;
 
 namespace interpreter.Api.Controllers;
 
@@ -7,30 +13,49 @@ namespace interpreter.Api.Controllers;
 public class VoiceDetectorController : ControllerBase
 {
     private readonly ILogger<VoiceDetectorController> _logger;
+    private readonly InterpreterDbContext _dbContext;
+    private readonly ISpeechBrainRecognition _speechBrainRecognition;
 
     public VoiceDetectorController(
-        ILogger<VoiceDetectorController> logger)
+        ILogger<VoiceDetectorController> logger, InterpreterDbContext dbContext,
+        ISpeechBrainRecognition speechBrainRecognition)
     {
         _logger = logger;
+        _dbContext = dbContext;
+        _speechBrainRecognition = speechBrainRecognition;
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromQuery] string name, [FromBody] IFormFile file)
+    public async Task<IActionResult> Create([FromBody] CreateVoiceDetectorRequest request)
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(name))
+            if (string.IsNullOrWhiteSpace(request.Name))
                 return BadRequest("Name is required");
 
-            if (file == null || file.Length == 0)
+            if (request.Voice.Length == 0)
                 return BadRequest("File is required");
 
-            // TODO: Implement create logic
-            return Ok(new { name });
+            var embedding = _speechBrainRecognition.GetAudioEmbedding(request.Voice);
+
+            var VoiceEmbedding = new VoiceEmbedding()
+            {
+                Id = Guid.NewGuid(),
+                Name = request.Name,
+                Embedding = embedding
+            };
+
+            _dbContext.VoiceEmbeddings.Add(VoiceEmbedding);
+            await _dbContext.SaveChangesAsync();
+            return Ok(new CreateVoiceDetectorResponse
+            {
+                Id = VoiceEmbedding.Id,
+                Name = request.Name
+            });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error creating voice file: {Name}", name);
+            _logger.LogError(ex, "Error creating voice file: {Name}", request.Name);
             return StatusCode(500, "An error occurred while creating the voice file");
         }
     }
@@ -40,8 +65,9 @@ public class VoiceDetectorController : ControllerBase
     {
         try
         {
-            // TODO: Implement get list logic
-            return Ok(new string[] { });
+            var result = await _dbContext.VoiceEmbeddings
+                .Select(x => new VoiceEmbeddingResponse() { Id = x.Id, Name = x.Name }).ToListAsync();
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -50,29 +76,27 @@ public class VoiceDetectorController : ControllerBase
         }
     }
 
-    [HttpDelete("{name}")]
-    public async Task<IActionResult> Delete(string name)
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(Guid id)
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(name))
-                return BadRequest("Name is required");
+            var voiceEmbedding = await _dbContext.VoiceEmbeddings.FindAsync(id);
 
-            // TODO: Implement delete logic
-            _logger.LogInformation("Voice file deleted: {Name}", name);
-            return Ok(new { message = $"Voice file '{name}' deleted successfully" });
+            if (voiceEmbedding == null)
+                return NotFound($"Voice embedding with id '{id}' not found");
+
+            _dbContext.VoiceEmbeddings.Remove(voiceEmbedding);
+            await _dbContext.SaveChangesAsync();
+
+            _logger.LogInformation("Voice file deleted: {Id}, {Name}", id, voiceEmbedding.Name);
+            return Ok(new { message = $"Voice file '{voiceEmbedding.Name}' deleted successfully" });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting voice file: {Name}", name);
+            _logger.LogError(ex, "Error deleting voice file: {Id}", id);
             return StatusCode(500, "An error occurred while deleting the voice file");
         }
     }
-
-    [HttpPost("set-voice-cache")]
-    public IActionResult SetVoiceInCache()
-    {
-        // TODO: Implement set voice in cache logic
-        return Ok();
-    }
+    
 }

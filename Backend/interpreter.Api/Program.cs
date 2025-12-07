@@ -35,8 +35,11 @@ namespace interpreter.Api
             // Add services to the container.
             
             // Configure SQLite DbContext
+            var dbPath = Path.Combine(AppContext.BaseDirectory, "interpreter.db");
+            var connectionString = $"Data Source={dbPath}";
+            
             builder.Services.AddDbContext<InterpreterDbContext>(options =>
-                options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+                options.UseSqlite(connectionString));
             
             // Add Memory Cache
             builder.Services.AddMemoryCache();
@@ -96,6 +99,13 @@ namespace interpreter.Api
             builder.AddServiceDefaults();
             var app = builder.Build();
 
+            using (var scope = app.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<InterpreterDbContext>();
+                db.Database.EnsureCreated();
+            }
+
+            
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
