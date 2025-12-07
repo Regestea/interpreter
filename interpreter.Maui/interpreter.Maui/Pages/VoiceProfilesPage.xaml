@@ -1,0 +1,93 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:components="clr-namespace:interpreter.Maui.Components"
+             x:Class="interpreter.Maui.Pages.VoiceProfilesPage"
+             Title="Voice Profiles">
+    
+    <ContentPage.Background>
+        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#020617" Offset="0.0" />
+            <GradientStop Color="#020617" Offset="0.3" />
+            <GradientStop Color="#020617" Offset="1.0" />
+        </LinearGradientBrush>
+    </ContentPage.Background>
+
+    <ContentPage.Resources>
+        <!-- Core surfaces -->
+        <Color x:Key="ColorSurface">#0B1220</Color>
+        <Color x:Key="ColorSurfaceHigh">#111827</Color>
+
+        <!-- Text colors -->
+        <Color x:Key="ColorTextPrimary">#F9FAFB</Color>
+        <Color x:Key="ColorTextSecondary">#9CA3AF</Color>
+
+        <!-- Accents -->
+        <Color x:Key="ColorAccentSecondary">#818CF8</Color>
+
+        <!-- Brushes -->
+        <SolidColorBrush x:Key="BrushSurface" Color="{StaticResource ColorSurface}" />
+        <SolidColorBrush x:Key="BrushAccentSecondary" Color="{StaticResource ColorAccentSecondary}" />
+
+        <!-- Main card style -->
+        <Style x:Key="MainCardBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource BrushSurface}" />
+            <Setter Property="StrokeThickness" Value="1.5" />
+            <Setter Property="Stroke" Value="{StaticResource BrushAccentSecondary}" />
+            <Setter Property="StrokeShape">
+                <Setter.Value>
+                    <RoundRectangle CornerRadius="22" />
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Shadow">
+                <Setter.Value>
+                    <Shadow Brush="#80000000" Offset="0,10" Radius="20" Opacity="0.35" />
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </ContentPage.Resources>
+
+    <ScrollView>
+        <Border Style="{StaticResource MainCardBorderStyle}">
+            <Border.Padding>
+                <OnIdiom x:TypeArguments="Thickness"
+                         Phone="16"
+                         Tablet="32"
+                         Desktop="32"/>
+            </Border.Padding>
+            <Border.Margin>
+                <OnIdiom x:TypeArguments="Thickness"
+                         Phone="8"
+                         Tablet="20"
+                         Desktop="20"/>
+            </Border.Margin>
+            
+            <VerticalStackLayout Spacing="20" Margin="0,10,0,20">
+                <!-- Page Header -->
+                <VerticalStackLayout Spacing="4" Margin="0,0,0,10">
+                    <Label Text="🎤 Voice Profiles"
+                           TextColor="{StaticResource ColorTextPrimary}"
+                           FontSize="24"
+                           FontAttributes="Bold"/>
+                    <Label Text="Create and manage voice profiles for speaker recognition"
+                           TextColor="{StaticResource ColorTextSecondary}"
+                           FontSize="14"/>
+                </VerticalStackLayout>
+                
+                <!-- Voice Profile Form Component -->
+                <components:VoiceProfileForm x:Name="ProfileForm"
+                                             SaveClicked="OnProfileFormSaveClicked"
+                                             RecordingStarted="OnProfileFormRecordingStarted"
+                                             RecordingStopped="OnProfileFormRecordingStopped"
+                                             ValidationFailed="OnProfileFormValidationFailed"/>
+                
+                <!-- Voice Profile List Component -->
+                <components:VoiceProfileList x:Name="ProfileList"
+                                             RefreshClicked="OnProfileListRefreshClicked"
+                                             DeleteClicked="OnProfileListDeleteClicked"/>
+            </VerticalStackLayout>
+        </Border>
+    </ScrollView>
+
+</ContentPage>
+

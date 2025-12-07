@@ -1,6 +1,7 @@
-﻿﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using interpreter.Maui.Services;
 using interpreter.Maui.ViewModels;
+using interpreter.Maui.Pages;
 
 namespace interpreter.Maui
 {
@@ -23,11 +24,13 @@ namespace interpreter.Maui
             
             // Register ViewModels
             builder.Services.AddTransient<MainViewModel>();
+            builder.Services.AddTransient<RecordingViewModel>();
+            builder.Services.AddTransient<VoiceProfilesViewModel>();
             
             // Register Pages
             builder.Services.AddTransient<MainPage>();
-
-
+            builder.Services.AddTransient<RecordingPage>();
+            builder.Services.AddTransient<VoiceProfilesPage>();
 
 #if DEBUG
             // AddDebug() can cause ANR during debugger attachment on Android

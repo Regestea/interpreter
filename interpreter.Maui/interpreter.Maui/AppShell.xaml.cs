@@ -2,21 +2,66 @@
 {
     public partial class AppShell : Shell
     {
+        public Command<string> NavigateCommand { get; }
+
         public AppShell()
         {
             InitializeComponent();
+
+            // Simple navigation command used by drawer items
+            NavigateCommand = new Command<string>(OnNavigate);
+
+            // Set BindingContext so drawer items can bind to NavigateCommand
+            BindingContext = this;
+
+            // Subscribe to navigation events to update the title
+            Navigated += OnShellNavigated;
         }
 
         private void OnMenuButtonClicked(object sender, EventArgs e)
         {
-            // Navigate to MainPage and trigger menu via ViewModel
-            if (CurrentPage is MainPage mainPage)
+            // Toggle the Shell flyout (drawer)
+            Shell.Current.FlyoutIsPresented = !Shell.Current.FlyoutIsPresented;
+        }
+
+        private async void OnNavigate(string? route)
+        {
+            if (string.IsNullOrWhiteSpace(route))
+                return;
+
+            // Check if we're already on the requested page
+            var currentRoute = Current?.CurrentState?.Location?.OriginalString ?? string.Empty;
+            var targetPage = route.TrimStart('/');
+            
+            if (currentRoute.Contains(targetPage))
             {
-                // Access the ViewModel's MenuToggleCommand through BindingContext
-                if (mainPage.BindingContext is ViewModels.MainViewModel viewModel)
-                {
-                    viewModel.MenuToggleCommand.Execute(null);
-                }
+                // Already on this page, just close the flyout
+                Shell.Current.FlyoutIsPresented = false;
+                return;
+            }
+
+            // Close flyout first
+            Shell.Current.FlyoutIsPresented = false;
+
+            // Wait for flyout close animation to complete (~250ms is typical)
+            await Task.Delay(250);
+
+            // Navigate without animation for instant switch
+            await Shell.Current.GoToAsync(route, false);
+        }
+
+        private void OnShellNavigated(object? sender, ShellNavigatedEventArgs e)
+        {
+            // Update title based on current route
+            var currentRoute = Current?.CurrentState?.Location?.OriginalString ?? string.Empty;
+
+            if (currentRoute.Contains("VoiceProfilesPage"))
+            {
+                PageTitleLabel.Text = "Voice Profiles";
+            }
+            else
+            {
+                PageTitleLabel.Text = "Recording";
             }
         }
     }

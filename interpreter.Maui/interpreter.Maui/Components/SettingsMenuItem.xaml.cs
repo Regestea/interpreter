@@ -1,4 +1,6 @@
-﻿namespace interpreter.Maui.Components;
+﻿using System.Windows.Input;
+
+namespace interpreter.Maui.Components;
 
 /// <summary>
 /// A menu item for settings flyout with icon and text.
@@ -13,6 +15,13 @@ public partial class SettingsMenuItem : ContentView
 
     public static readonly BindableProperty TextColorProperty =
         BindableProperty.Create(nameof(TextColor), typeof(Color), typeof(SettingsMenuItem), Colors.White);
+
+    // New: Command for navigation / actions when used in a drawer
+    public static readonly BindableProperty CommandProperty =
+        BindableProperty.Create(nameof(Command), typeof(ICommand), typeof(SettingsMenuItem));
+
+    public static readonly BindableProperty CommandParameterProperty =
+        BindableProperty.Create(nameof(CommandParameter), typeof(object), typeof(SettingsMenuItem));
 
     public string Icon
     {
@@ -30,6 +39,18 @@ public partial class SettingsMenuItem : ContentView
     {
         get => (Color)GetValue(TextColorProperty);
         set => SetValue(TextColorProperty, value);
+    }
+
+    public ICommand? Command
+    {
+        get => (ICommand?)GetValue(CommandProperty);
+        set => SetValue(CommandProperty, value);
+    }
+
+    public object? CommandParameter
+    {
+        get => GetValue(CommandParameterProperty);
+        set => SetValue(CommandParameterProperty, value);
     }
 
     /// <summary>
@@ -51,7 +72,13 @@ public partial class SettingsMenuItem : ContentView
 
     private void OnTapped(object? sender, EventArgs e)
     {
+        // First, raise the Clicked event for backward compatibility
         Clicked?.Invoke(this, e);
+
+        // Then execute the bound command if present
+        if (Command is { } cmd && cmd.CanExecute(CommandParameter))
+        {
+            cmd.Execute(CommandParameter);
+        }
     }
 }
-

@@ -4,16 +4,54 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:local="clr-namespace:interpreter.Maui"
-    Shell.FlyoutBehavior="Disabled"
+    xmlns:pages="clr-namespace:interpreter.Maui.Pages"
+    xmlns:components="clr-namespace:interpreter.Maui.Components"
+    FlyoutBehavior="Flyout"
+    FlyoutWidth="220"
     Title="interpreter.Maui"
     Shell.NavBarIsVisible="True"
-    Shell.BackgroundColor="#0C1220"
-    Shell.ForegroundColor="#E6EDF3">
+    BackgroundColor="#0C1220"
+    ForegroundColor="#E6EDF3"
+    FlyoutBackgroundColor="#050816">
+
+    <Shell.FlyoutHeader>
+        <Grid Padding="16" RowDefinitions="Auto,Auto" RowSpacing="4" BackgroundColor="#050816">
+            <Label Text="Interpreter"
+                   FontSize="22"
+                   FontAttributes="Bold"
+                   TextColor="#F9FAFB"/>
+            <Label Grid.Row="1"
+                   Text="Your smart voice assistant"
+                   FontSize="12"
+                   TextColor="#9CA3AF"/>
+        </Grid>
+    </Shell.FlyoutHeader>
+
+    <Shell.FlyoutContent>
+        <ScrollView BackgroundColor="#050816">
+            <VerticalStackLayout Padding="12" Spacing="8" BackgroundColor="#050816">
+                <!-- Recording -->
+                <components:SettingsMenuItem
+                    Icon="🎙️"
+                    Text="Recording"
+                    Command="{Binding NavigateCommand}"
+                    CommandParameter="//RecordingPage" />
+
+                <!-- Voice Profiles -->
+                <components:SettingsMenuItem
+                    Icon="🎤"
+                    Text="Voice Profiles"
+                    Command="{Binding NavigateCommand}"
+                    CommandParameter="//VoiceProfilesPage" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </Shell.FlyoutContent>
 
     <Shell.TitleView>
         <Grid ColumnDefinitions="Auto,*,Auto" Padding="10,0">
-            <Label Grid.Column="0" 
-                   Text="Home" 
+            <Label Grid.Column="0"
+                   x:Name="PageTitleLabel"
+                   Text="Recording" 
                    FontSize="20" 
                    FontAttributes="Bold"
                    VerticalOptions="Center"
@@ -51,9 +89,16 @@
         </Grid>
     </Shell.TitleView>
 
+    <!-- Recording Page - Default -->
     <ShellContent
-        Title="Home"
-        ContentTemplate="{DataTemplate local:MainPage}"
-        Route="MainPage" />
+        Title="Recording"
+        ContentTemplate="{DataTemplate pages:RecordingPage}"
+        Route="RecordingPage" />
+
+    <!-- Voice Profiles Page -->
+    <ShellContent
+        Title="Voice Profiles"
+        ContentTemplate="{DataTemplate pages:VoiceProfilesPage}"
+        Route="VoiceProfilesPage" />
 
 </Shell>

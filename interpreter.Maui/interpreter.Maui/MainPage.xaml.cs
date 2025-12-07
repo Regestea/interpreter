@@ -176,20 +176,9 @@ namespace interpreter.Maui
             _viewModel.NoiseAdjustCommand.Execute(null);
         }
 
-        private void OnMenuClicked(object? sender, EventArgs e)
-        {
-            _viewModel.MenuToggleCommand.Execute(null);
-        }
-
-
         private async void OnVoiceDetectorClicked(object? sender, EventArgs e)
         {
-            if (sender is Border border)
-            {
-                await _animationService.AnimateButtonPressAsync(border, 0.95);
-            }
-
-            // Close the menu flyout
+            // Close the menu flyout first
             _viewModel.IsMenuVisible = false;
 
             // Show Voice Detector Layout
@@ -333,6 +322,40 @@ namespace interpreter.Maui
         {
             // Only close if tapped on the background grid itself, not on the content
             await _modalService.CloseModalAsync();
+        }
+
+        #endregion
+
+        #region Navigation
+
+        protected override async void OnNavigatedTo(NavigatedToEventArgs args)
+        {
+            base.OnNavigatedTo(args);
+
+            try
+            {
+                var location = Shell.Current?.CurrentState?.Location;
+                if (location == null)
+                    return;
+
+                // Parse query manually from the Uri (e.g. //MainPage?showVoiceDetector=true)
+                var queryString = location.OriginalString;
+                if (string.IsNullOrEmpty(queryString))
+                    return;
+
+                // Check if the query contains showVoiceDetector=true
+                if (queryString.Contains("showVoiceDetector=true", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!VoiceDetectorLayout.IsVisible)
+                    {
+                        await ShowVoiceDetectorLayout();
+                    }
+                }
+            }
+            catch
+            {
+                // Silently ignore any parsing errors on startup
+            }
         }
 
         #endregion
