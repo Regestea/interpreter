@@ -4,27 +4,27 @@
              x:Class="interpreter.Maui.Components.PickerCard"
              x:Name="ThisControl">
     
-    <Border BackgroundColor="{Binding CardBackgroundColor, Source={x:Reference ThisControl}, FallbackValue=#18202B}"
+    <!-- surfaces & text pulled from page theme when embedded -->
+    
+    <Border Background="{Binding CardBackgroundColor, Source={x:Reference ThisControl}, FallbackValue=#111827}"
             StrokeThickness="1"
-            Stroke="{Binding CardStroke, Source={x:Reference ThisControl}, FallbackValue=#40FFFFFF}">
+            Stroke="#1F2937">
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="18"/>
+        </Border.StrokeShape>
+        <Border.Shadow>
+            <Shadow Brush="#33000000" Offset="0,6" Radius="14" Opacity="0.3"/>
+        </Border.Shadow>
         <Border.Padding>
             <OnIdiom x:TypeArguments="Thickness"
                      Phone="16,12"
                      Tablet="20,16"
                      Desktop="20,16"/>
         </Border.Padding>
-        <Border.Shadow>
-            <Shadow Brush="#40000000"
-                    Offset="0,10"
-                    Radius="30"
-                    Opacity="0.3"/>
-        </Border.Shadow>
-        <Border.StrokeShape>
-            <RoundRectangle CornerRadius="20"/>
-        </Border.StrokeShape>
+
         <VerticalStackLayout Spacing="8">
             <Label Text="{Binding Title, Source={x:Reference ThisControl}}"
-                   TextColor="{Binding TitleColor, Source={x:Reference ThisControl}, FallbackValue=#BB86FC}"
+                   TextColor="{Binding TitleColor, Source={x:Reference ThisControl}, FallbackValue=#22C7B8}"
                    FontAttributes="Bold">
                 <Label.FontSize>
                     <OnIdiom x:TypeArguments="x:Double"
@@ -34,8 +34,9 @@
                 </Label.FontSize>
             </Label>
             <Picker x:Name="InnerPicker"
-                    TextColor="White"
-                    TitleColor="#80FFFFFF"
+                    TextColor="#E5E7EB"
+                    TitleColor="#6B7280"
+                    BackgroundColor="Transparent"
                     Title="{Binding PickerTitle, Source={x:Reference ThisControl}}"
                     ItemsSource="{Binding ItemsSource, Source={x:Reference ThisControl}}"
                     SelectedIndex="{Binding SelectedIndex, Source={x:Reference ThisControl}, Mode=TwoWay}"
@@ -49,6 +50,4 @@
             </Picker>
         </VerticalStackLayout>
     </Border>
-    
 </ContentView>
-

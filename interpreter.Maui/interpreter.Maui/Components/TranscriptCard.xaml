@@ -4,9 +4,15 @@
              x:Class="interpreter.Maui.Components.TranscriptCard"
              x:Name="ThisControl">
     
-    <Border BackgroundColor="{Binding CardBackgroundColor, Source={x:Reference ThisControl}, FallbackValue=#18202B}"
+    <Border Background="{Binding CardBackgroundColor, Source={x:Reference ThisControl}, FallbackValue=#111827}"
             StrokeThickness="1"
-            Stroke="{Binding CardStroke, Source={x:Reference ThisControl}, FallbackValue=#40FFFFFF}">
+            Stroke="#1F2937">
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="20"/>
+        </Border.StrokeShape>
+        <Border.Shadow>
+            <Shadow Brush="#33000000" Offset="0,8" Radius="18" Opacity="0.3"/>
+        </Border.Shadow>
         <Border.Padding>
             <OnIdiom x:TypeArguments="Thickness"
                      Phone="16"
@@ -19,19 +25,10 @@
                      Tablet="140"
                      Desktop="140"/>
         </Border.HeightRequest>
-        <Border.Shadow>
-            <Shadow Brush="#40000000"
-                    Offset="0,8"
-                    Radius="20"
-                    Opacity="0.2"/>
-        </Border.Shadow>
-        <Border.StrokeShape>
-            <RoundRectangle CornerRadius="24"/>
-        </Border.StrokeShape>
         <ScrollView>
             <Label x:Name="TranscriptLabel"
                    Text="{Binding TranscriptText, Source={x:Reference ThisControl}}"
-                   TextColor="{Binding TextColor, Source={x:Reference ThisControl}, FallbackValue=White}"
+                   TextColor="{Binding TextColor, Source={x:Reference ThisControl}, FallbackValue=#E5E7EB}"
                    LineHeight="1.5">
                 <Label.FontSize>
                     <OnIdiom x:TypeArguments="x:Double"
@@ -42,5 +39,4 @@
             </Label>
         </ScrollView>
     </Border>
-    
 </ContentView>

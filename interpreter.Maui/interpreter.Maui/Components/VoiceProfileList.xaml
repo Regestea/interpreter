@@ -3,25 +3,44 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="interpreter.Maui.Components.VoiceProfileList">
     
-    <Border BackgroundColor="#1A1F2E"
+    <ContentView.Resources>
+        <Color x:Key="ColorSurface">#0B1220</Color>
+        <Color x:Key="ColorSurfaceHigh">#111827</Color>
+        <Color x:Key="ColorTextPrimary">#F9FAFB</Color>
+        <Color x:Key="ColorTextSecondary">#9CA3AF</Color>
+        <Color x:Key="ColorAccentPrimary">#22C7B8</Color>
+        <Color x:Key="ColorDanger">#F97373</Color>
+        <SolidColorBrush x:Key="BrushSurface" Color="{StaticResource ColorSurface}" />
+        <SolidColorBrush x:Key="BrushSurfaceHigh" Color="{StaticResource ColorSurfaceHigh}" />
+        <SolidColorBrush x:Key="BrushTextPrimary" Color="{StaticResource ColorTextPrimary}" />
+        <SolidColorBrush x:Key="BrushTextSecondary" Color="{StaticResource ColorTextSecondary}" />
+        <SolidColorBrush x:Key="BrushAccentPrimary" Color="{StaticResource ColorAccentPrimary}" />
+        <SolidColorBrush x:Key="BrushDanger" Color="{StaticResource ColorDanger}" />
+    </ContentView.Resources>
+    
+    <Border Background="{StaticResource BrushSurfaceHigh}"
             StrokeThickness="1"
-            Stroke="#374151"
+            Stroke="#1F2937"
             Padding="20">
         <Border.StrokeShape>
             <RoundRectangle CornerRadius="16"/>
         </Border.StrokeShape>
+        <Border.Shadow>
+            <Shadow Brush="#33000000" Offset="0,6" Radius="14" Opacity="0.3" />
+        </Border.Shadow>
         
         <VerticalStackLayout Spacing="16">
             <Grid ColumnDefinitions="*,Auto">
                 <Label Grid.Column="0"
                        Text="Saved Voice Profiles"
-                       TextColor="#7cc8a5"
+                       TextColor="{StaticResource ColorAccentPrimary}"
                        FontSize="16"
                        FontAttributes="Bold"/>
                 
                 <Border Grid.Column="1"
-                        BackgroundColor="#374151"
-                        StrokeThickness="0"
+                        Background="{StaticResource BrushSurface}"
+                        StrokeThickness="1"
+                        Stroke="#1F2937"
                         Padding="8,4">
                     <Border.StrokeShape>
                         <RoundRectangle CornerRadius="8"/>
@@ -30,7 +49,7 @@
                         <TapGestureRecognizer Tapped="OnRefreshClicked"/>
                     </Border.GestureRecognizers>
                     <Label Text="🔄 Refresh"
-                           TextColor="White"
+                           TextColor="{StaticResource ColorTextPrimary}"
                            FontSize="12"/>
                 </Border>
             </Grid>
@@ -40,9 +59,9 @@
                             EmptyView="No voice profiles saved yet">
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
-                        <Border BackgroundColor="#252D3D"
+                        <Border Background="{StaticResource BrushSurface}"
                                 StrokeThickness="1"
-                                Stroke="#374151"
+                                Stroke="#1F2937"
                                 Padding="16,12"
                                 Margin="0,4">
                             <Border.StrokeShape>
@@ -57,16 +76,16 @@
                                 
                                 <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
                                     <Label Text="{Binding Name}"
-                                           TextColor="White"
+                                           TextColor="{StaticResource ColorTextPrimary}"
                                            FontSize="14"
                                            FontAttributes="Bold"/>
                                     <Label Text="{Binding Id, StringFormat='ID: {0}'}"
-                                           TextColor="#6B7280"
+                                           TextColor="{StaticResource ColorTextSecondary}"
                                            FontSize="11"/>
                                 </VerticalStackLayout>
                                 
                                 <Border Grid.Column="2"
-                                        BackgroundColor="#EF4444"
+                                        Background="{StaticResource BrushDanger}"
                                         StrokeThickness="0"
                                         Padding="8,4"
                                         VerticalOptions="Center">

@@ -1,31 +1,170 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:local="clr-namespace:interpreter.Maui"
              xmlns:drawables="clr-namespace:interpreter.Maui.Drawables"
              xmlns:components="clr-namespace:interpreter.Maui.Components"
              x:Class="interpreter.Maui.MainPage">
     
     <ContentPage.Background>
+        <!-- Calm deep blue gradient background -->
         <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#0B0F14" Offset="0.0" />
-            <GradientStop Color="#0C1220" Offset="0.5" />
-            <GradientStop Color="#0B0F14" Offset="1.0" />
+            <GradientStop Color="#020617" Offset="0.0" />
+            <GradientStop Color="#020617" Offset="0.3" />
+            <GradientStop Color="#020617" Offset="1.0" />
         </LinearGradientBrush>
     </ContentPage.Background>
 
     <ContentPage.Resources>
+        <!-- Core surfaces -->
+        <Color x:Key="ColorSurfaceLowest">#020617</Color>
+        <Color x:Key="ColorSurfaceLow">#050816</Color>
+        <Color x:Key="ColorSurface">#0B1220</Color>
+        <Color x:Key="ColorSurfaceHigh">#111827</Color>
+
+        <!-- Text colors -->
+        <Color x:Key="ColorTextPrimary">#F9FAFB</Color>
+        <Color x:Key="ColorTextSecondary">#9CA3AF</Color>
+        <Color x:Key="ColorTextMuted">#6B7280</Color>
+
+        <!-- Accents -->
+        <Color x:Key="ColorAccentPrimary">#22C7B8</Color> <!-- teal -->
+        <Color x:Key="ColorAccentSecondary">#818CF8</Color> <!-- indigo -->
+        <Color x:Key="ColorAccentSoft">#334155</Color>
+
+        <!-- Status -->
+        <Color x:Key="ColorDanger">#F97373</Color>
+        <Color x:Key="ColorSuccess">#4ADE80</Color>
+
+        <!-- Overlay -->
+        <Color x:Key="ColorOverlayScrim">#CC020617</Color>
+
+        <!-- Brushes -->
+        <SolidColorBrush x:Key="BrushSurfaceLowest" Color="{StaticResource ColorSurfaceLowest}" />
+        <SolidColorBrush x:Key="BrushSurfaceLow" Color="{StaticResource ColorSurfaceLow}" />
+        <SolidColorBrush x:Key="BrushSurface" Color="{StaticResource ColorSurface}" />
+        <SolidColorBrush x:Key="BrushSurfaceHigh" Color="{StaticResource ColorSurfaceHigh}" />
+
+        <SolidColorBrush x:Key="BrushTextPrimary" Color="{StaticResource ColorTextPrimary}" />
+        <SolidColorBrush x:Key="BrushTextSecondary" Color="{StaticResource ColorTextSecondary}" />
+        <SolidColorBrush x:Key="BrushTextMuted" Color="{StaticResource ColorTextMuted}" />
+
+        <SolidColorBrush x:Key="BrushAccentPrimary" Color="{StaticResource ColorAccentPrimary}" />
+        <SolidColorBrush x:Key="BrushAccentSecondary" Color="{StaticResource ColorAccentSecondary}" />
+        <SolidColorBrush x:Key="BrushAccentSoft" Color="{StaticResource ColorAccentSoft}" />
+        <SolidColorBrush x:Key="BrushDanger" Color="{StaticResource ColorDanger}" />
+        <SolidColorBrush x:Key="BrushSuccess" Color="{StaticResource ColorSuccess}" />
+
+        <SolidColorBrush x:Key="BrushOverlayScrim" Color="{StaticResource ColorOverlayScrim}" />
+
+        <!-- Borders -->
+        <SolidColorBrush x:Key="BrushBorderSubtle" Color="#1F2937" />
+        <SolidColorBrush x:Key="BrushBorderStrong" Color="#4B5563" />
+
+        <!-- Small pill background for back button, etc. -->
+        <LinearGradientBrush x:Key="BrushPillBackground" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#020617" Offset="0.0" />
+            <GradientStop Color="#111827" Offset="1.0" />
+        </LinearGradientBrush>
+
+        <!-- Main card: only this gets a teal edge -->
+        <Style x:Key="MainCardBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource BrushSurface}" />
+            <Setter Property="StrokeThickness" Value="1.5" />
+            <Setter Property="Stroke" Value="{StaticResource BrushAccentPrimary}" />
+            <Setter Property="StrokeShape">
+                <Setter.Value>
+                    <RoundRectangle CornerRadius="22" />
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Shadow">
+                <Setter.Value>
+                    <Shadow Brush="#80000000" Offset="0,10" Radius="20" Opacity="0.35" />
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Generic inner card: neutral border, subtle shadow -->
+        <Style x:Key="InnerCardBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource BrushSurfaceHigh}" />
+            <Setter Property="StrokeThickness" Value="1" />
+            <Setter Property="Stroke" Value="{StaticResource BrushBorderSubtle}" />
+            <Setter Property="StrokeShape">
+                <Setter.Value>
+                    <RoundRectangle CornerRadius="18" />
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Shadow">
+                <Setter.Value>
+                    <Shadow Brush="#40000000" Offset="0,6" Radius="14" Opacity="0.3" />
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Flyout: soft panel -->
+        <Style x:Key="FlyoutBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource BrushSurfaceHigh}" />
+            <Setter Property="StrokeThickness" Value="1" />
+            <Setter Property="Stroke" Value="{StaticResource BrushBorderSubtle}" />
+            <Setter Property="StrokeShape">
+                <Setter.Value>
+                    <RoundRectangle CornerRadius="16" />
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Shadow">
+                <Setter.Value>
+                    <Shadow Brush="#66000000" Offset="0,8" Radius="20" Opacity="0.4" />
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Modal dialog: accent edge but calm body -->
+        <Style x:Key="ModalBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource BrushSurface}" />
+            <Setter Property="StrokeThickness" Value="1.5" />
+            <Setter Property="Stroke" Value="{StaticResource BrushAccentSecondary}" />
+            <Setter Property="StrokeShape">
+                <Setter.Value>
+                    <RoundRectangle CornerRadius="20" />
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Shadow">
+                <Setter.Value>
+                    <Shadow Brush="#99000000" Offset="0,16" Radius="32" Opacity="0.55" />
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Primary circular action button -->
+        <RadialGradientBrush x:Key="BrushActionButtonBackground" Center="0.5,0.5" Radius="0.9">
+            <GradientStop Color="#22C7B8" Offset="0.0" />
+            <GradientStop Color="#0F766E" Offset="0.4" />
+            <GradientStop Color="#022C22" Offset="1.0" />
+        </RadialGradientBrush>
+
+        <Style x:Key="ActionCircleBorderStyle" TargetType="Border">
+            <Setter Property="StrokeThickness" Value="3" />
+            <Setter Property="Stroke" Value="{StaticResource BrushAccentPrimary}" />
+            <Setter Property="Background" Value="{StaticResource BrushActionButtonBackground}" />
+            <Setter Property="StrokeShape">
+                <Setter.Value>
+                    <Ellipse />
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Shadow">
+                <Setter.Value>
+                    <Shadow Brush="#66000000" Offset="0,14" Radius="26" Opacity="0.55" />
+                </Setter.Value>
+            </Setter>
+        </Style>
+    
+        <!-- Existing drawable resource -->
         <drawables:FrequencyChartDrawable x:Key="FrequencyChartDrawable"/>
     </ContentPage.Resources>
 
     <Grid>
-        <!-- Main Content -->
         <ScrollView>
-            <Border Background="{StaticResource GlassSurfaceBrushDark}"
-                    x:Name="MainBorder"
-                    StrokeThickness="1"
-                    Stroke="#30FFFFFF"
-                    Opacity="0.96">
+            <Border x:Name="MainBorder"
+                    Style="{StaticResource MainCardBorderStyle}">
                 <Border.Padding>
                     <OnIdiom x:TypeArguments="Thickness"
                              Phone="16"
@@ -38,15 +177,6 @@
                              Tablet="20"
                              Desktop="20"/>
                 </Border.Margin>
-                <Border.StrokeShape>
-                    <RoundRectangle CornerRadius="26"/>
-                </Border.StrokeShape>
-                <Border.Shadow>
-                    <Shadow Brush="#40FFFFFF"
-                            Offset="0,12"
-                            Radius="40"
-                            Opacity="0.35"/>
-                </Border.Shadow>
                 <Grid RowSpacing="20">
                 <!-- Initial State -->
                 <VerticalStackLayout x:Name="InitialStateLayout" 
@@ -58,10 +188,10 @@
                     <!-- Language Picker Card -->
                     <components:PickerCard x:Name="LanguagePickerBorder"
                                           Title="🌍 Language"
-                                          TitleColor="{StaticResource AppPurple}"
+                                          TitleColor="{StaticResource ColorAccentSecondary}"
                                           PickerTitle="Select Language"
-                                          CardBackgroundColor="{StaticResource DarkCardBackground}"
-                                          Opacity="0">
+                                          CardBackgroundColor="{StaticResource ColorSurface}"
+                                          Opacity="0.98">
                         <components:PickerCard.ItemsSource>
                             <x:Array Type="{x:Type x:String}">
                                 <x:String>🇮🇷 Persian</x:String>
@@ -73,10 +203,10 @@
                     <!-- Mode Picker Card -->
                     <components:PickerCard x:Name="ModePickerBorder"
                                           Title="⚙️ Mode"
-                                          TitleColor="{StaticResource AppMint}"
+                                          TitleColor="{StaticResource ColorAccentPrimary}"
                                           PickerTitle="Select Mode"
-                                          CardBackgroundColor="{StaticResource DarkCardBackground}"
-                                          Opacity="0">
+                                          CardBackgroundColor="{StaticResource ColorSurface}"
+                                          Opacity="0.98">
                         <components:PickerCard.ItemsSource>
                             <x:Array Type="{x:Type x:String}">
                                 <x:String>🔄 Translate Everything</x:String>
@@ -93,9 +223,9 @@
                                               Grid.Column="0"
                                               Icon="🎵"
                                               Text="Voice Tune"
-                                              TextColor="{StaticResource AppCoral}"
-                                              ShadowColor="{StaticResource AppCoral}"
-                                              CardBackgroundColor="{StaticResource DarkCardBackground}"
+                                              TextColor="{StaticResource ColorTextPrimary}"
+                                              ShadowColor="{StaticResource ColorAccentSecondary}"
+                                              CardBackgroundColor="{StaticResource ColorSurfaceLow}"
                                               Clicked="OnVoiceTuneClicked"/>
 
                         <!-- Noise Control Button -->
@@ -103,9 +233,9 @@
                                               Grid.Column="1"
                                               Icon="🔇"
                                               Text="Noise Control"
-                                              TextColor="{StaticResource AppCyan}"
-                                              ShadowColor="{StaticResource AppCyan}"
-                                              CardBackgroundColor="{StaticResource DarkCardBackground}"
+                                              TextColor="{StaticResource ColorTextPrimary}"
+                                              ShadowColor="{StaticResource ColorAccentPrimary}"
+                                              CardBackgroundColor="{StaticResource ColorSurfaceLow}"
                                               Clicked="OnNoiseAdjustClicked"/>
                     </Grid>
                 </VerticalStackLayout>
@@ -121,13 +251,13 @@
                     <!-- Transcript Card -->
                     <components:TranscriptCard x:Name="TranscriptBorder"
                                               TranscriptText="This is a sample text for the transcription area. The recognized speech will appear here in real-time as you speak."
-                                              CardBackgroundColor="{StaticResource DarkCardBackground}"/>
+                                              CardBackgroundColor="{StaticResource ColorSurface}"/>
                     
                     <!-- Frequency Chart Card -->
                     <components:FrequencyChartCard x:Name="ChartBorder"
                                                    Title="📊 Voice Frequency"
-                                                   TitleColor="{StaticResource AppMint}"
-                                                   CardBackgroundColor="{StaticResource DarkCardBackground}"
+                                                   TitleColor="{StaticResource ColorAccentPrimary}"
+                                                   CardBackgroundColor="{StaticResource ColorSurface}"
                                                    ChartDrawable="{StaticResource FrequencyChartDrawable}"/>
                     
                 </VerticalStackLayout>
@@ -143,19 +273,20 @@
                     <!-- Header with Back Button -->
                     <Grid ColumnDefinitions="Auto,*" Margin="0,0,0,10">
                         <Border Grid.Column="0"
-                                BackgroundColor="#1F2937"
-                                StrokeThickness="0"
+                                Background="{StaticResource BrushPillBackground}"
+                                StrokeThickness="1.5"
+                                Stroke="{StaticResource BrushBorderSubtle}"
                                 HeightRequest="40"
                                 WidthRequest="40"
                                 HorizontalOptions="Start">
                             <Border.StrokeShape>
-                                <RoundRectangle CornerRadius="12"/>
+                                <RoundRectangle CornerRadius="14"/>
                             </Border.StrokeShape>
                             <Border.GestureRecognizers>
                                 <TapGestureRecognizer Tapped="OnVoiceDetectorBackClicked"/>
                             </Border.GestureRecognizers>
                             <Label Text="←"
-                                   TextColor="White"
+                                   TextColor="{StaticResource ColorTextPrimary}"
                                    FontSize="20"
                                    HorizontalOptions="Center"
                                    VerticalOptions="Center"/>
@@ -163,7 +294,7 @@
                         
                         <Label Grid.Column="1"
                                Text="🎤 Voice Detector"
-                               TextColor="White"
+                               TextColor="{StaticResource ColorTextPrimary}"
                                FontSize="18"
                                FontAttributes="Bold"
                                HorizontalOptions="Center"
@@ -186,8 +317,7 @@
 
                 <!-- Action Button (Start/Stop) - Always visible, positioned at bottom -->
                 <Border x:Name="ActionButton"
-                        StrokeThickness="3"
-                        Stroke="#90FFFFFF"
+                        Style="{StaticResource ActionCircleBorderStyle}"
                         HorizontalOptions="Center"
                         VerticalOptions="End"
                         Margin="0,0,0,20">
@@ -203,21 +333,6 @@
                                  Tablet="180"
                                  Desktop="180"/>
                     </Border.HeightRequest>
-                    <Border.Background>
-                        <RadialGradientBrush Center="0.5,0.5" Radius="1.0">
-                            <GradientStop Color="#7cc8a5" Offset="0.0" />
-                            <GradientStop Color="#5cb88d" Offset="1.0" />
-                        </RadialGradientBrush>
-                    </Border.Background>
-                    <Border.Shadow>
-                        <Shadow Brush="#7cc8a5"
-                                Offset="0,12"
-                                Radius="35"
-                                Opacity="0.5"/>
-                    </Border.Shadow>
-                    <Border.StrokeShape>
-                        <Ellipse/>
-                    </Border.StrokeShape>
                     <Border.GestureRecognizers>
                         <TapGestureRecognizer Tapped="OnActionButtonClicked"/>
                     </Border.GestureRecognizers>
@@ -254,44 +369,33 @@
     </ScrollView>
 
         <!-- Menu Flyout -->
-            <Border x:Name="MenuFlyout"
+        <Border x:Name="MenuFlyout"
+                Style="{StaticResource FlyoutBorderStyle}"
                 IsVisible="False"
                 Opacity="0"
                 HorizontalOptions="End"
-                VerticalOptions="Start"
-                BackgroundColor="{StaticResource DarkSurface}"
-                StrokeThickness="1"
-                Stroke="#40BB00FF">
-                <Border.Padding>
-                    <OnIdiom x:TypeArguments="Thickness"
-                             Phone="12"
-                             Tablet="16"
-                             Desktop="16"/>
-                </Border.Padding>
-                <Border.Margin>
-                    <OnIdiom x:TypeArguments="Thickness"
-                             Phone="8,4"
-                             Tablet="10,5"
-                             Desktop="10,5"/>
-                </Border.Margin>
-                <Border.MinimumWidthRequest>
-                    <OnIdiom x:TypeArguments="x:Double"
-                             Phone="160"
-                             Tablet="180"
-                             Desktop="180"/>
-                </Border.MinimumWidthRequest>
-                <Border.Shadow>
-                <Shadow Brush="#80BB00FF"
-                        Offset="0,8"
-                        Radius="25"
-                        Opacity="0.35"/>
-            </Border.Shadow>
-            <Border.StrokeShape>
-                <RoundRectangle CornerRadius="20"/>
-            </Border.StrokeShape>
+                VerticalOptions="Start">
+            <Border.Padding>
+                <OnIdiom x:TypeArguments="Thickness"
+                         Phone="12"
+                         Tablet="16"
+                         Desktop="16"/>
+            </Border.Padding>
+            <Border.Margin>
+                <OnIdiom x:TypeArguments="Thickness"
+                         Phone="8,4"
+                         Tablet="10,5"
+                         Desktop="10,5"/>
+            </Border.Margin>
+            <Border.MinimumWidthRequest>
+                <OnIdiom x:TypeArguments="x:Double"
+                         Phone="160"
+                         Tablet="180"
+                         Desktop="180"/>
+            </Border.MinimumWidthRequest>
             <VerticalStackLayout Spacing="12">
                 <Label Text="⚙️ Settings"
-                       TextColor="{StaticResource DarkTextPrimary}"
+                       TextColor="{StaticResource ColorTextSecondary}"
                        FontAttributes="Bold"
                        Margin="0,0,0,8">
                     <Label.FontSize>
@@ -305,7 +409,7 @@
                 <!-- Voice Detector Button -->
                 <components:SettingsMenuItem Icon="🎤"
                                             Text="Voice Detector"
-                                            TextColor="{StaticResource DarkTextPrimary}"
+                                            TextColor="{StaticResource ColorTextPrimary}"
                                             Clicked="OnVoiceDetectorClicked"/>
             </VerticalStackLayout>
         </Border>
@@ -314,7 +418,7 @@
         <Grid x:Name="ModalContainer"
               IsVisible="False"
               Opacity="0"
-              BackgroundColor="#80000000"
+              Background="{StaticResource BrushOverlayScrim}"
               ZIndex="1000"
               HorizontalOptions="Fill"
               VerticalOptions="Fill">
@@ -323,9 +427,7 @@
             </Grid.GestureRecognizers>
             
             <Border x:Name="ModalContentBorder"
-                    BackgroundColor="#0D0D18"
-                    StrokeThickness="2"
-                    Stroke="#7000FFFF"
+                    Style="{StaticResource ModalBorderStyle}"
                     HorizontalOptions="Center"
                     VerticalOptions="Center"
                     MaximumWidthRequest="400"
@@ -337,15 +439,6 @@
                              Tablet="24"
                              Desktop="24"/>
                 </Border.Padding>
-                <Border.Shadow>
-                    <Shadow Brush="#9000FFFF"
-                            Offset="0,12"
-                            Radius="45"
-                            Opacity="0.7"/>
-                </Border.Shadow>
-                <Border.StrokeShape>
-                    <RoundRectangle CornerRadius="24"/>
-                </Border.StrokeShape>
                 <!-- Content will be set dynamically -->
             </Border>
         </Grid>

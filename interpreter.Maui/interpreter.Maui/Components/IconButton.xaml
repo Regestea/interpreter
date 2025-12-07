@@ -4,40 +4,39 @@
              x:Class="interpreter.Maui.Components.IconButton"
              x:Name="ThisControl">
     
-    <Border BackgroundColor="{Binding CardBackgroundColor, Source={x:Reference ThisControl}, FallbackValue=#18202B}"
+    <Border Background="{Binding CardBackgroundColor, Source={x:Reference ThisControl}, FallbackValue=#020617}"
             StrokeThickness="1"
-            Stroke="{Binding CardStroke, Source={x:Reference ThisControl}, FallbackValue=#40FFFFFF}">
+            Stroke="#1F2937">
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="16"/>
+        </Border.StrokeShape>
+        <Border.Shadow>
+            <Shadow Brush="#33000000" Offset="0,6" Radius="15" Opacity="0.3"/>
+        </Border.Shadow>
         <Border.Padding>
             <OnIdiom x:TypeArguments="Thickness"
-                     Phone="12,16"
-                     Tablet="16,20"
-                     Desktop="16,20"/>
+                     Phone="12,14"
+                     Tablet="16,18"
+                     Desktop="16,18"/>
         </Border.Padding>
-        <Border.Shadow>
-            <Shadow Brush="{Binding ShadowColor, Source={x:Reference ThisControl}, FallbackValue=#FF6B6B}"
-                    Offset="0,6"
-                    Radius="15"
-                    Opacity="0.2"/>
-        </Border.Shadow>
-        <Border.StrokeShape>
-            <RoundRectangle CornerRadius="18"/>
-        </Border.StrokeShape>
         <Border.GestureRecognizers>
             <TapGestureRecognizer Tapped="OnTapped"/>
         </Border.GestureRecognizers>
-        <VerticalStackLayout Spacing="6" HorizontalOptions="Center">
+        <VerticalStackLayout Spacing="4" HorizontalOptions="Center">
             <Label Text="{Binding Icon, Source={x:Reference ThisControl}}"
+                   TextColor="{Binding TextColor, Source={x:Reference ThisControl}, FallbackValue=#E5E7EB}"
                    HorizontalOptions="Center">
                 <Label.FontSize>
                     <OnIdiom x:TypeArguments="x:Double"
-                             Phone="24"
-                             Tablet="28"
-                             Desktop="28"/>
+                             Phone="22"
+                             Tablet="24"
+                             Desktop="24"/>
                 </Label.FontSize>
             </Label>
             <Label Text="{Binding Text, Source={x:Reference ThisControl}}"
-                   TextColor="{Binding TextColor, Source={x:Reference ThisControl}, FallbackValue=#FF6B6B}"
+                   TextColor="{Binding TextColor, Source={x:Reference ThisControl}, FallbackValue=#E5E7EB}"
                    FontAttributes="Bold"
+                   Opacity="0.9"
                    HorizontalTextAlignment="Center">
                 <Label.FontSize>
                     <OnIdiom x:TypeArguments="x:Double"
@@ -48,5 +47,4 @@
             </Label>
         </VerticalStackLayout>
     </Border>
-    
 </ContentView>

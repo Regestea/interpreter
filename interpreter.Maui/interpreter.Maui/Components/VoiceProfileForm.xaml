@@ -3,105 +3,190 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="interpreter.Maui.Components.VoiceProfileForm">
     
-    <Border BackgroundColor="#1A1F2E"
+    <ContentView.Resources>
+        <!-- Match MainPage theme -->
+        <Color x:Key="ColorSurface">#0B1220</Color>
+        <Color x:Key="ColorSurfaceHigh">#111827</Color>
+        <Color x:Key="ColorTextPrimary">#F9FAFB</Color>
+        <Color x:Key="ColorTextSecondary">#9CA3AF</Color>
+        <Color x:Key="ColorAccentPrimary">#22C7B8</Color>
+        <Color x:Key="ColorAccentSecondary">#818CF8</Color>
+        <Color x:Key="ColorDanger">#F97373</Color>
+        <Color x:Key="ColorWarning">#FACC15</Color>
+
+        <SolidColorBrush x:Key="BrushSurface" Color="{StaticResource ColorSurface}" />
+        <SolidColorBrush x:Key="BrushSurfaceHigh" Color="{StaticResource ColorSurfaceHigh}" />
+        <SolidColorBrush x:Key="BrushTextPrimary" Color="{StaticResource ColorTextPrimary}" />
+        <SolidColorBrush x:Key="BrushTextSecondary" Color="{StaticResource ColorTextSecondary}" />
+        <SolidColorBrush x:Key="BrushAccentPrimary" Color="{StaticResource ColorAccentPrimary}" />
+        <SolidColorBrush x:Key="BrushAccentSecondary" Color="{StaticResource ColorAccentSecondary}" />
+        <SolidColorBrush x:Key="BrushDanger" Color="{StaticResource ColorDanger}" />
+        <SolidColorBrush x:Key="BrushWarning" Color="{StaticResource ColorWarning}" />
+    </ContentView.Resources>
+    
+    <!-- Outer card -->
+    <Border Background="{StaticResource BrushSurfaceHigh}"
             StrokeThickness="1"
-            Stroke="#374151"
-            Padding="20">
+            Stroke="#1F2937"
+            Padding="18">
         <Border.StrokeShape>
-            <RoundRectangle CornerRadius="16"/>
+            <RoundRectangle CornerRadius="18"/>
         </Border.StrokeShape>
+        <Border.Shadow>
+            <Shadow Brush="#33000000" Offset="0,8" Radius="18" Opacity="0.3" />
+        </Border.Shadow>
         
         <VerticalStackLayout Spacing="16">
-            <Label Text="Create New Voice Profile"
-                   TextColor="#7cc8a5"
-                   FontSize="16"
-                   FontAttributes="Bold"/>
-            
-            <Label Text="Record a voice sample to create a new profile for voice detection."
-                   TextColor="#9CA3AF"
-                   FontSize="13"/>
-            
+            <!-- Header row -->
+            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto">
+                <VerticalStackLayout Grid.Column="0" Spacing="2">
+                    <Label Text="Voice Profile"
+                           TextColor="{StaticResource ColorTextPrimary}"
+                           FontSize="15"
+                           FontAttributes="Bold"/>
+                    <Label Text="Train the detector to recognize this voice."
+                           TextColor="{StaticResource ColorTextSecondary}"
+                           FontSize="11"/>
+                </VerticalStackLayout>
+                
+                <!-- Small status pill -->
+                <Border Grid.Column="1"
+                        Background="{StaticResource BrushSurface}"
+                        StrokeThickness="1"
+                        Stroke="#1F2937"
+                        Padding="8,4"
+                        HorizontalOptions="End">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="10"/>
+                    </Border.StrokeShape>
+                    <HorizontalStackLayout Spacing="4">
+                        <BoxView WidthRequest="8" HeightRequest="8" CornerRadius="4" Color="{StaticResource ColorAccentPrimary}"/>
+                        <Label x:Name="StatusPillLabel"
+                               Text="Ready"
+                               TextColor="{StaticResource ColorTextSecondary}"
+                               FontSize="11"/>
+                    </HorizontalStackLayout>
+                </Border>
+            </Grid>
+
             <!-- Name Entry -->
-            <VerticalStackLayout Spacing="8">
-                <Label Text="Voice Name"
-                       TextColor="#7cc8a5"
-                       FontSize="14"
+            <VerticalStackLayout Spacing="6">
+                <Label Text="Profile Name"
+                       TextColor="{StaticResource ColorTextPrimary}"
+                       FontSize="13"
                        FontAttributes="Bold"/>
                 
                 <Border x:Name="NameEntryBorder"
-                        BackgroundColor="#1F2937"
+                        Background="{StaticResource BrushSurface}"
                         StrokeThickness="1"
-                        Stroke="#374151"
-                        Padding="12,8">
+                        Stroke="#1F2937"
+                        Padding="10,6">
                     <Border.StrokeShape>
                         <RoundRectangle CornerRadius="12"/>
                     </Border.StrokeShape>
                     <Entry x:Name="NameEntry"
-                           Placeholder="Enter a name for this voice profile"
+                           Placeholder="e.g. Meeting Room Mic, John, Studio Mic"
                            PlaceholderColor="#6B7280"
-                           TextColor="White"
+                           TextColor="{StaticResource ColorTextPrimary}"
                            BackgroundColor="Transparent"
-                           FontSize="14"
+                           FontSize="13"
                            TextChanged="OnNameTextChanged"/>
                 </Border>
+                
+                <Label x:Name="NameHelperLabel"
+                       Text="Give this profile a clear, memorable name."
+                       TextColor="{StaticResource ColorTextSecondary}"
+                       FontSize="11"/>
             </VerticalStackLayout>
             
             <!-- Voice Recording Section -->
-            <VerticalStackLayout Spacing="12">
-                <Label Text="Voice Sample"
-                       TextColor="#7cc8a5"
-                       FontSize="14"
-                       FontAttributes="Bold"/>
+            <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*" ColumnSpacing="14" RowSpacing="8">
+                <!-- Record button column -->
+                <VerticalStackLayout Grid.RowSpan="2" Grid.Column="0" Spacing="6" HorizontalOptions="Center">
+                    <Border x:Name="RecordButton"
+                            Background="{StaticResource BrushDanger}"
+                            StrokeThickness="0"
+                            HeightRequest="70"
+                            WidthRequest="70"
+                            HorizontalOptions="Center">
+                        <Border.StrokeShape>
+                            <Ellipse/>
+                        </Border.StrokeShape>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnRecordClicked"/>
+                        </Border.GestureRecognizers>
+                        <Label x:Name="RecordIcon"
+                               Text="🎙️"
+                               FontSize="30"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center"/>
+                    </Border>
+                    <Label x:Name="RecordButtonLabel"
+                           Text="Record"
+                           TextColor="{StaticResource ColorTextSecondary}"
+                           FontSize="11"
+                           HorizontalOptions="Center"/>
+                </VerticalStackLayout>
+
+                <!-- Recording text / progress -->
+                <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="4" VerticalOptions="Center">
+                    <Label Text="Voice Sample"
+                           TextColor="{StaticResource ColorTextPrimary}"
+                           FontSize="13"
+                           FontAttributes="Bold"/>
+                    <Label x:Name="RecordingStatusLabel"
+                           Text="Tap the mic to capture 5–10 seconds of speech."
+                           TextColor="{StaticResource ColorTextSecondary}"
+                           FontSize="11"/>
+                </VerticalStackLayout>
+
+                <!-- Progress / hint row -->
+                <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,Auto" VerticalOptions="Center">
+                    <ProgressBar x:Name="RecordingProgressBar"
+                                 Grid.Column="0"
+                                 Progress="0"
+                                 HeightRequest="4"
+                                 BackgroundColor="#111827"
+                                 ProgressColor="{StaticResource ColorAccentPrimary}"/>
+                    <Label x:Name="RecordingLengthLabel"
+                           Grid.Column="1"
+                           Text="0s"
+                           TextColor="{StaticResource ColorTextSecondary}"
+                           FontSize="10"
+                           Margin="8,0,0,0"/>
+                </Grid>
+            </Grid>
+            
+            <!-- Actions row -->
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" Margin="0,4,0,0">
+                <Label x:Name="FormMessageLabel"
+                       Grid.Column="0"
+                       Text=""
+                       TextColor="{StaticResource ColorWarning}"
+                       FontSize="11"
+                       LineBreakMode="TailTruncation"/>
                 
-                <Label Text="Tap the button below to record a voice sample"
-                       TextColor="#9CA3AF"
-                       FontSize="12"/>
-                
-                <!-- Record Button -->
-                <Border x:Name="RecordButton"
-                        BackgroundColor="#EF4444"
+                <Border x:Name="SaveButton"
+                        Grid.Column="1"
+                        Background="{StaticResource BrushAccentPrimary}"
                         StrokeThickness="0"
-                        HeightRequest="64"
-                        WidthRequest="64"
-                        HorizontalOptions="Center">
+                        Padding="16,10">
                     <Border.StrokeShape>
-                        <Ellipse/>
+                        <RoundRectangle CornerRadius="12"/>
                     </Border.StrokeShape>
                     <Border.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnRecordClicked"/>
+                        <TapGestureRecognizer Tapped="OnSaveClicked"/>
                     </Border.GestureRecognizers>
-                    <Label x:Name="RecordIcon"
-                           Text="🎙️"
-                           FontSize="28"
-                           HorizontalOptions="Center"
-                           VerticalOptions="Center"/>
+                    <HorizontalStackLayout Spacing="6">
+                        <Label Text="💾"
+                               FontSize="13"/>
+                        <Label Text="Save"
+                               TextColor="{StaticResource ColorTextPrimary}"
+                               FontSize="13"
+                               FontAttributes="Bold"/>
+                    </HorizontalStackLayout>
                 </Border>
-                
-                <Label x:Name="RecordingStatusLabel"
-                       Text="Ready to record"
-                       TextColor="#9CA3AF"
-                       FontSize="12"
-                       HorizontalOptions="Center"/>
-            </VerticalStackLayout>
-            
-            <!-- Save Button -->
-            <Border x:Name="SaveButton"
-                    BackgroundColor="#7cc8a5"
-                    StrokeThickness="0"
-                    Padding="16,12"
-                    Margin="0,8,0,0">
-                <Border.StrokeShape>
-                    <RoundRectangle CornerRadius="12"/>
-                </Border.StrokeShape>
-                <Border.GestureRecognizers>
-                    <TapGestureRecognizer Tapped="OnSaveClicked"/>
-                </Border.GestureRecognizers>
-                <Label Text="Save Voice Profile"
-                       TextColor="White"
-                       FontSize="14"
-                       FontAttributes="Bold"
-                       HorizontalOptions="Center"/>
-            </Border>
+            </Grid>
         </VerticalStackLayout>
     </Border>
     

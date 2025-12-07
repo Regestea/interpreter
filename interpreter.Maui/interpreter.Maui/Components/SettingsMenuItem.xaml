@@ -4,7 +4,13 @@
              x:Class="interpreter.Maui.Components.SettingsMenuItem"
              x:Name="ThisControl">
     
-    <Border BackgroundColor="Transparent"
+    <ContentView.Resources>
+        <Color x:Key="ColorSurfaceLow">#0B1020</Color>
+        <Color x:Key="ColorTextPrimary">#F9FAFB</Color>
+        <SolidColorBrush x:Key="BrushSurfaceLow" Color="{StaticResource ColorSurfaceLow}" />
+    </ContentView.Resources>
+    
+    <Border Background="{StaticResource BrushSurfaceLow}"
             StrokeThickness="0"
             Padding="8">
         <Border.GestureRecognizers>
@@ -13,6 +19,7 @@
         <HorizontalStackLayout Spacing="12">
             <Label x:Name="IconLabel"
                    Text="{Binding Icon, Source={x:Reference ThisControl}}"
+                   TextColor="{StaticResource ColorTextPrimary}"
                    VerticalOptions="Center">
                 <Label.FontSize>
                     <OnIdiom x:TypeArguments="x:Double"
@@ -23,7 +30,7 @@
             </Label>
             <Label x:Name="TextLabel"
                    Text="{Binding Text, Source={x:Reference ThisControl}}"
-                   TextColor="{Binding TextColor, Source={x:Reference ThisControl}, FallbackValue=White}"
+                   TextColor="{Binding TextColor, Source={x:Reference ThisControl}, FallbackValue={StaticResource ColorTextPrimary}}"
                    VerticalOptions="Center">
                 <Label.FontSize>
                     <OnIdiom x:TypeArguments="x:Double"
