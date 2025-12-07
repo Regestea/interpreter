@@ -1,0 +1,93 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="interpreter.Maui.Components.VoiceProfileList">
+    
+    <Border BackgroundColor="#1A1F2E"
+            StrokeThickness="1"
+            Stroke="#374151"
+            Padding="20">
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="16"/>
+        </Border.StrokeShape>
+        
+        <VerticalStackLayout Spacing="16">
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Grid.Column="0"
+                       Text="Saved Voice Profiles"
+                       TextColor="#7cc8a5"
+                       FontSize="16"
+                       FontAttributes="Bold"/>
+                
+                <Border Grid.Column="1"
+                        BackgroundColor="#374151"
+                        StrokeThickness="0"
+                        Padding="8,4">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="8"/>
+                    </Border.StrokeShape>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnRefreshClicked"/>
+                    </Border.GestureRecognizers>
+                    <Label Text="🔄 Refresh"
+                           TextColor="White"
+                           FontSize="12"/>
+                </Border>
+            </Grid>
+            
+            <!-- Voice Profiles List -->
+            <CollectionView x:Name="ProfilesCollection"
+                            EmptyView="No voice profiles saved yet">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Border BackgroundColor="#252D3D"
+                                StrokeThickness="1"
+                                Stroke="#374151"
+                                Padding="16,12"
+                                Margin="0,4">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="12"/>
+                            </Border.StrokeShape>
+                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                <Label Grid.Column="0"
+                                       Text="🎤"
+                                       FontSize="20"
+                                       VerticalOptions="Center"
+                                       Margin="0,0,12,0"/>
+                                
+                                <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
+                                    <Label Text="{Binding Name}"
+                                           TextColor="White"
+                                           FontSize="14"
+                                           FontAttributes="Bold"/>
+                                    <Label Text="{Binding Id, StringFormat='ID: {0}'}"
+                                           TextColor="#6B7280"
+                                           FontSize="11"/>
+                                </VerticalStackLayout>
+                                
+                                <Border Grid.Column="2"
+                                        BackgroundColor="#EF4444"
+                                        StrokeThickness="0"
+                                        Padding="8,4"
+                                        VerticalOptions="Center">
+                                    <Border.StrokeShape>
+                                        <RoundRectangle CornerRadius="8"/>
+                                    </Border.StrokeShape>
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer 
+                                            Tapped="OnDeleteClicked"
+                                            CommandParameter="{Binding Id}"/>
+                                    </Border.GestureRecognizers>
+                                    <Label Text="🗑️"
+                                           FontSize="14"
+                                           HorizontalOptions="Center"/>
+                                </Border>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </VerticalStackLayout>
+    </Border>
+    
+</ContentView>

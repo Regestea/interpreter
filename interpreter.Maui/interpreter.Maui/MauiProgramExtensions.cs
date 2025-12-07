@@ -18,7 +18,6 @@ namespace interpreter.Maui
 
             // Register shared services
             builder.Services.AddSingleton<IAnimationService, AnimationService>();
-            builder.Services.AddSingleton<IThemeService, ThemeService>();
             builder.Services.AddSingleton<IButtonStateService, ButtonStateService>();
             builder.Services.AddSingleton<IModalService, ModalService>();
             

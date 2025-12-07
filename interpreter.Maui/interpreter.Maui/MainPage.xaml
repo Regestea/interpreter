@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:interpreter.Maui"
              xmlns:drawables="clr-namespace:interpreter.Maui.Drawables"
+             xmlns:components="clr-namespace:interpreter.Maui.Components"
              x:Class="interpreter.Maui.MainPage">
     
     <ContentPage.Background>
@@ -55,203 +56,57 @@
                                    IsVisible="True">
                     
                     <!-- Language Picker Card -->
-                    <Border BackgroundColor="{StaticResource DarkCardBackground}"
-                            StrokeThickness="1"
-                            Stroke="#40FFFFFF"
-                            Opacity="0"
-                            x:Name="LanguagePickerBorder">
-                        <Border.Padding>
-                            <OnIdiom x:TypeArguments="Thickness"
-                                     Phone="16,12"
-                                     Tablet="20,16"
-                                     Desktop="20,16"/>
-                        </Border.Padding>
-                        <Border.Shadow>
-                            <Shadow Brush="#40000000"
-                                    Offset="0,10"
-                                    Radius="30"
-                                    Opacity="0.3"/>
-                        </Border.Shadow>
-                        <Border.StrokeShape>
-                            <RoundRectangle CornerRadius="20"/>
-                        </Border.StrokeShape>
-                        <VerticalStackLayout Spacing="8">
-                            <Label Text="🌍 Language"
-                                   TextColor="{StaticResource AppPurple}"
-                                   FontAttributes="Bold">
-                                <Label.FontSize>
-                                    <OnIdiom x:TypeArguments="x:Double"
-                                             Phone="13"
-                                             Tablet="14"
-                                             Desktop="14"/>
-                                </Label.FontSize>
-                            </Label>
-                            <Picker x:Name="LanguagePicker"
-                                    TextColor="{StaticResource DarkTextPrimary}"
-                                    TitleColor="{StaticResource DarkTextSecondary}"
-                                    Title="Select Language">
-                                <Picker.FontSize>
-                                    <OnIdiom x:TypeArguments="x:Double"
-                                             Phone="14"
-                                             Tablet="16"
-                                             Desktop="16"/>
-                                </Picker.FontSize>
-                                <Picker.Items>
-                                    <x:String>🇮🇷 Persian</x:String>
-                                    <x:String>🇬🇧 English</x:String>
-                                </Picker.Items>
-                            </Picker>
-                        </VerticalStackLayout>
-                    </Border>
+                    <components:PickerCard x:Name="LanguagePickerBorder"
+                                          Title="🌍 Language"
+                                          TitleColor="{StaticResource AppPurple}"
+                                          PickerTitle="Select Language"
+                                          CardBackgroundColor="{StaticResource DarkCardBackground}"
+                                          Opacity="0">
+                        <components:PickerCard.ItemsSource>
+                            <x:Array Type="{x:Type x:String}">
+                                <x:String>🇮🇷 Persian</x:String>
+                                <x:String>🇬🇧 English</x:String>
+                            </x:Array>
+                        </components:PickerCard.ItemsSource>
+                    </components:PickerCard>
 
                     <!-- Mode Picker Card -->
-                    <Border BackgroundColor="{StaticResource DarkCardBackground}"
-                            StrokeThickness="1"
-                            Stroke="#40FFFFFF"
-                            Opacity="0"
-                            x:Name="ModePickerBorder">
-                        <Border.Padding>
-                            <OnIdiom x:TypeArguments="Thickness"
-                                     Phone="16,12"
-                                     Tablet="20,16"
-                                     Desktop="20,16"/>
-                        </Border.Padding>
-                        <Border.Shadow>
-                            <Shadow Brush="#40000000"
-                                    Offset="0,10"
-                                    Radius="30"
-                                    Opacity="0.3"/>
-                        </Border.Shadow>
-                        <Border.StrokeShape>
-                            <RoundRectangle CornerRadius="20"/>
-                        </Border.StrokeShape>
-                        <VerticalStackLayout Spacing="8">
-                            <Label Text="⚙️ Mode"
-                                   TextColor="{StaticResource AppMint}"
-                                   FontAttributes="Bold">
-                                <Label.FontSize>
-                                    <OnIdiom x:TypeArguments="x:Double"
-                                             Phone="13"
-                                             Tablet="14"
-                                             Desktop="14"/>
-                                </Label.FontSize>
-                            </Label>
-                            <Picker x:Name="ModePicker"
-                                    TextColor="{StaticResource DarkTextPrimary}"
-                                    TitleColor="{StaticResource DarkTextSecondary}"
-                                    Title="Select Mode">
-                                <Picker.FontSize>
-                                    <OnIdiom x:TypeArguments="x:Double"
-                                             Phone="14"
-                                             Tablet="16"
-                                             Desktop="16"/>
-                                </Picker.FontSize>
-                                <Picker.Items>
-                                    <x:String>🔄 Translate Everything</x:String>
-                                    <x:String>🤫 Ignore My Talks</x:String>
-                                    <x:String>💬 Interpreter</x:String>
-                                </Picker.Items>
-                            </Picker>
-                        </VerticalStackLayout>
-                    </Border>
+                    <components:PickerCard x:Name="ModePickerBorder"
+                                          Title="⚙️ Mode"
+                                          TitleColor="{StaticResource AppMint}"
+                                          PickerTitle="Select Mode"
+                                          CardBackgroundColor="{StaticResource DarkCardBackground}"
+                                          Opacity="0">
+                        <components:PickerCard.ItemsSource>
+                            <x:Array Type="{x:Type x:String}">
+                                <x:String>🔄 Translate Everything</x:String>
+                                <x:String>🤫 Ignore My Talks</x:String>
+                                <x:String>💬 Interpreter</x:String>
+                            </x:Array>
+                        </components:PickerCard.ItemsSource>
+                    </components:PickerCard>
                     
-                         <!-- Bottom Buttons Grid -->
+                    <!-- Bottom Buttons Grid -->
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                        <!-- Detect My Voice Tune Button -->
-                        <Border Grid.Column="0"
-                                x:Name="VoiceTuneButton"
-                                BackgroundColor="{StaticResource DarkCardBackground}"
-                                StrokeThickness="1"
-                                Stroke="#40FFFFFF">
-                            <Border.Padding>
-                                <OnIdiom x:TypeArguments="Thickness"
-                                         Phone="12,16"
-                                         Tablet="16,20"
-                                         Desktop="16,20"/>
-                            </Border.Padding>
-                            <Border.Shadow>
-                                <Shadow Brush="{StaticResource AppCoral}"
-                                        Offset="0,6"
-                                        Radius="15"
-                                        Opacity="0.2"/>
-                            </Border.Shadow>
-                            <Border.StrokeShape>
-                                <RoundRectangle CornerRadius="18"/>
-                            </Border.StrokeShape>
-                            <Border.GestureRecognizers>
-                                <TapGestureRecognizer Tapped="OnVoiceTuneClicked"/>
-                            </Border.GestureRecognizers>
-                            <VerticalStackLayout Spacing="6" HorizontalOptions="Center">
-                                <Label Text="🎵"
-                                       HorizontalOptions="Center">
-                                    <Label.FontSize>
-                                        <OnIdiom x:TypeArguments="x:Double"
-                                                 Phone="24"
-                                                 Tablet="28"
-                                                 Desktop="28"/>
-                                    </Label.FontSize>
-                                </Label>
-                                <Label Text="Voice Tune"
-                                       TextColor="{StaticResource AppCoral}"
-                                       FontAttributes="Bold"
-                                       HorizontalTextAlignment="Center">
-                                    <Label.FontSize>
-                                        <OnIdiom x:TypeArguments="x:Double"
-                                                 Phone="11"
-                                                 Tablet="13"
-                                                 Desktop="13"/>
-                                    </Label.FontSize>
-                                </Label>
-                            </VerticalStackLayout>
-                        </Border>
+                        <!-- Voice Tune Button -->
+                        <components:IconButton x:Name="VoiceTuneButton"
+                                              Grid.Column="0"
+                                              Icon="🎵"
+                                              Text="Voice Tune"
+                                              TextColor="{StaticResource AppCoral}"
+                                              ShadowColor="{StaticResource AppCoral}"
+                                              CardBackgroundColor="{StaticResource DarkCardBackground}"
+                                              Clicked="OnVoiceTuneClicked"/>
 
-                        <!-- Adjust Environment Noise Button -->
-                        <Border Grid.Column="1"
-                                x:Name="NoiseButton"
-                                BackgroundColor="{StaticResource DarkCardBackground}"
-                                StrokeThickness="1"
-                                Stroke="#40FFFFFF">
-                            <Border.Padding>
-                                <OnIdiom x:TypeArguments="Thickness"
-                                         Phone="12,16"
-                                         Tablet="16,20"
-                                         Desktop="16,20"/>
-                            </Border.Padding>
-                            <Border.Shadow>
-                                <Shadow Brush="{StaticResource AppCyan}"
-                                        Offset="0,6"
-                                        Radius="15"
-                                        Opacity="0.2"/>
-                            </Border.Shadow>
-                            <Border.StrokeShape>
-                                <RoundRectangle CornerRadius="18"/>
-                            </Border.StrokeShape>
-                            <Border.GestureRecognizers>
-                                <TapGestureRecognizer Tapped="OnNoiseAdjustClicked"/>
-                            </Border.GestureRecognizers>
-                            <VerticalStackLayout Spacing="6" HorizontalOptions="Center">
-                                <Label Text="🔇"
-                                       HorizontalOptions="Center">
-                                    <Label.FontSize>
-                                        <OnIdiom x:TypeArguments="x:Double"
-                                                 Phone="24"
-                                                 Tablet="28"
-                                                 Desktop="28"/>
-                                    </Label.FontSize>
-                                </Label>
-                                <Label Text="Noise Control"
-                                       TextColor="{StaticResource AppCyan}"
-                                       FontAttributes="Bold"
-                                       HorizontalTextAlignment="Center">
-                                    <Label.FontSize>
-                                        <OnIdiom x:TypeArguments="x:Double"
-                                                 Phone="11"
-                                                 Tablet="13"
-                                                 Desktop="13"/>
-                                    </Label.FontSize>
-                                </Label>
-                            </VerticalStackLayout>
-                        </Border>
+                        <!-- Noise Control Button -->
+                        <components:IconButton x:Name="NoiseButton"
+                                              Grid.Column="1"
+                                              Icon="🔇"
+                                              Text="Noise Control"
+                                              TextColor="{StaticResource AppCyan}"
+                                              ShadowColor="{StaticResource AppCyan}"
+                                              CardBackgroundColor="{StaticResource DarkCardBackground}"
+                                              Clicked="OnNoiseAdjustClicked"/>
                     </Grid>
                 </VerticalStackLayout>
 
@@ -263,89 +118,69 @@
                                    IsVisible="False"
                                    Opacity="0">
                     
-                    <!-- Text Display Card -->
-                    <Border BackgroundColor="{StaticResource DarkCardBackground}"
-                            StrokeThickness="1"
-                            Stroke="#40FFFFFF"
-                            x:Name="TranscriptBorder">
-                        <Border.Padding>
-                            <OnIdiom x:TypeArguments="Thickness"
-                                     Phone="16"
-                                     Tablet="24"
-                                     Desktop="24"/>
-                        </Border.Padding>
-                        <Border.HeightRequest>
-                            <OnIdiom x:TypeArguments="x:Double"
-                                     Phone="120"
-                                     Tablet="140"
-                                     Desktop="140"/>
-                        </Border.HeightRequest>
-                        <Border.Shadow>
-                            <Shadow Brush="#40000000"
-                                    Offset="0,8"
-                                    Radius="20"
-                                    Opacity="0.2"/>
-                        </Border.Shadow>
-                        <Border.StrokeShape>
-                            <RoundRectangle CornerRadius="24"/>
-                        </Border.StrokeShape>
-                        <ScrollView>
-                            <Label x:Name="TranscriptLabel"
-                                   Text="This is a sample text for the transcription area. The recognized speech will appear here in real-time as you speak."
-                                   TextColor="{StaticResource DarkTextPrimary}"
-                                   LineHeight="1.5">
-                                <Label.FontSize>
-                                    <OnIdiom x:TypeArguments="x:Double"
-                                             Phone="14"
-                                             Tablet="16"
-                                             Desktop="16"/>
-                                </Label.FontSize>
-                            </Label>
-                        </ScrollView>
-                    </Border>
+                    <!-- Transcript Card -->
+                    <components:TranscriptCard x:Name="TranscriptBorder"
+                                              TranscriptText="This is a sample text for the transcription area. The recognized speech will appear here in real-time as you speak."
+                                              CardBackgroundColor="{StaticResource DarkCardBackground}"/>
                     
                     <!-- Frequency Chart Card -->
-                    <Border BackgroundColor="{StaticResource DarkCardBackground}"
-                            StrokeThickness="1"
-                            Stroke="#40FFFFFF"
-                            x:Name="ChartBorder">
-                        <Border.Padding>
-                            <OnIdiom x:TypeArguments="Thickness"
-                                     Phone="16"
-                                     Tablet="20"
-                                     Desktop="20"/>
-                        </Border.Padding>
-                        <Border.HeightRequest>
-                            <OnIdiom x:TypeArguments="x:Double"
-                                     Phone="130"
-                                     Tablet="150"
-                                     Desktop="150"/>
-                        </Border.HeightRequest>
-                        <Border.Shadow>
-                            <Shadow Brush="#40000000"
-                                    Offset="0,8"
-                                    Radius="20"
-                                    Opacity="0.2"/>
-                        </Border.Shadow>
-                        <Border.StrokeShape>
-                            <RoundRectangle CornerRadius="24"/>
-                        </Border.StrokeShape>
-                        <VerticalStackLayout Spacing="12">
-                            <Label Text="📊 Voice Frequency"
-                                   TextColor="{StaticResource AppMint}"
-                                   FontAttributes="Bold">
-                                <Label.FontSize>
-                                    <OnIdiom x:TypeArguments="x:Double"
-                                             Phone="13"
-                                             Tablet="14"
-                                             Desktop="14"/>
-                                </Label.FontSize>
-                            </Label>
-                            <GraphicsView x:Name="FrequencyChartView" 
-                                          HeightRequest="100"
-                                          Drawable="{StaticResource FrequencyChartDrawable}"/>
-                        </VerticalStackLayout>
-                    </Border>
+                    <components:FrequencyChartCard x:Name="ChartBorder"
+                                                   Title="📊 Voice Frequency"
+                                                   TitleColor="{StaticResource AppMint}"
+                                                   CardBackgroundColor="{StaticResource DarkCardBackground}"
+                                                   ChartDrawable="{StaticResource FrequencyChartDrawable}"/>
+                    
+                </VerticalStackLayout>
+
+                <!-- Voice Detector State -->
+                <VerticalStackLayout x:Name="VoiceDetectorLayout" 
+                                   Spacing="20" 
+                                   VerticalOptions="Start"
+                                   Margin="0,20,0,20"
+                                   IsVisible="False"
+                                   Opacity="0">
+                    
+                    <!-- Header with Back Button -->
+                    <Grid ColumnDefinitions="Auto,*" Margin="0,0,0,10">
+                        <Border Grid.Column="0"
+                                BackgroundColor="#1F2937"
+                                StrokeThickness="0"
+                                HeightRequest="40"
+                                WidthRequest="40"
+                                HorizontalOptions="Start">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="12"/>
+                            </Border.StrokeShape>
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnVoiceDetectorBackClicked"/>
+                            </Border.GestureRecognizers>
+                            <Label Text="←"
+                                   TextColor="White"
+                                   FontSize="20"
+                                   HorizontalOptions="Center"
+                                   VerticalOptions="Center"/>
+                        </Border>
+                        
+                        <Label Grid.Column="1"
+                               Text="🎤 Voice Detector"
+                               TextColor="White"
+                               FontSize="18"
+                               FontAttributes="Bold"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center"/>
+                    </Grid>
+                    
+                    <!-- Voice Profile Form Component -->
+                    <components:VoiceProfileForm x:Name="ProfileForm"
+                                                 SaveClicked="OnProfileFormSaveClicked"
+                                                 RecordingStarted="OnProfileFormRecordingStarted"
+                                                 RecordingStopped="OnProfileFormRecordingStopped"
+                                                 ValidationFailed="OnProfileFormValidationFailed"/>
+                    
+                    <!-- Voice Profile List Component -->
+                    <components:VoiceProfileList x:Name="ProfileList"
+                                                 RefreshClicked="OnProfileListRefreshClicked"
+                                                 DeleteClicked="OnProfileListDeleteClicked"/>
                     
                 </VerticalStackLayout>
 
@@ -467,37 +302,11 @@
                     </Label.FontSize>
                 </Label>
                 
-                <!-- Theme Toggle Button -->
-                <Border BackgroundColor="Transparent"
-                        StrokeThickness="0"
-                        Padding="8">
-                    <Border.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnThemeToggleClicked"/>
-                    </Border.GestureRecognizers>
-                    <HorizontalStackLayout Spacing="12">
-                        <Label x:Name="ThemeIcon"
-                               Text="🌙"
-                               VerticalOptions="Center">
-                            <Label.FontSize>
-                                <OnIdiom x:TypeArguments="x:Double"
-                                         Phone="18"
-                                         Tablet="20"
-                                         Desktop="20"/>
-                            </Label.FontSize>
-                        </Label>
-                        <Label x:Name="ThemeLabel"
-                               Text="Dark Mode"
-                               TextColor="{StaticResource DarkTextPrimary}"
-                               VerticalOptions="Center">
-                            <Label.FontSize>
-                                <OnIdiom x:TypeArguments="x:Double"
-                                         Phone="13"
-                                         Tablet="14"
-                                         Desktop="14"/>
-                            </Label.FontSize>
-                        </Label>
-                    </HorizontalStackLayout>
-                </Border>
+                <!-- Voice Detector Button -->
+                <components:SettingsMenuItem Icon="🎤"
+                                            Text="Voice Detector"
+                                            TextColor="{StaticResource DarkTextPrimary}"
+                                            Clicked="OnVoiceDetectorClicked"/>
             </VerticalStackLayout>
         </Border>
 

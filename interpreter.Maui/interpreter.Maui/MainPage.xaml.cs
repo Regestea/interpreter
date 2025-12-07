@@ -1,6 +1,6 @@
-﻿using Android.Util;
-using interpreter.Maui.ViewModels;
+﻿using interpreter.Maui.ViewModels;
 using interpreter.Maui.Services;
+using interpreter.Maui.Components;
 
 namespace interpreter.Maui
 {
@@ -12,33 +12,28 @@ namespace interpreter.Maui
     {
         private readonly MainViewModel _viewModel;
         private readonly IAnimationService _animationService;
-        private readonly IThemeService _themeService;
         private readonly IButtonStateService _buttonStateService;
         private readonly IAudioRecordingService? _audioRecordingService;
-        private readonly IAudioPlaybackService? _audioPlaybackService;
         private readonly IModalService _modalService;
-        private readonly IAdjustmentService _adjustmentService;
+        private readonly IAdjustmentService? _adjustmentService;
 
         // Constructor with dependency injection (Dependency Inversion Principle)
         public MainPage(
             MainViewModel viewModel,
             IAnimationService animationService,
-            IThemeService themeService,
             IButtonStateService buttonStateService,
-            IModalService modalService, IAdjustmentService adjustmentService,
-            IAudioRecordingService? audioRecordingService = null,
-            IAudioPlaybackService? audioPlaybackService = null)
+            IModalService modalService,
+            IAdjustmentService? adjustmentService = null,
+            IAudioRecordingService? audioRecordingService = null)
         {
             InitializeComponent();
 
             _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
             _animationService = animationService ?? throw new ArgumentNullException(nameof(animationService));
-            _themeService = themeService ?? throw new ArgumentNullException(nameof(themeService));
             _buttonStateService = buttonStateService ?? throw new ArgumentNullException(nameof(buttonStateService));
             _modalService = modalService ?? throw new ArgumentNullException(nameof(modalService));
             _adjustmentService = adjustmentService;
             _audioRecordingService = audioRecordingService;
-            _audioPlaybackService = audioPlaybackService;
 
             BindingContext = _viewModel;
 
@@ -47,9 +42,6 @@ namespace interpreter.Maui
             {
                 concreteModalService.Initialize(ModalContainer, ModalContentBorder);
             }
-
-            // Apply dark theme immediately on page creation
-            _themeService.ApplyTheme(true, this, CreateThemeElements());
 
             SubscribeToViewModelEvents();
             Loaded += OnPageLoaded;
@@ -65,10 +57,6 @@ namespace interpreter.Maui
                 if (args.PropertyName == nameof(_viewModel.IsRecording))
                 {
                     await HandleRecordingStateChange();
-                }
-                else if (args.PropertyName == nameof(_viewModel.IsDarkTheme))
-                {
-                    HandleThemeChange();
                 }
                 else if (args.PropertyName == nameof(_viewModel.IsMenuVisible))
                 {
@@ -139,10 +127,6 @@ namespace interpreter.Maui
             }
         }
 
-        private void HandleThemeChange()
-        {
-            _themeService.ApplyTheme(_viewModel.IsDarkTheme, this, CreateThemeElements());
-        }
 
         private async Task HandleMenuVisibilityChange()
         {
@@ -184,7 +168,10 @@ namespace interpreter.Maui
             // Show the modal
             await _modalService.ShowModalAsync(modalContent, options);
 
-            await _adjustmentService.AdjustEnvironmentalNoise();
+            if (_adjustmentService != null)
+            {
+                await _adjustmentService.AdjustEnvironmentalNoise();
+            }
 
             _viewModel.NoiseAdjustCommand.Execute(null);
         }
@@ -194,14 +181,125 @@ namespace interpreter.Maui
             _viewModel.MenuToggleCommand.Execute(null);
         }
 
-        private async void OnThemeToggleClicked(object? sender, EventArgs e)
+
+        private async void OnVoiceDetectorClicked(object? sender, EventArgs e)
         {
             if (sender is Border border)
             {
                 await _animationService.AnimateButtonPressAsync(border, 0.95);
             }
 
-            _viewModel.ThemeToggleCommand.Execute(null);
+            // Close the menu flyout
+            _viewModel.IsMenuVisible = false;
+
+            // Show Voice Detector Layout
+            await ShowVoiceDetectorLayout();
+        }
+
+        private async void OnVoiceDetectorBackClicked(object? sender, EventArgs e)
+        {
+            // Hide Voice Detector Layout and show Initial Layout
+            await HideVoiceDetectorLayout();
+        }
+
+        private async Task ShowVoiceDetectorLayout()
+        {
+            // Hide initial state
+            await InitialStateLayout.FadeToAsync(0, 200);
+            InitialStateLayout.IsVisible = false;
+            
+            // Hide action button
+            await ActionButton.FadeToAsync(0, 200);
+            ActionButton.IsVisible = false;
+
+            // Show voice detector layout
+            VoiceDetectorLayout.IsVisible = true;
+            await VoiceDetectorLayout.FadeToAsync(1, 300);
+            
+            // Load voice profiles
+            LoadVoiceProfiles();
+        }
+
+        private async Task HideVoiceDetectorLayout()
+        {
+            // Hide voice detector layout
+            await VoiceDetectorLayout.FadeToAsync(0, 200);
+            VoiceDetectorLayout.IsVisible = false;
+
+            // Show initial state
+            InitialStateLayout.IsVisible = true;
+            await InitialStateLayout.FadeToAsync(1, 300);
+            
+            // Show action button
+            ActionButton.IsVisible = true;
+            await ActionButton.FadeToAsync(1, 300);
+        }
+
+        #endregion
+
+        #region Voice Detector Events
+
+        private async void OnProfileFormSaveClicked(object? sender, VoiceProfileSaveEventArgs e)
+        {
+            // TODO: Implement HTTP client request to VoiceDetectorController
+            // var request = new CreateVoiceDetectorRequest { Name = e.Name, Voice = e.VoiceData };
+            // var response = await _httpClient.PostAsJsonAsync("api/VoiceDetector", request);
+            // if (response.IsSuccessStatusCode)
+            // {
+            //     ProfileForm.Reset();
+            //     LoadVoiceProfiles();
+            // }
+
+            await DisplayAlert("Info", $"Save profile '{e.Name}' - HTTP client not implemented yet.", "OK");
+        }
+
+        private void OnProfileFormRecordingStarted(object? sender, EventArgs e)
+        {
+            // TODO: Start actual audio recording
+            // var bytes = await _audioRecordingService.StartRecordingAsync();
+        }
+
+        private void OnProfileFormRecordingStopped(object? sender, EventArgs e)
+        {
+            // TODO: Stop actual audio recording and set bytes
+            // var bytes = await _audioRecordingService.StopRecordingAsync();
+            // ProfileForm.RecordedAudioBytes = bytes;
+        }
+
+        private async void OnProfileFormValidationFailed(object? sender, string message)
+        {
+            await DisplayAlert("Validation Error", message, "OK");
+        }
+
+        private void OnProfileListRefreshClicked(object? sender, EventArgs e)
+        {
+            LoadVoiceProfiles();
+        }
+
+        private async void OnProfileListDeleteClicked(object? sender, Guid id)
+        {
+            var confirm = await DisplayAlert("Delete", "Are you sure you want to delete this voice profile?", "Yes", "No");
+            if (confirm)
+            {
+                // TODO: Implement HTTP client request to delete
+                // var response = await _httpClient.DeleteAsync($"api/VoiceDetector/{id}");
+                // if (response.IsSuccessStatusCode)
+                // {
+                //     LoadVoiceProfiles();
+                // }
+
+                await DisplayAlert("Info", $"Delete profile ID: {id} - HTTP client not implemented yet.", "OK");
+            }
+        }
+
+        private void LoadVoiceProfiles()
+        {
+            // TODO: Implement HTTP client request to get voice profiles
+            // var response = await _httpClient.GetFromJsonAsync<List<VoiceEmbeddingResponse>>("api/VoiceDetector");
+            // ProfileList.UpdateItems(response.Select(r => new VoiceProfileItem { Id = r.Id, Name = r.Name }));
+
+            // For now, show empty list
+            ProfileList.UpdateItems(new List<VoiceProfileItem>());
         }
 
         #endregion
@@ -237,27 +335,8 @@ namespace interpreter.Maui
             await _modalService.CloseModalAsync();
         }
 
-        /// <summary>
-        /// Factory method to create theme elements DTO
-        /// </summary>
-        private ThemeElements CreateThemeElements()
-        {
-            return new ThemeElements
-            {
-                MainBorder = MainBorder,
-                MenuFlyout = MenuFlyout,
-                ThemeIcon = ThemeIcon,
-                ThemeLabel = ThemeLabel,
-                LanguagePickerBorder = LanguagePickerBorder,
-                ModePickerBorder = ModePickerBorder,
-                VoiceTuneButton = VoiceTuneButton,
-                NoiseButton = NoiseButton,
-                TranscriptBorder = TranscriptBorder,
-                ChartBorder = ChartBorder,
-                TranscriptLabel = TranscriptLabel
-            };
-        }
-
         #endregion
     }
 }
+
+

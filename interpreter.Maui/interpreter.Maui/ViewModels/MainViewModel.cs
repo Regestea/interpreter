@@ -6,11 +6,11 @@ namespace interpreter.Maui.ViewModels
 {
     /// <summary>
     /// ViewModel for MainPage following MVVM pattern
+    /// Static dark theme only - no theme switching
     /// </summary>
     public class MainViewModel : INotifyPropertyChanged
     {
         private bool _isRecording;
-        private bool _isDarkTheme = true; // Force dark theme by default
         private bool _isMenuVisible;
         private string _transcriptText = "Your transcription will appear here...";
 
@@ -20,12 +20,6 @@ namespace interpreter.Maui.ViewModels
         {
             get => _isRecording;
             set => SetProperty(ref _isRecording, value);
-        }
-
-        public bool IsDarkTheme
-        {
-            get => _isDarkTheme;
-            set => SetProperty(ref _isDarkTheme, value);
         }
 
         public bool IsMenuVisible
@@ -47,7 +41,6 @@ namespace interpreter.Maui.ViewModels
         public ICommand VoiceTuneCommand { get; }
         public ICommand NoiseAdjustCommand { get; }
         public ICommand MenuToggleCommand { get; }
-        public ICommand ThemeToggleCommand { get; }
 
         public MainViewModel()
         {
@@ -55,8 +48,6 @@ namespace interpreter.Maui.ViewModels
             VoiceTuneCommand = new Command(OnVoiceTuneExecuted);
             NoiseAdjustCommand = new Command(OnNoiseAdjustExecuted);
             MenuToggleCommand = new Command(OnMenuToggleExecuted);
-            // Theme toggle disabled in dark-only mode
-            ThemeToggleCommand = new Command(() => { /* no-op in dark-only theme */ });
         }
 
         private void OnActionButtonExecuted()
@@ -81,8 +72,6 @@ namespace interpreter.Maui.ViewModels
             IsMenuVisible = !IsMenuVisible;
         }
 
-        // Removed theme toggle behavior (dark-only)
-
         protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
@@ -99,4 +88,3 @@ namespace interpreter.Maui.ViewModels
         }
     }
 }
-
