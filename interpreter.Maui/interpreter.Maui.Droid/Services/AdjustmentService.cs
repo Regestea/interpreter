@@ -4,10 +4,10 @@ namespace interpreter.Maui.Services;
 
 public class AdjustmentService: IAdjustmentService
 {
-    private readonly IAudioRecorder _audioRecorder;
+    private readonly IAudioRecorderService _audioRecorder;
     private readonly AudioCalibration _audioCalibration;
 
-    public AdjustmentService(IAudioRecorder audioRecorder, AudioCalibration audioCalibration)
+    public AdjustmentService(IAudioRecorderService audioRecorder, AudioCalibration audioCalibration)
     {
         _audioRecorder = audioRecorder ?? throw new ArgumentNullException(nameof(audioRecorder));
         _audioCalibration = audioCalibration ?? throw new ArgumentNullException(nameof(audioCalibration));

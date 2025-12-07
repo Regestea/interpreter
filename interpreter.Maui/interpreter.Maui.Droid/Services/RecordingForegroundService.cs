@@ -25,7 +25,7 @@ public class RecordingForegroundService : Service
     
     private AudioRecordingConfiguration? _config;
     private IRecordingNotificationManager? _notificationManager;
-    private IAudioRecorder? _audioRecorder;
+    private IAudioRecorderService? _audioRecorder;
     private SlidingWindowVad? _slidingWindowVad;
     private int _logCounter;
     private int _segmentCounter;
@@ -54,7 +54,7 @@ public class RecordingForegroundService : Service
         }
         
         _notificationManager ??= new RecordingNotificationManager(this);
-        _audioRecorder ??= new AudioRecorder(_config);
+        _audioRecorder ??= new AudioRecorderService(_config);
         
         var action = intent?.Action;
         if (action == ActionStart)

@@ -46,7 +46,7 @@ namespace interpreter.Maui
             // but RecordingForegroundService may instantiate them directly
             // since Android Services are created by the system, not the DI container
             builder.Services.AddSingleton<AudioRecordingConfiguration>();
-            builder.Services.AddTransient<IAudioRecorder, AudioRecorder>();
+            builder.Services.AddTransient<IAudioRecorderService, AudioRecorderService>();
             // RecordingNotificationManager requires Service instance in constructor,
             // so it cannot be injected in RecordingForegroundService via DI
 

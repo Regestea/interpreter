@@ -6,7 +6,7 @@ namespace interpreter.Maui.Services;
 /// <summary>
 /// Interface for audio recording operations using Android AudioRecord.
 /// </summary>
-public interface IAudioRecorder : IDisposable
+public interface IAudioRecorderService : IDisposable
 {
     /// <summary>
     /// Gets available audio input devices (requires AudioManager to be provided in constructor).

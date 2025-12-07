@@ -10,7 +10,7 @@ namespace interpreter.Maui.Services;
 /// <summary>
 /// Handles audio recording operations using Android AudioRecord.
 /// </summary>
-public class AudioRecorder : IAudioRecorder
+public class AudioRecorderService : IAudioRecorderService
 {
     private readonly AudioRecordingConfiguration _config;
     private readonly AudioManager? _audioManager;
@@ -20,7 +20,7 @@ public class AudioRecorder : IAudioRecorder
     private AutomaticGainControl? _automaticGainControl;
     private bool _disposed;
 
-    public AudioRecorder(AudioRecordingConfiguration config, AudioManager? audioManager = null)
+    public AudioRecorderService(AudioRecordingConfiguration config, AudioManager? audioManager = null)
     {
         _config = config ?? throw new ArgumentNullException(nameof(config));
         _audioManager = audioManager;
