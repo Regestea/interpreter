@@ -5,7 +5,7 @@
 /// </summary>
 public interface IButtonStateService
 {
-    void UpdateToStopState(Border actionButton, Label actionIcon, Label actionText);
-    void UpdateToStartState(Border actionButton, Label actionIcon, Label actionText);
+    void UpdateToStopState(Border actionButton, Label actionText);
+    void UpdateToStartState(Border actionButton, Label actionText);
 }
 

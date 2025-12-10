@@ -290,20 +290,7 @@
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnActionButtonClicked"/>
                         </Border.GestureRecognizers>
-                        <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="10">
-                            <Label x:Name="ActionIcon"
-                                   Text="▶"
-                                   TextColor="White"
-                                   HorizontalOptions="Center"
-                                   FontAttributes="Bold"
-                                   Margin="8,0,0,0">
-                                <Label.FontSize>
-                                    <OnIdiom x:TypeArguments="x:Double"
-                                             Phone="42"
-                                             Tablet="52"
-                                             Desktop="52"/>
-                                </Label.FontSize>
-                            </Label>
+                        <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="6">
                             <Label x:Name="ActionText"
                                    Text="START"
                                    TextColor="White"

@@ -98,7 +98,7 @@ namespace interpreter.Maui
                     TranscriptBorder,
                     ChartBorder);
 
-                _buttonStateService.UpdateToStopState(ActionButton, ActionIcon, ActionText);
+                _buttonStateService.UpdateToStopState(ActionButton, ActionText);
 
                 // Start pulse animation
                 _ = _animationService.AnimatePulseAsync(
@@ -115,7 +115,7 @@ namespace interpreter.Maui
                     LanguagePickerBorder,
                     ModePickerBorder);
 
-                _buttonStateService.UpdateToStartState(ActionButton, ActionIcon, ActionText);
+                _buttonStateService.UpdateToStartState(ActionButton, ActionText);
                 if (_audioRecordingService != null)
                 {
                     await _audioRecordingService.StopAsync();
