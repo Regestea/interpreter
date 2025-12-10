@@ -50,6 +50,8 @@ namespace interpreter.Maui
             // RecordingNotificationManager requires Service instance in constructor,
             // so it cannot be injected in RecordingForegroundService via DI
             
+            builder.Services.AddSingleton<ILocalStorageService, LocalStorageService>();
+            
             // Microphone management service
             builder.Services.AddSingleton<IMicrophoneManagerService>(_ =>
             {
