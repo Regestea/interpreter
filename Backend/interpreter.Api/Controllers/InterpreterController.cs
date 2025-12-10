@@ -96,7 +96,7 @@ public class InterpreterController : ControllerBase
 
             // Determine the source language
             string sourceLanguage;
-            if (request.CurrentAudioLanguages == CurrentAudioLanguages.AutoDetect)
+            if (request.InputAudioLanguages == InputAudioLanguages.AutoDetect)
             {
                 _logger.LogInformation("Auto-detecting language from audio");
                 sourceLanguage = await _whisperService.GetLanguageAsync(decodedAudio);
@@ -104,7 +104,7 @@ public class InterpreterController : ControllerBase
             }
             else
             {
-                sourceLanguage = request.CurrentAudioLanguages.ToValue();
+                sourceLanguage = request.InputAudioLanguages.ToValue();
                 _logger.LogInformation("Using specified language: {Language}", sourceLanguage);
             }
 

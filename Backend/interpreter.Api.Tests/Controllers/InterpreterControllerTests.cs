@@ -117,7 +117,7 @@ public class InterpreterControllerTests : IDisposable
         {
             AudioFile = new FileStream(_testAudioPath, FileMode.Open, FileAccess.Read),
             UserVoiceDetectorName = "",
-            CurrentAudioLanguages = CurrentAudioLanguages.AutoDetect,
+            InputAudioLanguages = InputAudioLanguages.AutoDetect,
             OutputLanguages = OutputLanguages.English,
             EnglishVoiceModels = EnglishVoiceModels.EnUsHfcFemaleMedium,
             Modes = Modes.IgnoreMyTalks
@@ -140,7 +140,7 @@ public class InterpreterControllerTests : IDisposable
         {
             AudioFile = new FileStream(_testAudioPath, FileMode.Open, FileAccess.Read),
             UserVoiceDetectorName = "non-existent-user",
-            CurrentAudioLanguages = CurrentAudioLanguages.English,
+            InputAudioLanguages = InputAudioLanguages.English,
             OutputLanguages = OutputLanguages.Persian,
             EnglishVoiceModels = EnglishVoiceModels.EnUsHfcFemaleMedium,
             Modes = Modes.IgnoreMyTalks
@@ -166,7 +166,7 @@ public class InterpreterControllerTests : IDisposable
         {
             AudioFile = new FileStream(_testAudioPath, FileMode.Open, FileAccess.Read),
             UserVoiceDetectorName = TestUserName,
-            CurrentAudioLanguages = CurrentAudioLanguages.English,
+            InputAudioLanguages = InputAudioLanguages.English,
             OutputLanguages = OutputLanguages.Persian,
             EnglishVoiceModels = EnglishVoiceModels.EnUsHfcFemaleMedium,
             Modes = Modes.IgnoreMyTalks
@@ -193,7 +193,7 @@ public class InterpreterControllerTests : IDisposable
         {
             AudioFile = new FileStream(_testAudioPath, FileMode.Open, FileAccess.Read),
             UserVoiceDetectorName = TestUserName,
-            CurrentAudioLanguages = CurrentAudioLanguages.English,
+            InputAudioLanguages = InputAudioLanguages.English,
             OutputLanguages = OutputLanguages.Persian,
             EnglishVoiceModels = EnglishVoiceModels.EnUsHfcFemaleMedium,
             Modes = Modes.HelpMeToTalk
@@ -217,7 +217,7 @@ public class InterpreterControllerTests : IDisposable
         {
             AudioFile = new FileStream(_testAudioPath, FileMode.Open, FileAccess.Read),
             UserVoiceDetectorName = TestUserName,
-            CurrentAudioLanguages = CurrentAudioLanguages.English,
+            InputAudioLanguages = InputAudioLanguages.English,
             OutputLanguages = OutputLanguages.English,
             EnglishVoiceModels = EnglishVoiceModels.EnUsHfcFemaleMedium,
             Modes = Modes.IgnoreMyTalks
@@ -245,7 +245,7 @@ public class InterpreterControllerTests : IDisposable
         {
             AudioFile = new FileStream(_testAudioPath, FileMode.Open, FileAccess.Read),
             UserVoiceDetectorName = TestUserName,
-            CurrentAudioLanguages = CurrentAudioLanguages.English,
+            InputAudioLanguages = InputAudioLanguages.English,
             OutputLanguages = OutputLanguages.Persian, // Different from source to trigger voice recognition
             EnglishVoiceModels = EnglishVoiceModels.EnUsHfcFemaleMedium,
             Modes = Modes.IgnoreMyTalks
@@ -270,7 +270,7 @@ public class InterpreterControllerTests : IDisposable
         {
             AudioFile = new FileStream(_testAudioPath, FileMode.Open, FileAccess.Read),
             UserVoiceDetectorName = TestUserName,
-            CurrentAudioLanguages = CurrentAudioLanguages.AutoDetect,
+            InputAudioLanguages = InputAudioLanguages.AutoDetect,
             OutputLanguages = OutputLanguages.English,
             EnglishVoiceModels = EnglishVoiceModels.EnUsHfcFemaleMedium,
             Modes = Modes.IgnoreMyTalks
@@ -301,7 +301,7 @@ public class InterpreterControllerTests : IDisposable
         {
             AudioFile = new FileStream(_testAudioPath, FileMode.Open, FileAccess.Read),
             UserVoiceDetectorName = TestUserName,
-            CurrentAudioLanguages = CurrentAudioLanguages.English,
+            InputAudioLanguages = InputAudioLanguages.English,
             OutputLanguages = OutputLanguages.English,
             EnglishVoiceModels = voiceModel,
             Modes = Modes.IgnoreMyTalks
@@ -326,7 +326,7 @@ public class InterpreterControllerTests : IDisposable
         {
             AudioFile = new FileStream(_testAudioPath, FileMode.Open, FileAccess.Read),
             UserVoiceDetectorName = TestUserName,
-            CurrentAudioLanguages = CurrentAudioLanguages.English,
+            InputAudioLanguages = InputAudioLanguages.English,
             OutputLanguages = OutputLanguages.English, // Same as source
             EnglishVoiceModels = EnglishVoiceModels.EnUsHfcFemaleMedium,
             Modes = Modes.HelpMeToTalk
@@ -353,7 +353,7 @@ public class InterpreterControllerTests : IDisposable
         {
             AudioFile = new FileStream(_testAudioPath, FileMode.Open, FileAccess.Read),
             UserVoiceDetectorName = TestUserName,
-            CurrentAudioLanguages = CurrentAudioLanguages.English,
+            InputAudioLanguages = InputAudioLanguages.English,
             OutputLanguages = OutputLanguages.Persian,
             EnglishVoiceModels = EnglishVoiceModels.EnUsHfcFemaleMedium,
             Modes = Modes.IgnoreMyTalks
@@ -393,7 +393,7 @@ public class InterpreterControllerTests : IDisposable
         {
             AudioFile = GetAudioFileAsBase64(),
             UserVoiceDetectorName = "custom-user",
-            CurrentAudioLanguages = CurrentAudioLanguages.English,
+            InputAudioLanguages = InputAudioLanguages.English,
             OutputLanguages = OutputLanguages.Persian, // Different from source to trigger voice recognition
             EnglishVoiceModels = EnglishVoiceModels.EnUsHfcFemaleMedium,
             Modes = Modes.IgnoreMyTalks

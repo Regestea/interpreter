@@ -2,7 +2,7 @@
 
 namespace Models.Shared.Enums;
 
-public enum CurrentAudioLanguages
+public enum InputAudioLanguages
 {
     [Display(Name = "en")] 
     English,

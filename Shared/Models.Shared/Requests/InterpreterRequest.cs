@@ -8,7 +8,7 @@ public class InterpreterRequest
     [Required]
     public required string AudioFile { get; set; }
 
-    public CurrentAudioLanguages CurrentAudioLanguages { get; set; }
+    public InputAudioLanguages InputAudioLanguages { get; set; }
 
     [Required] 
     public string UserVoiceDetectorName { get; set; } = null!;

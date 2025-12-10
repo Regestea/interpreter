@@ -155,7 +155,7 @@ public sealed class AudioProcessQueue
                     // var request = new InterpreterRequest()
                     // {
                     //     AudioFile = Convert.ToBase64String(memoryStream.ToArray()),
-                    //     CurrentAudioLanguages = CurrentAudioLanguages.English,
+                    //     InputAudioLanguages = InputAudioLanguages.English,
                     //     EnglishVoiceModels = EnglishVoiceModels.EnUsHfcFemaleMedium,
                     //     Modes = Modes.IgnoreMyTalks,
                     //     OutputLanguages = OutputLanguages.Persian,
