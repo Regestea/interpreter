@@ -8,7 +8,7 @@
     
     <Border Background="{Binding CardBackgroundColor, Source={x:Reference ThisControl}, FallbackValue=#111827}"
             StrokeThickness="1"
-            Stroke="#1F2937">
+            Stroke="{Binding CardStroke, Source={x:Reference ThisControl}, FallbackValue=#1F2937}">
         <Border.StrokeShape>
             <RoundRectangle CornerRadius="18"/>
         </Border.StrokeShape>

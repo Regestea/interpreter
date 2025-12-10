@@ -13,6 +13,8 @@ public class InterpreterRequest
     [Required] 
     public string UserVoiceDetectorName { get; set; } = null!;
 
+    public bool WithTts { get; set; } = true;
+
     public EnglishVoiceModels EnglishVoiceModels { get; set; }
 
     public OutputLanguages OutputLanguages { get; set; }

@@ -74,6 +74,14 @@
                            FontSize="14"/>
                 </VerticalStackLayout>
                 
+                <!-- Active Voice Profile Picker -->
+                <components:PickerCard x:Name="ActiveVoiceProfilePicker"
+                                      Title="👤 Active Voice Profile"
+                                      TitleColor="{StaticResource ColorAccentSecondary}"
+                                      PickerTitle="Select Active Voice Profile"
+                                      CardBackgroundColor="{StaticResource ColorSurface}">
+                </components:PickerCard>
+
                 <!-- Voice Profile Form Component -->
                 <components:VoiceProfileForm x:Name="ProfileForm"
                                              SaveClicked="OnProfileFormSaveClicked"

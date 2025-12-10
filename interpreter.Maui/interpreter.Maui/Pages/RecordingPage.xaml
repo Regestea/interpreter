@@ -129,6 +129,123 @@
                                        VerticalOptions="Start"
                                        Margin="0,20,0,200"
                                        IsVisible="True">
+                        
+                        <!-- Picker rows -->
+                        <Grid ColumnDefinitions="*,*"
+                              RowDefinitions="Auto,Auto"
+                              ColumnSpacing="12"
+                              RowSpacing="12"
+                              HorizontalOptions="FillAndExpand">
+                            <!-- Row 0: Input language + Voice model -->
+                            <components:PickerCard Grid.Row="0" Grid.Column="0"
+                                                  x:Name="InputAudioLanguagePicker"
+                                                  Title="🌍 Input Language"
+                                                  TitleColor="{StaticResource ColorAccentPrimary}"
+                                                  PickerTitle="Select Input Language"
+                                                  CardBackgroundColor="{StaticResource ColorSurface}"
+                                                  CardStroke="{StaticResource ColorAccentPrimary}"
+                                                  HorizontalOptions="FillAndExpand">
+                            </components:PickerCard>
+
+                            <components:PickerCard Grid.Row="0" Grid.Column="1"
+                                                  x:Name="EnglishVoiceModelPicker"
+                                                  Title="🎤 TTS Voice Model"
+                                                  TitleColor="{StaticResource ColorAccentPrimary}"
+                                                  PickerTitle="Select Voice Model"
+                                                  CardBackgroundColor="{StaticResource ColorSurface}"
+                                                  CardStroke="{StaticResource ColorAccentPrimary}"
+                                                  HorizontalOptions="FillAndExpand">
+                            </components:PickerCard>
+
+                            <!-- Row 1: Output language + Mode -->
+                            <components:PickerCard Grid.Row="1" Grid.Column="0"
+                                                  x:Name="OutputLanguagePicker"
+                                                  Title="🔊 Output Language"
+                                                  TitleColor="{StaticResource ColorAccentPrimary}"
+                                                  PickerTitle="Select Output Language"
+                                                  CardBackgroundColor="{StaticResource ColorSurface}"
+                                                  CardStroke="{StaticResource ColorAccentPrimary}"
+                                                  HorizontalOptions="FillAndExpand">
+                            </components:PickerCard>
+
+                            <components:PickerCard Grid.Row="1" Grid.Column="1"
+                                                  x:Name="ModePicker"
+                                                  Title="⚙️Translation Mode"
+                                                  TitleColor="{StaticResource ColorAccentPrimary}"
+                                                  PickerTitle="Select Mode"
+                                                  CardBackgroundColor="{StaticResource ColorSurface}"
+                                                  CardStroke="{StaticResource ColorAccentPrimary}"
+                                                  HorizontalOptions="FillAndExpand">
+                            </components:PickerCard>
+                        </Grid>
+
+                        <!-- TTS Options Card -->
+                        <Border Background="{StaticResource BrushSurface}"
+                                StrokeThickness="1"
+                                Stroke="{StaticResource ColorAccentPrimary}">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="18"/>
+                            </Border.StrokeShape>
+                            <Border.Shadow>
+                                <Shadow Brush="#33000000" Offset="0,6" Radius="14" Opacity="0.3"/>
+                            </Border.Shadow>
+                            <Border.Padding>
+                                <OnIdiom x:TypeArguments="Thickness"
+                                         Phone="16,12"
+                                         Tablet="20,16"
+                                         Desktop="20,16"/>
+                            </Border.Padding>
+                            <VerticalStackLayout Spacing="12">
+                                <Label Text="🔊 Text-to-Speech"
+                                       TextColor="{StaticResource ColorAccentPrimary}"
+                                       FontAttributes="Bold">
+                                    <Label.FontSize>
+                                        <OnIdiom x:TypeArguments="x:Double"
+                                                 Phone="13"
+                                                 Tablet="14"
+                                                 Desktop="14"/>
+                                    </Label.FontSize>
+                                </Label>
+                                
+                                <!-- With TTS Switch -->
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                    <Label Grid.Column="0"
+                                           Text="Enable TTS"
+                                           TextColor="{StaticResource ColorTextPrimary}"
+                                           VerticalOptions="Center">
+                                        <Label.FontSize>
+                                            <OnIdiom x:TypeArguments="x:Double"
+                                                     Phone="14"
+                                                     Tablet="16"
+                                                     Desktop="16"/>
+                                        </Label.FontSize>
+                                    </Label>
+                                    <Switch x:Name="WithTtsSwitch"
+                                            Grid.Column="1"
+                                            Toggled="OnWithTtsToggled"/>
+                                </Grid>
+
+                                <!-- Use Android TTS Switch -->
+                                <Grid x:Name="UseAndroidTtsRow"
+                                      ColumnDefinitions="*,Auto"
+                                      ColumnSpacing="8">
+                                    <Label Grid.Column="0"
+                                           Text="Use Android TTS"
+                                           TextColor="{StaticResource ColorTextPrimary}"
+                                           VerticalOptions="Center">
+                                        <Label.FontSize>
+                                            <OnIdiom x:TypeArguments="x:Double"
+                                                     Phone="14"
+                                                     Tablet="16"
+                                                     Desktop="16"/>
+                                        </Label.FontSize>
+                                    </Label>
+                                    <Switch x:Name="UseAndroidTtsSwitch"
+                                            Grid.Column="1"
+                                            Toggled="OnUseAndroidTtsToggled"/>
+                                </Grid>
+                            </VerticalStackLayout>
+                        </Border>
                     </VerticalStackLayout>
 
                     <!-- Recording State -->

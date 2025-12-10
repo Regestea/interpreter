@@ -11,8 +11,5 @@ public enum EnglishVoiceModels
     EnUsHfcFemaleMedium,
 
     [Display(Name = "en_US-amy-medium")] 
-    EnUsAmyMedium,
-
-    [Display(Name = "fa_IR-gyro-medium")] 
-    FaIrGyroMedium
+    EnUsAmyMedium
 }
