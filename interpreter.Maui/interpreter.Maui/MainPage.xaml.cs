@@ -71,9 +71,7 @@ namespace interpreter.Maui
         {
             await _animationService.AnimatePageLoadAsync(
                 LanguagePickerBorder,
-                ModePickerBorder,
-                VoiceTuneButton,
-                NoiseButton);
+                ModePickerBorder);
         }
 
         #endregion
@@ -115,9 +113,7 @@ namespace interpreter.Maui
                     RecordingStateLayout,
                     InitialStateLayout,
                     LanguagePickerBorder,
-                    ModePickerBorder,
-                    VoiceTuneButton,
-                    NoiseButton);
+                    ModePickerBorder);
 
                 _buttonStateService.UpdateToStartState(ActionButton, ActionIcon, ActionText);
                 if (_audioRecordingService != null)

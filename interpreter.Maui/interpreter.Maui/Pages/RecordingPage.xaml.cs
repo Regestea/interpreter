@@ -63,9 +63,7 @@ public partial class RecordingPage : ContentPage
         // Fire-and-forget animation to prevent blocking
         _ = _animationService.AnimatePageLoadAsync(
             LanguagePickerBorder,
-            ModePickerBorder,
-            VoiceTuneButton,
-            NoiseButton);
+            ModePickerBorder);
     }
 
     #endregion
@@ -107,9 +105,7 @@ public partial class RecordingPage : ContentPage
                 RecordingStateLayout,
                 InitialStateLayout,
                 LanguagePickerBorder,
-                ModePickerBorder,
-                VoiceTuneButton,
-                NoiseButton);
+                ModePickerBorder);
 
             _buttonStateService.UpdateToStartState(ActionButton, ActionIcon, ActionText);
             if (_audioRecordingService != null)
@@ -128,52 +124,6 @@ public partial class RecordingPage : ContentPage
         _viewModel.ActionButtonCommand.Execute(null);
     }
 
-    private async void OnVoiceTuneClicked(object? sender, EventArgs e)
-    {
-        await _animationService.AnimateButtonPressAsync(VoiceTuneButton);
-        _viewModel.VoiceTuneCommand.Execute(null);
-    }
-
-    private async void OnNoiseAdjustClicked(object? sender, EventArgs e)
-    {
-        await _animationService.AnimateButtonPressAsync(NoiseButton);
-
-        var modalContent = CreateNoiseAdjustModalContent();
-
-        var options = new ModalOptions
-        {
-            ShowCloseButton = true,
-            AutoCloseDurationSeconds = 5,
-            CloseOnBackgroundTap = true,
-            ContentBackgroundColor = Color.FromArgb("#121821"),
-            CloseButtonColor = Colors.White
-        };
-
-        await _modalService.ShowModalAsync(modalContent, options);
-
-        if (_adjustmentService != null)
-        {
-            await _adjustmentService.AdjustEnvironmentalNoise();
-        }
-
-        _viewModel.NoiseAdjustCommand.Execute(null);
-    }
-
-    private View CreateNoiseAdjustModalContent()
-    {
-        var label = new Label
-        {
-            Text = "🔇 Noise Control Settings",
-            FontSize = 18,
-            FontAttributes = FontAttributes.Bold,
-            HorizontalOptions = LayoutOptions.Center,
-            VerticalOptions = LayoutOptions.Center,
-            TextColor = Colors.White,
-            Padding = new Thickness(20)
-        };
-
-        return label;
-    }
 
     private async void OnModalBackgroundTapped(object? sender, EventArgs e)
     {

@@ -7,12 +7,10 @@ public class AnimationService : IAnimationService
 {
     // All animations are disabled for a snappy modern dark UI. Methods apply final states immediately.
 
-    public Task AnimatePageLoadAsync(View languagePicker, View modePicker, View voiceTuneButton, View noiseButton)
+    public Task AnimatePageLoadAsync(View languagePicker, View modePicker)
     {
         languagePicker.Opacity = 1;
         modePicker.Opacity = 1;
-        voiceTuneButton.Opacity = 1;
-        noiseButton.Opacity = 1;
         return Task.CompletedTask;
     }
 
@@ -42,9 +40,7 @@ public class AnimationService : IAnimationService
         View recordingStateLayout,
         View initialStateLayout,
         View languagePicker,
-        View modePicker,
-        View voiceTuneButton,
-        View noiseButton)
+        View modePicker)
     {
         recordingStateLayout.Opacity = 0;
         recordingStateLayout.IsVisible = false;
@@ -52,8 +48,6 @@ public class AnimationService : IAnimationService
         initialStateLayout.Opacity = 1;
         languagePicker.Opacity = 1;
         modePicker.Opacity = 1;
-        voiceTuneButton.Opacity = 1;
-        noiseButton.Opacity = 1;
         return Task.CompletedTask;
     }
 
