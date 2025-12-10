@@ -13,9 +13,6 @@
 
             // Set BindingContext so drawer items can bind to NavigateCommand
             BindingContext = this;
-
-            // Subscribe to navigation events to update the title
-            Navigated += OnShellNavigated;
         }
 
         private void OnMenuButtonClicked(object sender, EventArgs e)
@@ -50,19 +47,6 @@
             await Shell.Current.GoToAsync(route, false);
         }
 
-        private void OnShellNavigated(object? sender, ShellNavigatedEventArgs e)
-        {
-            // Update title based on current route
-            var currentRoute = Current?.CurrentState?.Location?.OriginalString ?? string.Empty;
 
-            if (currentRoute.Contains("VoiceProfilesPage"))
-            {
-                PageTitleLabel.Text = "Voice Profiles";
-            }
-            else
-            {
-                PageTitleLabel.Text = "Recording";
-            }
-        }
     }
 }

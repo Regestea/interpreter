@@ -53,49 +53,7 @@
             </VerticalStackLayout>
         </ScrollView>
     </Shell.FlyoutContent>
-
-    <Shell.TitleView>
-        <Grid ColumnDefinitions="Auto,*,Auto" Padding="10,0">
-            <Label Grid.Column="0"
-                   x:Name="PageTitleLabel"
-                   Text="Recording" 
-                   FontSize="20" 
-                   FontAttributes="Bold"
-                   VerticalOptions="Center"
-                   TextColor="#E6EDF3"/>
-            
-            <!-- Menu Button -->
-            <Border Grid.Column="2"
-                    x:Name="ShellMenuButton"
-                    BackgroundColor="#1E2633"
-                    StrokeThickness="1"
-                    Stroke="#60FFFFFF"
-                    Padding="10"
-                    WidthRequest="44"
-                    HeightRequest="44"
-                    VerticalOptions="Center">
-                <Border.Shadow>
-                    <Shadow Brush="#40000000"
-                            Offset="0,4"
-                            Radius="15"
-                            Opacity="0.65"/>
-                </Border.Shadow>
-                <Border.StrokeShape>
-                    <RoundRectangle CornerRadius="22"/>
-                </Border.StrokeShape>
-                <Border.GestureRecognizers>
-                    <TapGestureRecognizer Tapped="OnMenuButtonClicked"/>
-                </Border.GestureRecognizers>
-                <Label Text="☰"
-                       TextColor="#C8D1FF"
-                       FontSize="20"
-                       HorizontalOptions="Center"
-                       VerticalOptions="Center"
-                       FontAttributes="Bold"/>
-            </Border>
-        </Grid>
-    </Shell.TitleView>
-
+    
     <!-- Recording Page - Default -->
     <ShellContent
         Title="Recording"
