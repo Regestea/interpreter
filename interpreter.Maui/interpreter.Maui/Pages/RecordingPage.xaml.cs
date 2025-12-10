@@ -42,7 +42,6 @@ public partial class RecordingPage : ContentPage
         }
 
         SubscribeToViewModelEvents();
-        Loaded += OnPageLoaded;
     }
 
     private void SubscribeToViewModelEvents()
@@ -55,18 +54,6 @@ public partial class RecordingPage : ContentPage
             }
         };
     }
-
-    #region Lifecycle Events
-
-    private void OnPageLoaded(object? sender, EventArgs e)
-    {
-        // Fire-and-forget animation to prevent blocking
-        _ = _animationService.AnimatePageLoadAsync(
-            LanguagePickerBorder,
-            ModePickerBorder);
-    }
-
-    #endregion
 
     #region ViewModel Event Handlers
 
@@ -103,9 +90,7 @@ public partial class RecordingPage : ContentPage
 
             await _animationService.AnimateToInitialStateAsync(
                 RecordingStateLayout,
-                InitialStateLayout,
-                LanguagePickerBorder,
-                ModePickerBorder);
+                InitialStateLayout);
 
             _buttonStateService.UpdateToStartState(ActionButton, ActionIcon, ActionText);
             if (_audioRecordingService != null)

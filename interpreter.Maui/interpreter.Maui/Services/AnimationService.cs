@@ -7,10 +7,12 @@ public class AnimationService : IAnimationService
 {
     // All animations are disabled for a snappy modern dark UI. Methods apply final states immediately.
 
-    public Task AnimatePageLoadAsync(View languagePicker, View modePicker)
+    public Task AnimatePageLoadAsync(params View[] views)
     {
-        languagePicker.Opacity = 1;
-        modePicker.Opacity = 1;
+        foreach (var view in views)
+        {
+            view.Opacity = 1;
+        }
         return Task.CompletedTask;
     }
 
@@ -39,15 +41,16 @@ public class AnimationService : IAnimationService
     public Task AnimateToInitialStateAsync(
         View recordingStateLayout,
         View initialStateLayout,
-        View languagePicker,
-        View modePicker)
+        params View[] viewsToShow)
     {
         recordingStateLayout.Opacity = 0;
         recordingStateLayout.IsVisible = false;
         initialStateLayout.IsVisible = true;
         initialStateLayout.Opacity = 1;
-        languagePicker.Opacity = 1;
-        modePicker.Opacity = 1;
+        foreach (var view in viewsToShow)
+        {
+            view.Opacity = 1;
+        }
         return Task.CompletedTask;
     }
 

@@ -129,37 +129,6 @@
                                        VerticalOptions="Start"
                                        Margin="0,20,0,200"
                                        IsVisible="True">
-                        
-                        <!-- Language Picker Card -->
-                        <components:PickerCard x:Name="LanguagePickerBorder"
-                                              Title="🌍 Language"
-                                              TitleColor="{StaticResource ColorAccentSecondary}"
-                                              PickerTitle="Select Language"
-                                              CardBackgroundColor="{StaticResource ColorSurface}"
-                                              Opacity="0.98">
-                            <components:PickerCard.ItemsSource>
-                                <x:Array Type="{x:Type x:String}">
-                                    <x:String>🇮🇷 Persian</x:String>
-                                    <x:String>🇬🇧 English</x:String>
-                                </x:Array>
-                            </components:PickerCard.ItemsSource>
-                        </components:PickerCard>
-
-                        <!-- Mode Picker Card -->
-                        <components:PickerCard x:Name="ModePickerBorder"
-                                              Title="⚙️ Mode"
-                                              TitleColor="{StaticResource ColorAccentPrimary}"
-                                              PickerTitle="Select Mode"
-                                              CardBackgroundColor="{StaticResource ColorSurface}"
-                                              Opacity="0.98">
-                            <components:PickerCard.ItemsSource>
-                                <x:Array Type="{x:Type x:String}">
-                                    <x:String>🔄 Translate Everything</x:String>
-                                    <x:String>🤫 Ignore My Talks</x:String>
-                                    <x:String>💬 Interpreter</x:String>
-                                </x:Array>
-                            </components:PickerCard.ItemsSource>
-                        </components:PickerCard>
                     </VerticalStackLayout>
 
                     <!-- Recording State -->

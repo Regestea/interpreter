@@ -5,10 +5,10 @@
 /// </summary>
 public interface IAnimationService
 {
-    Task AnimatePageLoadAsync(View languagePicker, View modePicker);
+    Task AnimatePageLoadAsync(params View[] views);
     Task AnimateButtonPressAsync(View button, double scale = 0.95);
     Task AnimateToRecordingStateAsync(View initialStateLayout, View recordingStateLayout, View actionButton, View transcriptBorder, View chartBorder);
-    Task AnimateToInitialStateAsync(View recordingStateLayout, View initialStateLayout, View languagePicker, View modePicker);
+    Task AnimateToInitialStateAsync(View recordingStateLayout, View initialStateLayout, params View[] viewsToShow);
     Task AnimatePulseAsync(View view, Func<bool> shouldContinue);
     Task AnimateFadeToggleAsync(View view, bool fadeIn);
 }

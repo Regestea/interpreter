@@ -2,6 +2,7 @@
 
 public enum Modes
 {
+    TranslateEverything,
     IgnoreMyTalks,
     HelpMeToTalk
 }
