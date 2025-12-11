@@ -9,18 +9,20 @@
         <Color x:Key="ColorTextPrimary">#F9FAFB</Color>
         <Color x:Key="ColorTextSecondary">#9CA3AF</Color>
         <Color x:Key="ColorAccentPrimary">#22C7B8</Color>
+        <Color x:Key="ColorAccentSecondary">#818CF8</Color>
         <Color x:Key="ColorDanger">#F97373</Color>
         <SolidColorBrush x:Key="BrushSurface" Color="{StaticResource ColorSurface}" />
         <SolidColorBrush x:Key="BrushSurfaceHigh" Color="{StaticResource ColorSurfaceHigh}" />
         <SolidColorBrush x:Key="BrushTextPrimary" Color="{StaticResource ColorTextPrimary}" />
         <SolidColorBrush x:Key="BrushTextSecondary" Color="{StaticResource ColorTextSecondary}" />
         <SolidColorBrush x:Key="BrushAccentPrimary" Color="{StaticResource ColorAccentPrimary}" />
+        <SolidColorBrush x:Key="BrushAccentSecondary" Color="{StaticResource ColorAccentSecondary}" />
         <SolidColorBrush x:Key="BrushDanger" Color="{StaticResource ColorDanger}" />
     </ContentView.Resources>
     
     <Border Background="{StaticResource BrushSurfaceHigh}"
             StrokeThickness="1"
-            Stroke="#1F2937"
+            Stroke="{StaticResource BrushAccentSecondary}"
             Padding="20">
         <Border.StrokeShape>
             <RoundRectangle CornerRadius="16"/>
@@ -40,7 +42,7 @@
                 <Border Grid.Column="1"
                         Background="{StaticResource BrushSurface}"
                         StrokeThickness="1"
-                        Stroke="#1F2937"
+                        Stroke="{StaticResource BrushAccentSecondary}"
                         Padding="8,4">
                     <Border.StrokeShape>
                         <RoundRectangle CornerRadius="8"/>
@@ -61,7 +63,7 @@
                     <DataTemplate>
                         <Border Background="{StaticResource BrushSurface}"
                                 StrokeThickness="1"
-                                Stroke="#1F2937"
+                                Stroke="{StaticResource BrushAccentSecondary}"
                                 Padding="16,12"
                                 Margin="0,4">
                             <Border.StrokeShape>

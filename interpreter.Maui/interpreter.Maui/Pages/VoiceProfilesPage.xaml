@@ -79,7 +79,8 @@
                                       Title="👤 Active Voice Profile"
                                       TitleColor="{StaticResource ColorAccentSecondary}"
                                       PickerTitle="Select Active Voice Profile"
-                                      CardBackgroundColor="{StaticResource ColorSurface}">
+                                      CardBackgroundColor="{StaticResource ColorSurface}"
+                                      CardStroke="{StaticResource ColorAccentSecondary}">
                 </components:PickerCard>
 
                 <!-- Voice Profile Form Component -->

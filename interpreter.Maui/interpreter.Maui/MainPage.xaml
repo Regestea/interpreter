@@ -199,7 +199,7 @@
                             </x:Array>
                         </components:PickerCard.ItemsSource>
                     </components:PickerCard>
-
+                    
                     <!-- Mode Picker Card -->
                     <components:PickerCard x:Name="ModePickerBorder"
                                           Title="⚙️ Mode"

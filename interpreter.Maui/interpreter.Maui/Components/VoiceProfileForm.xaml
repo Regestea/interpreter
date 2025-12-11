@@ -27,7 +27,7 @@
     <!-- Outer card -->
     <Border Background="{StaticResource BrushSurfaceHigh}"
             StrokeThickness="1"
-            Stroke="#1F2937"
+            Stroke="{StaticResource BrushAccentSecondary}"
             Padding="18">
         <Border.StrokeShape>
             <RoundRectangle CornerRadius="18"/>
@@ -37,37 +37,6 @@
         </Border.Shadow>
         
         <VerticalStackLayout Spacing="16">
-            <!-- Header row -->
-            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto">
-                <VerticalStackLayout Grid.Column="0" Spacing="2">
-                    <Label Text="Voice Profile"
-                           TextColor="{StaticResource ColorTextPrimary}"
-                           FontSize="15"
-                           FontAttributes="Bold"/>
-                    <Label Text="Train the detector to recognize this voice."
-                           TextColor="{StaticResource ColorTextSecondary}"
-                           FontSize="11"/>
-                </VerticalStackLayout>
-                
-                <!-- Small status pill -->
-                <Border Grid.Column="1"
-                        Background="{StaticResource BrushSurface}"
-                        StrokeThickness="1"
-                        Stroke="#1F2937"
-                        Padding="8,4"
-                        HorizontalOptions="End">
-                    <Border.StrokeShape>
-                        <RoundRectangle CornerRadius="10"/>
-                    </Border.StrokeShape>
-                    <HorizontalStackLayout Spacing="4">
-                        <BoxView WidthRequest="8" HeightRequest="8" CornerRadius="4" Color="{StaticResource ColorAccentPrimary}"/>
-                        <Label x:Name="StatusPillLabel"
-                               Text="Ready"
-                               TextColor="{StaticResource ColorTextSecondary}"
-                               FontSize="11"/>
-                    </HorizontalStackLayout>
-                </Border>
-            </Grid>
 
             <!-- Name Entry -->
             <VerticalStackLayout Spacing="6">
@@ -79,7 +48,7 @@
                 <Border x:Name="NameEntryBorder"
                         Background="{StaticResource BrushSurface}"
                         StrokeThickness="1"
-                        Stroke="#1F2937"
+                        Stroke="{StaticResource BrushAccentSecondary}"
                         Padding="10,6">
                     <Border.StrokeShape>
                         <RoundRectangle CornerRadius="12"/>
@@ -168,7 +137,7 @@
                 
                 <Border x:Name="SaveButton"
                         Grid.Column="1"
-                        Background="{StaticResource BrushAccentPrimary}"
+                        Background="{StaticResource ColorAccentSecondary}"
                         StrokeThickness="0"
                         Padding="16,10">
                     <Border.StrokeShape>
@@ -178,8 +147,6 @@
                         <TapGestureRecognizer Tapped="OnSaveClicked"/>
                     </Border.GestureRecognizers>
                     <HorizontalStackLayout Spacing="6">
-                        <Label Text="💾"
-                               FontSize="13"/>
                         <Label Text="Save"
                                TextColor="{StaticResource ColorTextPrimary}"
                                FontSize="13"
