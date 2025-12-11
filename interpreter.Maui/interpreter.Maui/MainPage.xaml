@@ -185,21 +185,6 @@
                                    Margin="0,20,0,200"
                                    IsVisible="True">
                     
-                    <!-- Language Picker Card -->
-                    <components:PickerCard x:Name="LanguagePickerBorder"
-                                          Title="🌍 Language"
-                                          TitleColor="{StaticResource ColorAccentSecondary}"
-                                          PickerTitle="Select Language"
-                                          CardBackgroundColor="{StaticResource ColorSurface}"
-                                          Opacity="0.98">
-                        <components:PickerCard.ItemsSource>
-                            <x:Array Type="{x:Type x:String}">
-                                <x:String>🇮🇷 Persian</x:String>
-                                <x:String>🇬🇧 English</x:String>
-                            </x:Array>
-                        </components:PickerCard.ItemsSource>
-                    </components:PickerCard>
-                    
                     <!-- Mode Picker Card -->
                     <components:PickerCard x:Name="ModePickerBorder"
                                           Title="⚙️ Mode"
@@ -216,28 +201,7 @@
                         </components:PickerCard.ItemsSource>
                     </components:PickerCard>
                     
-                    <!-- Bottom Buttons Grid -->
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                        <!-- Voice Tune Button -->
-                        <components:IconButton x:Name="VoiceTuneButton"
-                                              Grid.Column="0"
-                                              Icon="🎵"
-                                              Text="Voice Tune"
-                                              TextColor="{StaticResource ColorTextPrimary}"
-                                              ShadowColor="{StaticResource ColorAccentSecondary}"
-                                              CardBackgroundColor="{StaticResource ColorSurfaceLow}"
-                                              Clicked="OnVoiceTuneClicked"/>
 
-                        <!-- Noise Control Button -->
-                        <components:IconButton x:Name="NoiseButton"
-                                              Grid.Column="1"
-                                              Icon="🔇"
-                                              Text="Noise Control"
-                                              TextColor="{StaticResource ColorTextPrimary}"
-                                              ShadowColor="{StaticResource ColorAccentPrimary}"
-                                              CardBackgroundColor="{StaticResource ColorSurfaceLow}"
-                                              Clicked="OnNoiseAdjustClicked"/>
-                    </Grid>
                 </VerticalStackLayout>
 
                 <!-- Recording State -->
@@ -259,59 +223,6 @@
                                                    TitleColor="{StaticResource ColorAccentPrimary}"
                                                    CardBackgroundColor="{StaticResource ColorSurface}"
                                                    ChartDrawable="{StaticResource FrequencyChartDrawable}"/>
-                    
-                </VerticalStackLayout>
-
-                <!-- Voice Detector State -->
-                <VerticalStackLayout x:Name="VoiceDetectorLayout" 
-                                   Spacing="20" 
-                                   VerticalOptions="Start"
-                                   Margin="0,20,0,20"
-                                   IsVisible="False"
-                                   Opacity="0">
-                    
-                    <!-- Header with Back Button -->
-                    <Grid ColumnDefinitions="Auto,*" Margin="0,0,0,10">
-                        <Border Grid.Column="0"
-                                Background="{StaticResource BrushPillBackground}"
-                                StrokeThickness="1.5"
-                                Stroke="{StaticResource BrushBorderSubtle}"
-                                HeightRequest="40"
-                                WidthRequest="40"
-                                HorizontalOptions="Start">
-                            <Border.StrokeShape>
-                                <RoundRectangle CornerRadius="14"/>
-                            </Border.StrokeShape>
-                            <Border.GestureRecognizers>
-                                <TapGestureRecognizer Tapped="OnVoiceDetectorBackClicked"/>
-                            </Border.GestureRecognizers>
-                            <Label Text="←"
-                                   TextColor="{StaticResource ColorTextPrimary}"
-                                   FontSize="20"
-                                   HorizontalOptions="Center"
-                                   VerticalOptions="Center"/>
-                        </Border>
-                        
-                        <Label Grid.Column="1"
-                               Text="🎤 Voice Detector"
-                               TextColor="{StaticResource ColorTextPrimary}"
-                               FontSize="18"
-                               FontAttributes="Bold"
-                               HorizontalOptions="Center"
-                               VerticalOptions="Center"/>
-                    </Grid>
-                    
-                    <!-- Voice Profile Form Component -->
-                    <components:VoiceProfileForm x:Name="ProfileForm"
-                                                 SaveClicked="OnProfileFormSaveClicked"
-                                                 RecordingStarted="OnProfileFormRecordingStarted"
-                                                 RecordingStopped="OnProfileFormRecordingStopped"
-                                                 ValidationFailed="OnProfileFormValidationFailed"/>
-                    
-                    <!-- Voice Profile List Component -->
-                    <components:VoiceProfileList x:Name="ProfileList"
-                                                 RefreshClicked="OnProfileListRefreshClicked"
-                                                 DeleteClicked="OnProfileListDeleteClicked"/>
                     
                 </VerticalStackLayout>
 
@@ -392,12 +303,6 @@
                                  Desktop="16"/>
                     </Label.FontSize>
                 </Label>
-                
-                <!-- Voice Detector Button -->
-                <components:SettingsMenuItem Icon="🎤"
-                                            Text="Voice Detector"
-                                            TextColor="{StaticResource ColorTextPrimary}"
-                                            Clicked="OnVoiceDetectorClicked"/>
             </VerticalStackLayout>
         </Border>
 
