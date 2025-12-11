@@ -70,20 +70,14 @@
                                 <RoundRectangle CornerRadius="12"/>
                             </Border.StrokeShape>
                             <Grid ColumnDefinitions="Auto,*,Auto">
-                                <Label Grid.Column="0"
-                                       Text="🎤"
-                                       FontSize="20"
-                                       VerticalOptions="Center"
-                                       Margin="0,0,12,0"/>
+                               
                                 
                                 <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
                                     <Label Text="{Binding Name}"
                                            TextColor="{StaticResource ColorTextPrimary}"
                                            FontSize="14"
                                            FontAttributes="Bold"/>
-                                    <Label Text="{Binding Id, StringFormat='ID: {0}'}"
-                                           TextColor="{StaticResource ColorTextSecondary}"
-                                           FontSize="11"/>
+                                    
                                 </VerticalStackLayout>
                                 
                                 <Border Grid.Column="2"
@@ -99,7 +93,7 @@
                                             Tapped="OnDeleteClicked"
                                             CommandParameter="{Binding Id}"/>
                                     </Border.GestureRecognizers>
-                                    <Label Text="🗑️"
+                                    <Label Text="Delete"
                                            FontSize="14"
                                            HorizontalOptions="Center"/>
                                 </Border>

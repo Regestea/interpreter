@@ -229,6 +229,14 @@ public partial class VoiceProfilesPage : ContentPage
         var profileItems = _recordingModel.VoiceProfileModels
             .Select(p => new VoiceProfileItem { Id = p.Id, Name = p.Name })
             .ToList();
+
+        profileItems = new List<VoiceProfileItem>()
+        {
+            new VoiceProfileItem(){Id = Guid.NewGuid(), Name = "Ali"},
+            new VoiceProfileItem(){Id = Guid.NewGuid(), Name = "Hasan"},
+            new VoiceProfileItem(){Id = Guid.NewGuid(), Name = "Hossein"},
+        };
+        
         ProfileList.UpdateItems(profileItems);
         
         // Update the picker after loading profiles

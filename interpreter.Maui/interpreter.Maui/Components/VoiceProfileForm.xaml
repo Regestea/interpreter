@@ -104,7 +104,7 @@
                            FontSize="13"
                            FontAttributes="Bold"/>
                     <Label x:Name="RecordingStatusLabel"
-                           Text="Tap the mic to capture 5–10 seconds of speech."
+                           Text="Tap the mic to capture 30–60 seconds of speech."
                            TextColor="{StaticResource ColorTextSecondary}"
                            FontSize="11"/>
                 </VerticalStackLayout>
