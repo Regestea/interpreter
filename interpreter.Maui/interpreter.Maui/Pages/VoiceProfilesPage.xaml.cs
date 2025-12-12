@@ -17,7 +17,7 @@ public partial class VoiceProfilesPage : ContentPage
     private readonly ILocalStorageService _localStorageService;
     private readonly IVoiceProfileService _voiceProfileService;
     private readonly IAndroidAudioRecordingService _audioRecordingService;
-    
+
     private RecordingModel _recordingModel = new();
     private bool _isInitializing;
 
@@ -39,7 +39,8 @@ public partial class VoiceProfilesPage : ContentPage
         _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         _localStorageService = localStorageService ?? throw new ArgumentNullException(nameof(localStorageService));
         _voiceProfileService = voiceProfileService ?? throw new ArgumentNullException(nameof(voiceProfileService));
-        _audioRecordingService = audioRecordingService ?? throw new ArgumentNullException(nameof(audioRecordingService));
+        _audioRecordingService =
+            audioRecordingService ?? throw new ArgumentNullException(nameof(audioRecordingService));
         BindingContext = _viewModel;
 
         Loaded += OnPageLoaded;
@@ -71,7 +72,7 @@ public partial class VoiceProfilesPage : ContentPage
         };
 
         _recordingModel = _localStorageService.Get(defaultModel);
-        
+
         // Ensure VoiceProfileModels list is initialized
         if (_recordingModel.VoiceProfileModels == null)
         {
@@ -92,7 +93,7 @@ public partial class VoiceProfilesPage : ContentPage
     {
         ActiveVoiceProfilePicker.ItemsSource = new List<string>();
         ActiveVoiceProfilePicker.SelectionChanged += OnActiveVoiceProfileChanged;
-        var result=await _voiceProfileService.GetListAsync();
+        var result = await _voiceProfileService.GetListAsync();
         UpdateVoiceProfilePicker(result);
     }
 
@@ -164,99 +165,6 @@ public partial class VoiceProfilesPage : ContentPage
 
     #endregion
 
-    #region Voice Profile Form Events
-
-    private async void OnProfileFormSaveClicked(VoiceProfileSaveEventArgs e)
-    {
-        try
-        {
-            if (_recordedAudioStream == null)
-            {
-                await DisplayAlertAsync("Error", "No audio data recorded.", "OK");
-                return;
-            }
-
-            var createRequest = new CreateVoiceProfileDto
-            {
-                Name = e.Name,
-                Voice = _recordedAudioStream
-            };
-
-            var response = await _voiceProfileService.CreateAsync(createRequest);
-            if (response != null)
-            {
-                var newProfile = new VoiceProfileModel
-                {
-                    Id = response.Id,
-                    Name = e.Name
-                };
-                _recordingModel.VoiceProfileModels.Add(newProfile);
-                SaveRecordingModel();
-                _resetFormFields();
-                LoadVoiceProfiles();
-
-                await DisplayAlertAsync("Success", $"Profile '{e.Name}' saved successfully.", "OK");
-            }
-            else
-            {
-                await DisplayAlertAsync("Error", "Failed to create voice profile.", "OK");
-            }
-        }
-        catch (Exception ex)
-        {
-            await DisplayAlertAsync("Error", $"An error occurred: {ex.Message}", "OK");
-        }
-    }
-
-    private async void OnProfileFormRecordingStarted()
-    {
-        try
-        {
-            bool hasPermission = await _audioRecordingService.RequestPermissionsAsync();
-            if (!hasPermission)
-            {
-                await DisplayAlertAsync("Permission Denied", "Microphone permission is required to record audio.", "OK");
-                _resetFormFields();
-                return;
-            }
-
-            await _audioRecordingService.StartAsync();
-        }
-        catch (Exception ex)
-        {
-            await DisplayAlertAsync("Error", $"Failed to start recording: {ex.Message}", "OK");
-            _resetFormFields();
-        }
-    }
-
-    private async void OnProfileFormRecordingStopped()
-    {
-        try
-        {
-            var audioFilePath = await _audioRecordingService.StopAsync();
-            if (!string.IsNullOrEmpty(audioFilePath) && File.Exists(audioFilePath))
-            {
-                var audioBytes = await File.ReadAllBytesAsync(audioFilePath);
-                _recordedAudioStream = new MemoryStream(audioBytes);
-                _updateRecordingStatus("Audio recorded successfully", true);
-            }
-            else
-            {
-                _updateRecordingStatus("Failed to record audio", false);
-            }
-        }
-        catch (Exception ex)
-        {
-            _updateRecordingStatus($"Recording error: {ex.Message}", false);
-        }
-    }
-
-    private async void OnProfileFormValidationFailed(object? sender, string message)
-    {
-        await DisplayAlertAsync("Validation Error", message, "OK");
-    }
-
-    #endregion
 
     #region Voice Profile List Events
 
@@ -267,23 +175,25 @@ public partial class VoiceProfilesPage : ContentPage
 
     private async void OnProfileListDeleteClicked(object? sender, Guid id)
     {
-        var confirm = await DisplayAlertAsync("Delete", "Are you sure you want to delete this voice profile?", "Yes", "No");
+        var confirm =
+            await DisplayAlertAsync("Delete", "Are you sure you want to delete this voice profile?", "Yes", "No");
         if (confirm)
         {
             try
             {
                 // Call the service to delete the voice profile
                 await _voiceProfileService.DeleteAsync(id);
-                
+
                 _recordingModel.VoiceProfileModels.RemoveAll(p => p.Id == id);
                 // Clear selection if deleted profile was selected
                 if (_recordingModel.SelectedVoiceProfileId == id)
                 {
                     _recordingModel.SelectedVoiceProfileId = null;
                 }
+
                 SaveRecordingModel();
                 LoadVoiceProfiles();
-                
+
                 await DisplayAlertAsync("Success", "Voice profile deleted successfully.", "OK");
             }
             catch (Exception ex)
@@ -295,11 +205,10 @@ public partial class VoiceProfilesPage : ContentPage
 
     private async Task LoadVoiceProfiles()
     {
-
         var response = await _voiceProfileService.GetListAsync();
         var profileItems = response.Select(r => new VoiceProfileItem { Id = r.Id, Name = r.Name }).ToList();
         ProfileList.UpdateItems(profileItems);
-        
+
         // Update the picker after loading profiles
         UpdateVoiceProfilePicker(response);
     }
@@ -342,7 +251,8 @@ public partial class VoiceProfilesPage : ContentPage
             // Start recording
             try
             {
-                _recordedAudioStream = await _audioRecordingService.RecordAudioTrack(durationSeconds: _selectedDurationSeconds);
+                _recordedAudioStream =
+                    await _audioRecordingService.RecordAudioTrack(durationSeconds: _selectedDurationSeconds);
             }
             catch (Exception ex)
             {
@@ -389,11 +299,8 @@ public partial class VoiceProfilesPage : ContentPage
                     // Stop recording and process the audio
                     try
                     {
-                        var audioFilePath = await _audioRecordingService.StopAsync();
-                        if (!string.IsNullOrEmpty(audioFilePath) && File.Exists(audioFilePath))
+                        if (_recordedAudioStream != null)
                         {
-                            var audioBytes = await File.ReadAllBytesAsync(audioFilePath);
-                            _recordedAudioStream = new MemoryStream(audioBytes);
                             _updateRecordingStatus("Audio recorded successfully", true);
                         }
                         else
@@ -410,7 +317,7 @@ public partial class VoiceProfilesPage : ContentPage
         }, cancellationToken);
     }
 
-    private void OnSaveClicked(object? sender, EventArgs e)
+    private async void OnSaveClicked(object? sender, EventArgs e)
     {
         var name = NameEntry.Text;
 
@@ -425,19 +332,19 @@ public partial class VoiceProfilesPage : ContentPage
             return;
         }
 
+        await _voiceProfileService.CreateAsync(new CreateVoiceProfileDto()
+        {
+            Name = name,
+            Voice = _recordedAudioStream
+        });
+        NameEntry.Text= string.Empty;
+        _recordedAudioStream = null;
+        _updateRecordingStatus("",true);
+        _countdownSeconds = 0;
+        await LoadVoiceProfiles();
         // Save logic here
     }
 
-    private void _resetFormFields()
-    {
-        NameEntry.Text = string.Empty;
-        RecordingStatusLabel.Text = "";
-        RecordingCountdownLabel.Text = "";
-        RecordingProgressBar.Progress = 0;
-        RecordingLengthLabel.Text = "";
-        _recordedAudioStream = null;
-        _isRecording = false;
-    }
 
     private void _updateRecordingStatus(string message, bool isSuccess)
     {
@@ -462,12 +369,7 @@ public partial class VoiceProfilesPage : ContentPage
         {
             return await mainPage.DisplayAlertAsync(title, message, accept, cancel);
         }
-        return false;
-    }
 
-    // Added definition for VoiceProfileSaveEventArgs
-    public class VoiceProfileSaveEventArgs : EventArgs
-    {
-        public string Name { get; set; } = string.Empty;
+        return false;
     }
 }

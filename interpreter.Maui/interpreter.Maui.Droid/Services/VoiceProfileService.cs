@@ -22,6 +22,13 @@ public class VoiceProfileService : IVoiceProfileService
     /// </summary>
     public async Task<CreateVoiceDetectorResponse> CreateAsync(CreateVoiceProfileDto createVoiceProfile)
     {
+
+        return new CreateVoiceDetectorResponse()
+        {
+            Name =  createVoiceProfile.Name,
+            Id = Guid.NewGuid()
+        };
+        
         if (createVoiceProfile == null)
             throw new ArgumentNullException(nameof(createVoiceProfile));
 

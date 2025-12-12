@@ -17,6 +17,11 @@ public class AndroidAudioRecordingService : IAndroidAudioRecordingService
 
     public bool IsRecording => RecordingState.IsRecording;
 
+    public AndroidAudioRecordingService(IAudioRecorderService audioRecorderService)
+    {
+        _audioRecorderService = audioRecorderService ?? throw new ArgumentNullException(nameof(audioRecorderService));
+    }
+
     public async Task<bool> RequestPermissionsAsync()
     {
         var mic = await Permissions.RequestAsync<Permissions.Microphone>();
