@@ -102,25 +102,6 @@ public sealed class AudioProcessQueue
         {
             if (audioProcess.AudioStream != null)
             {
-                // Calculate audio duration from stream size
-                // WAV format: 44 bytes header + PCM data
-                // Sample rate: 44100 Hz, Channels: 1 (Mono), Bits per sample: 16
-                long streamSize = audioProcess.AudioStream.Length;
-                long audioDataSize = streamSize - 44; // Subtract WAV header
-                
-                const int sampleRate = 44100;
-                const int channels = 1;
-                const int bitsPerSample = 16;
-                int bytesPerSecond = sampleRate * channels * (bitsPerSample / 8);
-                
-                double durationSeconds = audioDataSize > 0 
-                    ? (double)audioDataSize / bytesPerSecond 
-                    : 0;
-                
-                // Process stream-based audio (from chunked recording)
-                Debug.WriteLine($"Processing audio stream chunk: {audioProcess.Name}, Size: {streamSize} bytes, Duration: {durationSeconds:F2}s");
-                Debug.WriteLine(TAG, $"Audio chunk duration: {durationSeconds:F2}s ({audioDataSize} bytes of audio data)");
-                
                 // Save audio chunk to debug folder for inspection
                 try
                 {

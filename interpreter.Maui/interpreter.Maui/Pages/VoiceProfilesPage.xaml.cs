@@ -3,6 +3,7 @@ using interpreter.Maui.Components;
 using interpreter.Maui.ViewModels;
 using interpreter.Maui.Services;
 using interpreter.Maui.Models;
+using interpreter.Maui.DTOs;
 
 namespace interpreter.Maui.Pages;
 
@@ -13,18 +14,24 @@ public partial class VoiceProfilesPage : ContentPage
 {
     private readonly VoiceProfilesViewModel _viewModel;
     private readonly ILocalStorageService _localStorageService;
+    private readonly IVoiceProfileService _voiceProfileService;
+    private readonly IAndroidAudioRecordingService _audioRecordingService;
     
     private RecordingModel _recordingModel = new();
     private bool _isInitializing = false;
 
     public VoiceProfilesPage(
         VoiceProfilesViewModel viewModel,
-        ILocalStorageService localStorageService)
+        ILocalStorageService localStorageService,
+        IVoiceProfileService voiceProfileService,
+        IAndroidAudioRecordingService audioRecordingService)
     {
         InitializeComponent();
 
         _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         _localStorageService = localStorageService ?? throw new ArgumentNullException(nameof(localStorageService));
+        _voiceProfileService = voiceProfileService ?? throw new ArgumentNullException(nameof(voiceProfileService));
+        _audioRecordingService = audioRecordingService ?? throw new ArgumentNullException(nameof(audioRecordingService));
         BindingContext = _viewModel;
 
         Loaded += OnPageLoaded;
@@ -130,47 +137,103 @@ public partial class VoiceProfilesPage : ContentPage
 
     private async void OnProfileFormSaveClicked(object? sender, VoiceProfileSaveEventArgs e)
     {
-        // TODO: Implement HTTP client request to VoiceDetectorController
-        // var request = new CreateVoiceDetectorRequest { Name = e.Name, Voice = e.VoiceData };
-        // var response = await _httpClient.PostAsJsonAsync("api/VoiceDetector", request);
-        // if (response.IsSuccessStatusCode)
-        // {
-        //     var newProfile = new VoiceProfileModel 
-        //     { 
-        //         Id = response.Id, 
-        //         Name = e.Name 
-        //     };
-        //     _recordingModel.VoiceProfileModels.Add(newProfile);
-        //     SaveRecordingModel();
-        //     ProfileForm.Reset();
-        //     LoadVoiceProfiles();
-        // }
-
-        // For now, add to local model
-        var newProfile = new VoiceProfileModel
+        try
         {
-            Id = Guid.NewGuid(),
-            Name = e.Name
-        };
-        _recordingModel.VoiceProfileModels.Add(newProfile);
-        SaveRecordingModel();
-        ProfileForm.Reset();
-        LoadVoiceProfiles();
-        
-        await DisplayAlert("Success", $"Profile '{e.Name}' saved successfully.", "OK");
+            if (ProfileForm.RecordedAudioBytes == null || ProfileForm.RecordedAudioBytes.Length == 0)
+            {
+                await DisplayAlert("Error", "No audio data recorded.", "OK");
+                return;
+            }
+
+            // Create a MemoryStream from the recorded audio bytes
+            using var audioStream = new MemoryStream(ProfileForm.RecordedAudioBytes);
+            
+            // Create the DTO with the voice data
+            var createRequest = new CreateVoiceProfileDto
+            {
+                Name = e.Name,
+                Voice = audioStream
+            };
+
+            // Call the service to create the voice profile
+            var response = await _voiceProfileService.CreateAsync(createRequest);
+            
+            if (response != null)
+            {
+                // Add to local model
+                var newProfile = new VoiceProfileModel
+                {
+                    Id = response.Id,
+                    Name = e.Name
+                };
+                _recordingModel.VoiceProfileModels.Add(newProfile);
+                SaveRecordingModel();
+                ProfileForm.Reset();
+                LoadVoiceProfiles();
+                
+                await DisplayAlert("Success", $"Profile '{e.Name}' saved successfully.", "OK");
+            }
+            else
+            {
+                await DisplayAlert("Error", "Failed to create voice profile.", "OK");
+            }
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert("Error", $"An error occurred: {ex.Message}", "OK");
+        }
     }
 
-    private void OnProfileFormRecordingStarted(object? sender, EventArgs e)
+    private async void OnProfileFormRecordingStarted(object? sender, EventArgs e)
     {
-        // TODO: Start actual audio recording
-        // var bytes = await _audioRecordingService.StartRecordingAsync();
+        try
+        {
+            // Request permissions if needed
+            bool hasPermission = await _audioRecordingService.RequestPermissionsAsync();
+            if (!hasPermission)
+            {
+                await DisplayAlert("Permission Denied", "Microphone permission is required to record audio.", "OK");
+                ProfileForm.Reset();
+                return;
+            }
+
+            // Get the selected duration from the form
+            int durationSeconds = ProfileForm.IsRecording ? 30 : 60;
+            
+            // Start recording
+            await _audioRecordingService.StartAsync();
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert("Error", $"Failed to start recording: {ex.Message}", "OK");
+            ProfileForm.Reset();
+        }
     }
 
-    private void OnProfileFormRecordingStopped(object? sender, EventArgs e)
+    private async void OnProfileFormRecordingStopped(object? sender, EventArgs e)
     {
-        // TODO: Stop actual audio recording and set bytes
-        // var bytes = await _audioRecordingService.StopRecordingAsync();
-        // ProfileForm.RecordedAudioBytes = bytes;
+        try
+        {
+            // Stop recording and get the audio file path
+            var audioFilePath = await _audioRecordingService.StopAsync();
+            
+            if (!string.IsNullOrEmpty(audioFilePath) && File.Exists(audioFilePath))
+            {
+                // Read the audio file into bytes
+                var audioBytes = await File.ReadAllBytesAsync(audioFilePath);
+                ProfileForm.RecordedAudioBytes = audioBytes;
+                
+                ProfileForm.SetRecordingStatus("Audio recorded successfully", isSuccess: true);
+            }
+            else
+            {
+                ProfileForm.SetRecordingStatus("Failed to record audio", isSuccess: false);
+            }
+        }
+        catch (Exception ex)
+        {
+            ProfileForm.SetRecordingStatus($"Recording error: {ex.Message}", isSuccess: false);
+        }
     }
 
     private async void OnProfileFormValidationFailed(object? sender, string message)
@@ -192,36 +255,33 @@ public partial class VoiceProfilesPage : ContentPage
         var confirm = await DisplayAlert("Delete", "Are you sure you want to delete this voice profile?", "Yes", "No");
         if (confirm)
         {
-            // TODO: Implement HTTP client request to delete
-            // var response = await _httpClient.DeleteAsync($"api/VoiceDetector/{id}");
-            // if (response.IsSuccessStatusCode)
-            // {
-            //     _recordingModel.VoiceProfileModels.RemoveAll(p => p.Id == id);
-            //     // Clear selection if deleted profile was selected
-            //     if (_recordingModel.SelectedVoiceProfileId == id)
-            //     {
-            //         _recordingModel.SelectedVoiceProfileId = null;
-            //     }
-            //     SaveRecordingModel();
-            //     LoadVoiceProfiles();
-            // }
-
-            // For now, remove from local model
-            _recordingModel.VoiceProfileModels.RemoveAll(p => p.Id == id);
-            // Clear selection if deleted profile was selected
-            if (_recordingModel.SelectedVoiceProfileId == id)
+            try
             {
-                _recordingModel.SelectedVoiceProfileId = null;
+                // Call the service to delete the voice profile
+                await _voiceProfileService.DeleteAsync(id);
+                
+                _recordingModel.VoiceProfileModels.RemoveAll(p => p.Id == id);
+                // Clear selection if deleted profile was selected
+                if (_recordingModel.SelectedVoiceProfileId == id)
+                {
+                    _recordingModel.SelectedVoiceProfileId = null;
+                }
+                SaveRecordingModel();
+                LoadVoiceProfiles();
+                
+                await DisplayAlert("Success", "Voice profile deleted successfully.", "OK");
             }
-            SaveRecordingModel();
-            LoadVoiceProfiles();
+            catch (Exception ex)
+            {
+                await DisplayAlert("Error", $"Failed to delete profile: {ex.Message}", "OK");
+            }
         }
     }
 
     private void LoadVoiceProfiles()
     {
         // TODO: Implement HTTP client request to get voice profiles
-        // var response = await _httpClient.GetFromJsonAsync<List<VoiceEmbeddingResponse>>("api/VoiceDetector");
+        // var response = await _voiceProfileService.GetListAsync();
         // var profileItems = response.Select(r => new VoiceProfileItem { Id = r.Id, Name = r.Name }).ToList();
         // ProfileList.UpdateItems(profileItems);
         
@@ -229,13 +289,6 @@ public partial class VoiceProfilesPage : ContentPage
         var profileItems = _recordingModel.VoiceProfileModels
             .Select(p => new VoiceProfileItem { Id = p.Id, Name = p.Name })
             .ToList();
-
-        profileItems = new List<VoiceProfileItem>()
-        {
-            new VoiceProfileItem(){Id = Guid.NewGuid(), Name = "Ali"},
-            new VoiceProfileItem(){Id = Guid.NewGuid(), Name = "Hasan"},
-            new VoiceProfileItem(){Id = Guid.NewGuid(), Name = "Hossein"},
-        };
         
         ProfileList.UpdateItems(profileItems);
         

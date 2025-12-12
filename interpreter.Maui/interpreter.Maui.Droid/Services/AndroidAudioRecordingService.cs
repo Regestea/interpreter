@@ -11,8 +11,10 @@ using interpreter.Maui.Services;
 
 namespace interpreter.Maui.Services;
 
-public class AndroidAudioRecordingService : IAudioRecordingService
+public class AndroidAudioRecordingService : IAndroidAudioRecordingService
 {
+    private readonly IAudioRecorderService _audioRecorderService;
+
     public bool IsRecording => RecordingState.IsRecording;
 
     public async Task<bool> RequestPermissionsAsync()
@@ -49,6 +51,15 @@ public class AndroidAudioRecordingService : IAudioRecordingService
             await Task.Delay(100);
         }
         return RecordingState.LastFilePath;
+    }
+    
+    public Task<Stream> RecordAudioTrack(int durationSeconds)
+    {
+        return Task.Run(() =>
+        {
+            var duration = TimeSpan.FromSeconds(durationSeconds);
+            return _audioRecorderService.RecordForDuration(duration);
+        });
     }
 }
 

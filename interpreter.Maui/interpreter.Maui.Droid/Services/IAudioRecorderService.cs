@@ -1,5 +1,6 @@
 ﻿using Android.Media;
 using System;
+using Stream = System.IO.Stream;
 
 namespace interpreter.Maui.Services;
 
@@ -23,7 +24,7 @@ public interface IAudioRecorderService : IDisposable
     /// <summary>
     /// Records audio for a specified duration and returns a stream containing the WAV data.
     /// </summary>
-    System.IO.Stream RecordForDuration(TimeSpan duration);
+    Stream RecordForDuration(TimeSpan duration);
 
     /// <summary>
     /// Creates and configures an AudioRecord instance for continuous recording with audio enhancements.

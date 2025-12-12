@@ -32,11 +32,14 @@ namespace interpreter.Maui
             {
                 client.BaseAddress = new Uri("https://regestea.ir/");
             });
+            
 
             // Platform services
-            builder.Services.AddSingleton<IAudioRecordingService, AndroidAudioRecordingService>();
+            builder.Services.AddSingleton<IAndroidAudioRecordingService, AndroidAudioRecordingService>();
             builder.Services.AddSingleton<IAudioPlaybackService, AndroidAudioPlaybackService>();
             builder.Services.AddSingleton<IAdjustmentService, AdjustmentService>();
+            builder.Services.AddScoped<IVoiceProfileService,VoiceProfileService>();
+            // builder.Services.AddScoped<IOpusCodecService,OpusCodecService>();
             
             // Audio calibration
             builder.Services.AddSingleton<AudioCalibration>();

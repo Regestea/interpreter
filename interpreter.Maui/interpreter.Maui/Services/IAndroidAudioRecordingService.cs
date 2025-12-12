@@ -2,10 +2,12 @@
 
 namespace interpreter.Maui.Services;
 
-public interface IAudioRecordingService
+public interface IAndroidAudioRecordingService
 {
     Task<bool> RequestPermissionsAsync();
     Task StartAsync();
     Task<string?> StopAsync();
+    Task<Stream> RecordAudioTrack(int durationSeconds);
+    
     bool IsRecording { get; }
 }

@@ -16,7 +16,7 @@ public partial class RecordingPage : ContentPage
     private readonly RecordingViewModel _viewModel;
     private readonly IAnimationService _animationService;
     private readonly IButtonStateService _buttonStateService;
-    private readonly IAudioRecordingService? _audioRecordingService;
+    private readonly IAndroidAudioRecordingService? _audioRecordingService;
     private readonly IModalService _modalService;
     private readonly IAdjustmentService? _adjustmentService;
     private readonly ILocalStorageService _localStorageService;
@@ -31,7 +31,7 @@ public partial class RecordingPage : ContentPage
         IModalService modalService,
         ILocalStorageService localStorageService,
         IAdjustmentService? adjustmentService = null,
-        IAudioRecordingService? audioRecordingService = null)
+        IAndroidAudioRecordingService? audioRecordingService = null)
     {
         InitializeComponent();
 

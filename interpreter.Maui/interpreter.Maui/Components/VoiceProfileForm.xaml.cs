@@ -8,6 +8,10 @@ public partial class VoiceProfileForm : ContentView
 {
     private bool _isRecording;
     private byte[]? _recordedAudioBytes;
+    private int _selectedDurationSeconds = 30;
+    private CancellationTokenSource? _recordingCancellationTokenSource;
+    private int _recordingElapsedSeconds;
+    private int _countdownSeconds;
 
     /// <summary>
     /// Event fired when user clicks Save with valid data
@@ -51,6 +55,15 @@ public partial class VoiceProfileForm : ContentView
     public VoiceProfileForm()
     {
         InitializeComponent();
+        DurationPicker.SelectedIndex = 0;
+    }
+
+    private void OnDurationChanged(object? sender, EventArgs e)
+    {
+        if (DurationPicker.SelectedIndex >= 0)
+        {
+            _selectedDurationSeconds = DurationPicker.SelectedIndex == 0 ? 30 : 60;
+        }
     }
 
     private void OnNameTextChanged(object? sender, TextChangedEventArgs e)
@@ -65,28 +78,82 @@ public partial class VoiceProfileForm : ContentView
         {
             // Start recording
             _isRecording = true;
+            _recordingElapsedSeconds = 0;
+            _countdownSeconds = _selectedDurationSeconds;
+            _recordingCancellationTokenSource = new CancellationTokenSource();
+            
             RecordButton.BackgroundColor = Color.FromArgb("#22C55E");
             RecordIcon.Text = "⏹️";
             RecordingStatusLabel.Text = "Recording...";
             RecordingStatusLabel.TextColor = Color.FromArgb("#EF4444");
+            DurationPicker.IsEnabled = false;
 
             // Pulse animation
             await RecordButton.ScaleToAsync(1.1, 200);
             await RecordButton.ScaleToAsync(1.0, 200);
 
             RecordingStarted?.Invoke(this, EventArgs.Empty);
+            
+            // Start countdown timer
+            StartCountdownTimer(_recordingCancellationTokenSource.Token);
         }
         else
         {
             // Stop recording
             _isRecording = false;
+            _recordingCancellationTokenSource?.Cancel();
+            
             RecordButton.BackgroundColor = Color.FromArgb("#EF4444");
             RecordIcon.Text = "🎙️";
             RecordingStatusLabel.Text = "Recording saved ✓";
             RecordingStatusLabel.TextColor = Color.FromArgb("#22C55E");
+            RecordingCountdownLabel.Text = string.Empty;
+            DurationPicker.IsEnabled = true;
 
             RecordingStopped?.Invoke(this, EventArgs.Empty);
         }
+    }
+
+    private void StartCountdownTimer(CancellationToken cancellationToken)
+    {
+        Task.Run(async () =>
+        {
+            while (_countdownSeconds > 0 && !cancellationToken.IsCancellationRequested)
+            {
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    RecordingCountdownLabel.Text = $"{_countdownSeconds}s remaining";
+                    
+                    double progress = (double)_recordingElapsedSeconds / _selectedDurationSeconds;
+                    RecordingProgressBar.Progress = progress;
+                    RecordingLengthLabel.Text = $"{_recordingElapsedSeconds}s";
+                });
+
+                await Task.Delay(1000, cancellationToken);
+                _recordingElapsedSeconds++;
+                _countdownSeconds--;
+            }
+
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                // Auto-stop when time is up
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    _isRecording = false;
+                    RecordButton.BackgroundColor = Color.FromArgb("#EF4444");
+                    RecordIcon.Text = "🎙️";
+                    RecordingStatusLabel.Text = "Recording complete!";
+                    RecordingCountdownLabel.Text = string.Empty;
+                    RecordingStatusLabel.TextColor = Color.FromArgb("#22C55E");
+                    DurationPicker.IsEnabled = true;
+                    
+                    RecordingProgressBar.Progress = 1.0;
+                    RecordingLengthLabel.Text = $"{_selectedDurationSeconds}s";
+                    
+                    RecordingStopped?.Invoke(this, EventArgs.Empty);
+                });
+            }
+        }, cancellationToken);
     }
 
     private void OnSaveClicked(object? sender, EventArgs e)
@@ -118,10 +185,18 @@ public partial class VoiceProfileForm : ContentView
         NameEntryBorder.Stroke = Color.FromArgb("#374151");
         _isRecording = false;
         _recordedAudioBytes = null;
+        _recordingCancellationTokenSource?.Cancel();
+        _recordingElapsedSeconds = 0;
+        _countdownSeconds = _selectedDurationSeconds;
         RecordButton.BackgroundColor = Color.FromArgb("#EF4444");
         RecordIcon.Text = "🎙️";
-        RecordingStatusLabel.Text = "Ready to record";
+        RecordingStatusLabel.Text = "Tap the mic to start recording.";
         RecordingStatusLabel.TextColor = Color.FromArgb("#9CA3AF");
+        RecordingCountdownLabel.Text = string.Empty;
+        RecordingProgressBar.Progress = 0;
+        RecordingLengthLabel.Text = "0s";
+        RecordingTimerLabel.Text = string.Empty;
+        DurationPicker.IsEnabled = true;
     }
 
     /// <summary>

@@ -68,6 +68,26 @@
                        FontSize="11"/>
             </VerticalStackLayout>
             
+            <!-- Duration Selector -->
+            <VerticalStackLayout Spacing="6">
+                <Label Text="Recording Duration"
+                       TextColor="{StaticResource ColorTextPrimary}"
+                       FontSize="13"
+                       FontAttributes="Bold"/>
+                <Picker x:Name="DurationPicker"
+                        Title="Select duration"
+                        TextColor="{StaticResource ColorTextPrimary}"
+                        BackgroundColor="{StaticResource ColorSurface}"
+                        SelectedIndexChanged="OnDurationChanged">
+                    <Picker.ItemsSource>
+                        <x:Array Type="{x:Type x:String}">
+                            <x:String>30 seconds</x:String>
+                            <x:String>60 seconds</x:String>
+                        </x:Array>
+                    </Picker.ItemsSource>
+                </Picker>
+            </VerticalStackLayout>
+            
             <!-- Voice Recording Section -->
             <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*" ColumnSpacing="14" RowSpacing="8">
                 <!-- Record button column -->
@@ -104,9 +124,14 @@
                            FontSize="13"
                            FontAttributes="Bold"/>
                     <Label x:Name="RecordingStatusLabel"
-                           Text="Tap the mic to capture 30–60 seconds of speech."
+                           Text="Tap the mic to start recording."
                            TextColor="{StaticResource ColorTextSecondary}"
                            FontSize="11"/>
+                    <Label x:Name="RecordingCountdownLabel"
+                           Text=""
+                           TextColor="{StaticResource ColorAccentPrimary}"
+                           FontSize="13"
+                           FontAttributes="Bold"/>
                 </VerticalStackLayout>
 
                 <!-- Progress / hint row -->
@@ -117,12 +142,17 @@
                                  HeightRequest="4"
                                  BackgroundColor="#111827"
                                  ProgressColor="{StaticResource ColorAccentPrimary}"/>
-                    <Label x:Name="RecordingLengthLabel"
-                           Grid.Column="1"
-                           Text="0s"
-                           TextColor="{StaticResource ColorTextSecondary}"
-                           FontSize="10"
-                           Margin="8,0,0,0"/>
+                    <StackLayout Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                        <Label x:Name="RecordingLengthLabel"
+                               Text="0s"
+                               TextColor="{StaticResource ColorTextSecondary}"
+                               FontSize="10"/>
+                        <Label x:Name="RecordingTimerLabel"
+                               Text=""
+                               TextColor="{StaticResource ColorDanger}"
+                               FontSize="10"
+                               FontAttributes="Bold"/>
+                    </StackLayout>
                 </Grid>
             </Grid>
             
