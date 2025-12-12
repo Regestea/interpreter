@@ -22,13 +22,6 @@ public class VoiceProfileService : IVoiceProfileService
     /// </summary>
     public async Task<CreateVoiceDetectorResponse> CreateAsync(CreateVoiceProfileDto createVoiceProfile)
     {
-
-        return new CreateVoiceDetectorResponse()
-        {
-            Name =  createVoiceProfile.Name,
-            Id = Guid.NewGuid()
-        };
-        
         if (createVoiceProfile == null)
             throw new ArgumentNullException(nameof(createVoiceProfile));
 
@@ -50,7 +43,7 @@ public class VoiceProfileService : IVoiceProfileService
                 Name =  createVoiceProfile.Name,
                 Voice =  memoryStream.ToArray()
             };
-            var result=await _apiClient.SendAsync("api/Interpreter/UploadEncodeAudio", HttpMethod.Post,request,false);
+            var result=await _apiClient.SendAsync("api/VoiceDetector", HttpMethod.Post,request,false);
 
             var jsonOptions = new JsonSerializerOptions
             {
@@ -70,27 +63,21 @@ public class VoiceProfileService : IVoiceProfileService
     /// </summary>
     public async Task<List<VoiceEmbeddingResponse>> GetListAsync()
     {
-        return new List<VoiceEmbeddingResponse>()
+        try
         {
-            new VoiceEmbeddingResponse(){Id =  Guid.Parse("fd311703-5a05-414d-84bd-40bb562cfd97"), Name = "Ali"},
-            new VoiceEmbeddingResponse(){Id =  Guid.Parse("6c66eaa2-b86e-401b-82d2-952182aae385"), Name = "hasan"},
-            new VoiceEmbeddingResponse(){Id =  Guid.Parse("ae4894de-408a-464e-b95f-2cf12f2c303a"), Name = "hossein"},
-        };
-        // try
-        // {
-        //     var result = await _apiClient.SendAsync("api/VoiceDetector", HttpMethod.Get, null, false);
-        //
-        //     var jsonOptions = new JsonSerializerOptions
-        //     {
-        //         PropertyNameCaseInsensitive = true
-        //     };
-        //     var profiles = JsonSerializer.Deserialize<List<VoiceEmbeddingResponse>>(result.Content, jsonOptions);
-        //     return profiles ?? new List<VoiceEmbeddingResponse>();
-        // }
-        // catch (HttpRequestException ex)
-        // {
-        //     throw new InvalidOperationException("Failed to retrieve voice profiles.", ex);
-        // }
+            var result = await _apiClient.SendAsync("api/VoiceDetector", HttpMethod.Get, null, false);
+        
+            var jsonOptions = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+            var profiles = JsonSerializer.Deserialize<List<VoiceEmbeddingResponse>>(result.Content, jsonOptions);
+            return profiles ?? new List<VoiceEmbeddingResponse>();
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new InvalidOperationException("Failed to retrieve voice profiles.", ex);
+        }
     }
 
     /// <summary>
