@@ -4,6 +4,7 @@ using interpreter.Maui.ViewModels;
 using interpreter.Maui.Services;
 using interpreter.Maui.Models;
 using interpreter.Maui.DTOs;
+using Models.Shared.Responses;
 
 namespace interpreter.Maui.Pages;
 
@@ -21,7 +22,7 @@ public partial class VoiceProfilesPage : ContentPage
     private bool _isInitializing;
 
     private bool _isRecording;
-    private byte[]? _recordedAudioBytes;
+    private Stream? _recordedAudioStream;
     private int _selectedDurationSeconds = 30;
     private CancellationTokenSource? _recordingCancellationTokenSource;
     private int _recordingElapsedSeconds;
@@ -87,35 +88,45 @@ public partial class VoiceProfilesPage : ContentPage
 
     #region Voice Profile Picker
 
-    private void InitializeVoiceProfilePicker()
+    private async Task InitializeVoiceProfilePicker()
     {
         ActiveVoiceProfilePicker.ItemsSource = new List<string>();
         ActiveVoiceProfilePicker.SelectionChanged += OnActiveVoiceProfileChanged;
-        UpdateVoiceProfilePicker();
+        var result=await _voiceProfileService.GetListAsync();
+        UpdateVoiceProfilePicker(result);
     }
 
-    private void UpdateVoiceProfilePicker()
+    private void UpdateVoiceProfilePicker(List<VoiceEmbeddingResponse>? profiles = null)
     {
-        var profileNames = _recordingModel.VoiceProfileModels
-            .Select(p => string.IsNullOrWhiteSpace(p.Name) ? "Unnamed Profile" : p.Name)
-            .ToList();
-        
+        // Retrieve the current recording model from local storage
+        var localSaved = _localStorageService.Get<RecordingModel>() ?? new RecordingModel();
+
+        // Update the VoiceProfileModels with the provided profiles
+        if (profiles != null)
+        {
+            localSaved.VoiceProfileModels = profiles.Select(p => new VoiceProfileModel
+            {
+                Id = p.Id,
+                Name = p.Name
+            }).ToList();
+
+            // Save the updated recording model back to local storage
+            _localStorageService.Set(localSaved);
+        }
+
+        // Update the picker items
+        var profileNames = localSaved.VoiceProfileModels.Select(x => x.Name).ToList();
         ActiveVoiceProfilePicker.ItemsSource = profileNames;
 
         // Set selected index based on SelectedVoiceProfileId
-        if (_recordingModel.SelectedVoiceProfileId.HasValue)
+        if (localSaved.SelectedVoiceProfileId.HasValue)
         {
-            var selectedIndex = _recordingModel.VoiceProfileModels
-                .FindIndex(p => p.Id == _recordingModel.SelectedVoiceProfileId.Value);
-            
-            if (selectedIndex >= 0 && selectedIndex < profileNames.Count)
-            {
-                ActiveVoiceProfilePicker.SelectedIndex = selectedIndex;
-            }
-            else
-            {
-                ActiveVoiceProfilePicker.SelectedIndex = -1;
-            }
+            var selectedIndex = localSaved.VoiceProfileModels
+                .FindIndex(p => p.Id == localSaved.SelectedVoiceProfileId.Value);
+
+            ActiveVoiceProfilePicker.SelectedIndex = selectedIndex >= 0 && selectedIndex < profileNames.Count
+                ? selectedIndex
+                : -1;
         }
         else
         {
@@ -133,7 +144,20 @@ public partial class VoiceProfilesPage : ContentPage
         if (ActiveVoiceProfilePicker.SelectedIndex < profiles.Count)
         {
             var selectedProfile = profiles[ActiveVoiceProfilePicker.SelectedIndex];
+
+            // Retrieve the current recording model from local storage
+            var localSaved = _localStorageService.Get<RecordingModel>() ?? new RecordingModel();
+
+            // Update the selected voice profile ID
+            localSaved.SelectedVoiceProfileId = selectedProfile.Id;
+
+            // Save the updated recording model back to local storage
+            _localStorageService.Set(localSaved);
+
+            // Update the in-memory recording model
             _recordingModel.SelectedVoiceProfileId = selectedProfile.Id;
+
+            // Persist the changes
             SaveRecordingModel();
         }
     }
@@ -146,17 +170,16 @@ public partial class VoiceProfilesPage : ContentPage
     {
         try
         {
-            if (_recordedAudioBytes == null || _recordedAudioBytes.Length == 0)
+            if (_recordedAudioStream == null)
             {
                 await DisplayAlertAsync("Error", "No audio data recorded.", "OK");
                 return;
             }
 
-            using var audioStream = new MemoryStream(_recordedAudioBytes);
             var createRequest = new CreateVoiceProfileDto
             {
                 Name = e.Name,
-                Voice = audioStream
+                Voice = _recordedAudioStream
             };
 
             var response = await _voiceProfileService.CreateAsync(createRequest);
@@ -214,7 +237,7 @@ public partial class VoiceProfilesPage : ContentPage
             if (!string.IsNullOrEmpty(audioFilePath) && File.Exists(audioFilePath))
             {
                 var audioBytes = await File.ReadAllBytesAsync(audioFilePath);
-                _recordedAudioBytes = audioBytes;
+                _recordedAudioStream = new MemoryStream(audioBytes);
                 _updateRecordingStatus("Audio recorded successfully", true);
             }
             else
@@ -270,22 +293,15 @@ public partial class VoiceProfilesPage : ContentPage
         }
     }
 
-    private void LoadVoiceProfiles()
+    private async Task LoadVoiceProfiles()
     {
-        // TODO: Implement HTTP client request to get voice profiles
-        // var response = await _voiceProfileService.GetListAsync();
-        // var profileItems = response.Select(r => new VoiceProfileItem { Id = r.Id, Name = r.Name }).ToList();
-        // ProfileList.UpdateItems(profileItems);
-        
-        // For now, load from RecordingModel
-        var profileItems = _recordingModel.VoiceProfileModels
-            .Select(p => new VoiceProfileItem { Id = p.Id, Name = p.Name })
-            .ToList();
-        
+
+        var response = await _voiceProfileService.GetListAsync();
+        var profileItems = response.Select(r => new VoiceProfileItem { Id = r.Id, Name = r.Name }).ToList();
         ProfileList.UpdateItems(profileItems);
         
         // Update the picker after loading profiles
-        UpdateVoiceProfilePicker();
+        UpdateVoiceProfilePicker(response);
     }
 
     #endregion
@@ -311,7 +327,7 @@ public partial class VoiceProfilesPage : ContentPage
             _recordingElapsedSeconds = 0;
             _countdownSeconds = _selectedDurationSeconds;
             _recordingCancellationTokenSource = new CancellationTokenSource();
-            
+
             RecordButton.BackgroundColor = Color.FromArgb("#22C55E");
             RecordIcon.Text = "⏹️";
             RecordingStatusLabel.Text = "Recording...";
@@ -322,18 +338,18 @@ public partial class VoiceProfilesPage : ContentPage
             await RecordButton.ScaleToAsync(1.0, 200);
 
             StartCountdownTimer(_recordingCancellationTokenSource.Token);
-        }
-        else
-        {
-            _isRecording = false;
-            _recordingCancellationTokenSource?.Cancel();
-            
-            RecordButton.BackgroundColor = Color.FromArgb("#EF4444");
-            RecordIcon.Text = "🎙️";
-            RecordingStatusLabel.Text = "Recording saved ✓";
-            RecordingStatusLabel.TextColor = Color.FromArgb("#22C55E");
-            RecordingCountdownLabel.Text = string.Empty;
-            DurationPicker.IsEnabled = true;
+
+            // Start recording
+            try
+            {
+                _recordedAudioStream = await _audioRecordingService.RecordAudioTrack(durationSeconds: _selectedDurationSeconds);
+            }
+            catch (Exception ex)
+            {
+                _updateRecordingStatus($"Recording error: {ex.Message}", false);
+                _isRecording = false;
+                return;
+            }
         }
     }
 
@@ -358,7 +374,7 @@ public partial class VoiceProfilesPage : ContentPage
 
             if (!cancellationToken.IsCancellationRequested)
             {
-                MainThread.BeginInvokeOnMainThread(() =>
+                MainThread.BeginInvokeOnMainThread(async () =>
                 {
                     _isRecording = false;
                     RecordButton.BackgroundColor = Color.FromArgb("#EF4444");
@@ -369,6 +385,26 @@ public partial class VoiceProfilesPage : ContentPage
                     DurationPicker.IsEnabled = true;
                     RecordingProgressBar.Progress = 1.0;
                     RecordingLengthLabel.Text = $"{_selectedDurationSeconds}s";
+
+                    // Stop recording and process the audio
+                    try
+                    {
+                        var audioFilePath = await _audioRecordingService.StopAsync();
+                        if (!string.IsNullOrEmpty(audioFilePath) && File.Exists(audioFilePath))
+                        {
+                            var audioBytes = await File.ReadAllBytesAsync(audioFilePath);
+                            _recordedAudioStream = new MemoryStream(audioBytes);
+                            _updateRecordingStatus("Audio recorded successfully", true);
+                        }
+                        else
+                        {
+                            _updateRecordingStatus("Failed to record audio", false);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _updateRecordingStatus($"Recording error: {ex.Message}", false);
+                    }
                 });
             }
         }, cancellationToken);
@@ -384,7 +420,7 @@ public partial class VoiceProfilesPage : ContentPage
             return;
         }
 
-        if (_recordedAudioBytes == null || _recordedAudioBytes.Length == 0)
+        if (_recordedAudioStream == null)
         {
             return;
         }
@@ -399,7 +435,7 @@ public partial class VoiceProfilesPage : ContentPage
         RecordingCountdownLabel.Text = "";
         RecordingProgressBar.Progress = 0;
         RecordingLengthLabel.Text = "";
-        _recordedAudioBytes = null;
+        _recordedAudioStream = null;
         _isRecording = false;
     }
 

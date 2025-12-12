@@ -65,9 +65,9 @@ public class VoiceProfileService : IVoiceProfileService
     {
         return new List<VoiceEmbeddingResponse>()
         {
-            new VoiceEmbeddingResponse(){Id =  Guid.NewGuid(), Name = "Ali"},
-            new VoiceEmbeddingResponse(){Id =  Guid.NewGuid(), Name = "hasan"},
-            new VoiceEmbeddingResponse(){Id =  Guid.NewGuid(), Name = "hossein"},
+            new VoiceEmbeddingResponse(){Id =  Guid.Parse("fd311703-5a05-414d-84bd-40bb562cfd97"), Name = "Ali"},
+            new VoiceEmbeddingResponse(){Id =  Guid.Parse("6c66eaa2-b86e-401b-82d2-952182aae385"), Name = "hasan"},
+            new VoiceEmbeddingResponse(){Id =  Guid.Parse("ae4894de-408a-464e-b95f-2cf12f2c303a"), Name = "hossein"},
         };
         // try
         // {
