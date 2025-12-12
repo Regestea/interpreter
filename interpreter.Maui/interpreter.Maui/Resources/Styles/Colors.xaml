@@ -92,6 +92,9 @@
     <Color x:Key="Gray900">#212130</Color>
     <Color x:Key="Gray950">#141420</Color>
 
+    <!-- Adding BrushSurfaceHigh resource -->
+    <Color x:Key="BrushSurfaceHigh">#111827</Color>
+
     <!-- Neon Brushes -->
     <SolidColorBrush x:Key="NeonCyanBrush" Color="{StaticResource NeonCyan}"/>
     <SolidColorBrush x:Key="NeonMagentaBrush" Color="{StaticResource NeonMagenta}"/>

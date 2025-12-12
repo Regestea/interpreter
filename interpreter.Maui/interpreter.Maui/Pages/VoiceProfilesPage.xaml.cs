@@ -18,7 +18,14 @@ public partial class VoiceProfilesPage : ContentPage
     private readonly IAndroidAudioRecordingService _audioRecordingService;
     
     private RecordingModel _recordingModel = new();
-    private bool _isInitializing = false;
+    private bool _isInitializing;
+
+    private bool _isRecording;
+    private byte[]? _recordedAudioBytes;
+    private int _selectedDurationSeconds = 30;
+    private CancellationTokenSource? _recordingCancellationTokenSource;
+    private int _recordingElapsedSeconds;
+    private int _countdownSeconds;
 
     public VoiceProfilesPage(
         VoiceProfilesViewModel viewModel,
@@ -135,32 +142,26 @@ public partial class VoiceProfilesPage : ContentPage
 
     #region Voice Profile Form Events
 
-    private async void OnProfileFormSaveClicked(object? sender, VoiceProfileSaveEventArgs e)
+    private async void OnProfileFormSaveClicked(VoiceProfileSaveEventArgs e)
     {
         try
         {
-            if (ProfileForm.RecordedAudioBytes == null || ProfileForm.RecordedAudioBytes.Length == 0)
+            if (_recordedAudioBytes == null || _recordedAudioBytes.Length == 0)
             {
-                await DisplayAlert("Error", "No audio data recorded.", "OK");
+                await DisplayAlertAsync("Error", "No audio data recorded.", "OK");
                 return;
             }
 
-            // Create a MemoryStream from the recorded audio bytes
-            using var audioStream = new MemoryStream(ProfileForm.RecordedAudioBytes);
-            
-            // Create the DTO with the voice data
+            using var audioStream = new MemoryStream(_recordedAudioBytes);
             var createRequest = new CreateVoiceProfileDto
             {
                 Name = e.Name,
                 Voice = audioStream
             };
 
-            // Call the service to create the voice profile
             var response = await _voiceProfileService.CreateAsync(createRequest);
-            
             if (response != null)
             {
-                // Add to local model
                 var newProfile = new VoiceProfileModel
                 {
                     Id = response.Id,
@@ -168,77 +169,68 @@ public partial class VoiceProfilesPage : ContentPage
                 };
                 _recordingModel.VoiceProfileModels.Add(newProfile);
                 SaveRecordingModel();
-                ProfileForm.Reset();
+                _resetFormFields();
                 LoadVoiceProfiles();
-                
-                await DisplayAlert("Success", $"Profile '{e.Name}' saved successfully.", "OK");
+
+                await DisplayAlertAsync("Success", $"Profile '{e.Name}' saved successfully.", "OK");
             }
             else
             {
-                await DisplayAlert("Error", "Failed to create voice profile.", "OK");
+                await DisplayAlertAsync("Error", "Failed to create voice profile.", "OK");
             }
         }
         catch (Exception ex)
         {
-            await DisplayAlert("Error", $"An error occurred: {ex.Message}", "OK");
+            await DisplayAlertAsync("Error", $"An error occurred: {ex.Message}", "OK");
         }
     }
 
-    private async void OnProfileFormRecordingStarted(object? sender, EventArgs e)
+    private async void OnProfileFormRecordingStarted()
     {
         try
         {
-            // Request permissions if needed
             bool hasPermission = await _audioRecordingService.RequestPermissionsAsync();
             if (!hasPermission)
             {
-                await DisplayAlert("Permission Denied", "Microphone permission is required to record audio.", "OK");
-                ProfileForm.Reset();
+                await DisplayAlertAsync("Permission Denied", "Microphone permission is required to record audio.", "OK");
+                _resetFormFields();
                 return;
             }
 
-            // Get the selected duration from the form
-            int durationSeconds = ProfileForm.IsRecording ? 30 : 60;
-            
-            // Start recording
             await _audioRecordingService.StartAsync();
         }
         catch (Exception ex)
         {
-            await DisplayAlert("Error", $"Failed to start recording: {ex.Message}", "OK");
-            ProfileForm.Reset();
+            await DisplayAlertAsync("Error", $"Failed to start recording: {ex.Message}", "OK");
+            _resetFormFields();
         }
     }
 
-    private async void OnProfileFormRecordingStopped(object? sender, EventArgs e)
+    private async void OnProfileFormRecordingStopped()
     {
         try
         {
-            // Stop recording and get the audio file path
             var audioFilePath = await _audioRecordingService.StopAsync();
-            
             if (!string.IsNullOrEmpty(audioFilePath) && File.Exists(audioFilePath))
             {
-                // Read the audio file into bytes
                 var audioBytes = await File.ReadAllBytesAsync(audioFilePath);
-                ProfileForm.RecordedAudioBytes = audioBytes;
-                
-                ProfileForm.SetRecordingStatus("Audio recorded successfully", isSuccess: true);
+                _recordedAudioBytes = audioBytes;
+                _updateRecordingStatus("Audio recorded successfully", true);
             }
             else
             {
-                ProfileForm.SetRecordingStatus("Failed to record audio", isSuccess: false);
+                _updateRecordingStatus("Failed to record audio", false);
             }
         }
         catch (Exception ex)
         {
-            ProfileForm.SetRecordingStatus($"Recording error: {ex.Message}", isSuccess: false);
+            _updateRecordingStatus($"Recording error: {ex.Message}", false);
         }
     }
 
     private async void OnProfileFormValidationFailed(object? sender, string message)
     {
-        await DisplayAlert("Validation Error", message, "OK");
+        await DisplayAlertAsync("Validation Error", message, "OK");
     }
 
     #endregion
@@ -252,7 +244,7 @@ public partial class VoiceProfilesPage : ContentPage
 
     private async void OnProfileListDeleteClicked(object? sender, Guid id)
     {
-        var confirm = await DisplayAlert("Delete", "Are you sure you want to delete this voice profile?", "Yes", "No");
+        var confirm = await DisplayAlertAsync("Delete", "Are you sure you want to delete this voice profile?", "Yes", "No");
         if (confirm)
         {
             try
@@ -269,11 +261,11 @@ public partial class VoiceProfilesPage : ContentPage
                 SaveRecordingModel();
                 LoadVoiceProfiles();
                 
-                await DisplayAlert("Success", "Voice profile deleted successfully.", "OK");
+                await DisplayAlertAsync("Success", "Voice profile deleted successfully.", "OK");
             }
             catch (Exception ex)
             {
-                await DisplayAlert("Error", $"Failed to delete profile: {ex.Message}", "OK");
+                await DisplayAlertAsync("Error", $"Failed to delete profile: {ex.Message}", "OK");
             }
         }
     }
@@ -297,5 +289,149 @@ public partial class VoiceProfilesPage : ContentPage
     }
 
     #endregion
-}
 
+    private void OnDurationChanged(object? sender, EventArgs e)
+    {
+        if (DurationPicker.SelectedIndex >= 0)
+        {
+            _selectedDurationSeconds = DurationPicker.SelectedIndex == 0 ? 30 : 60;
+        }
+    }
+
+    private void OnNameTextChanged(object? sender, TextChangedEventArgs e)
+    {
+        NameEntryBorder.Stroke = Color.FromArgb("#374151");
+    }
+
+    private async void OnRecordClicked(object? sender, EventArgs e)
+    {
+        if (!_isRecording)
+        {
+            _isRecording = true;
+            _recordingElapsedSeconds = 0;
+            _countdownSeconds = _selectedDurationSeconds;
+            _recordingCancellationTokenSource = new CancellationTokenSource();
+            
+            RecordButton.BackgroundColor = Color.FromArgb("#22C55E");
+            RecordIcon.Text = "⏹️";
+            RecordingStatusLabel.Text = "Recording...";
+            RecordingStatusLabel.TextColor = Color.FromArgb("#EF4444");
+            DurationPicker.IsEnabled = false;
+
+            await RecordButton.ScaleToAsync(1.1, 200);
+            await RecordButton.ScaleToAsync(1.0, 200);
+
+            StartCountdownTimer(_recordingCancellationTokenSource.Token);
+        }
+        else
+        {
+            _isRecording = false;
+            _recordingCancellationTokenSource?.Cancel();
+            
+            RecordButton.BackgroundColor = Color.FromArgb("#EF4444");
+            RecordIcon.Text = "🎙️";
+            RecordingStatusLabel.Text = "Recording saved ✓";
+            RecordingStatusLabel.TextColor = Color.FromArgb("#22C55E");
+            RecordingCountdownLabel.Text = string.Empty;
+            DurationPicker.IsEnabled = true;
+        }
+    }
+
+    private void StartCountdownTimer(CancellationToken cancellationToken)
+    {
+        Task.Run(async () =>
+        {
+            while (_countdownSeconds > 0 && !cancellationToken.IsCancellationRequested)
+            {
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    RecordingCountdownLabel.Text = $"{_countdownSeconds}s remaining";
+                    double progress = (double)_recordingElapsedSeconds / _selectedDurationSeconds;
+                    RecordingProgressBar.Progress = progress;
+                    RecordingLengthLabel.Text = $"{_recordingElapsedSeconds}s";
+                });
+
+                await Task.Delay(1000, cancellationToken);
+                _recordingElapsedSeconds++;
+                _countdownSeconds--;
+            }
+
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    _isRecording = false;
+                    RecordButton.BackgroundColor = Color.FromArgb("#EF4444");
+                    RecordIcon.Text = "🎙️";
+                    RecordingStatusLabel.Text = "Recording complete!";
+                    RecordingCountdownLabel.Text = string.Empty;
+                    RecordingStatusLabel.TextColor = Color.FromArgb("#22C55E");
+                    DurationPicker.IsEnabled = true;
+                    RecordingProgressBar.Progress = 1.0;
+                    RecordingLengthLabel.Text = $"{_selectedDurationSeconds}s";
+                });
+            }
+        }, cancellationToken);
+    }
+
+    private void OnSaveClicked(object? sender, EventArgs e)
+    {
+        var name = NameEntry.Text;
+
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            NameEntryBorder.Stroke = Color.FromArgb("#EF4444");
+            return;
+        }
+
+        if (_recordedAudioBytes == null || _recordedAudioBytes.Length == 0)
+        {
+            return;
+        }
+
+        // Save logic here
+    }
+
+    private void _resetFormFields()
+    {
+        NameEntry.Text = string.Empty;
+        RecordingStatusLabel.Text = "";
+        RecordingCountdownLabel.Text = "";
+        RecordingProgressBar.Progress = 0;
+        RecordingLengthLabel.Text = "";
+        _recordedAudioBytes = null;
+        _isRecording = false;
+    }
+
+    private void _updateRecordingStatus(string message, bool isSuccess)
+    {
+        RecordingStatusLabel.Text = message;
+        RecordingStatusLabel.TextColor = isSuccess ? Color.FromArgb("#22C55E") : Color.FromArgb("#EF4444");
+    }
+
+    // Updated DisplayAlert logic
+    private new async Task DisplayAlertAsync(string title, string message, string cancel)
+    {
+        var mainPage = Application.Current?.Windows[0]?.Page;
+        if (mainPage != null)
+        {
+            await mainPage.DisplayAlertAsync(title, message, cancel);
+        }
+    }
+
+    private new async Task<bool> DisplayAlertAsync(string title, string message, string accept, string cancel)
+    {
+        var mainPage = Application.Current?.Windows[0]?.Page;
+        if (mainPage != null)
+        {
+            return await mainPage.DisplayAlertAsync(title, message, accept, cancel);
+        }
+        return false;
+    }
+
+    // Added definition for VoiceProfileSaveEventArgs
+    public class VoiceProfileSaveEventArgs : EventArgs
+    {
+        public string Name { get; set; } = string.Empty;
+    }
+}
