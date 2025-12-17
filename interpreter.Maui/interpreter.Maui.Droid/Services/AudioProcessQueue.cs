@@ -127,36 +127,36 @@ public sealed class AudioProcessQueue
                     var app = Microsoft.Maui.ApplicationModel.Platform.CurrentActivity?.Application as IPlatformApplication;
                     var sp = app?.Services;
                     
-                    // var apiClient= sp?.GetService<IApiClient>() ?? throw new InvalidOperationException("IApiClient not registered in DI.");
-                    // var encodedAudio= await _opusCodecService.EncodeAsync(audioProcess.AudioStream);
-                    //
-                    // var memoryStream=new MemoryStream();
-                    // await encodedAudio.CopyToAsync(memoryStream);
-                    //
-                    // var request = new InterpreterRequest()
-                    // {
-                    //     AudioFile = Convert.ToBase64String(memoryStream.ToArray()),
-                    //     InputAudioLanguages = InputAudioLanguages.English,
-                    //     EnglishVoiceModels = EnglishVoiceModels.EnUsHfcFemaleMedium,
-                    //     Modes = Modes.IgnoreMyTalks,
-                    //     OutputLanguages = OutputLanguages.Persian,
-                    //     UserVoiceDetectorName = "test"
-                    // };
-                    //
-                    // var result=await apiClient.SendAsync("api/Interpreter/UploadEncodeAudio", HttpMethod.Post,request,false);
-                    //
-                    // var jsonOptions = new JsonSerializerOptions
-                    // {
-                    //     PropertyNameCaseInsensitive = true
-                    // };
-                    // var interpreterResponse = JsonSerializer.Deserialize<InterpreterResponse>(result.Content, jsonOptions);
-                    //
-                    // var streamMemory = new MemoryStream(interpreterResponse.TranslatedAudio);
-                    // var decodedAudioStream=await _opusCodecService.DecodeAsync(streamMemory);
-                    //
-                    // var player= sp?.GetService<IAudioPlaybackService>() ?? throw new InvalidOperationException("IApiClient not registered in DI.");
-                    //
-                    // await player.PlayAsync(decodedAudioStream);
+                    var apiClient= sp?.GetService<IApiClient>() ?? throw new InvalidOperationException("IApiClient not registered in DI.");
+                    var encodedAudio= await _opusCodecService.EncodeAsync(audioProcess.AudioStream);
+                    
+                    var memoryStream=new MemoryStream();
+                    await encodedAudio.CopyToAsync(memoryStream);
+                    
+                    var request = new InterpreterRequest()
+                    {
+                        AudioFile = Convert.ToBase64String(memoryStream.ToArray()),
+                        InputAudioLanguages = InputAudioLanguages.English,
+                        EnglishVoiceModels = EnglishVoiceModels.EnUsHfcFemaleMedium,
+                        Modes = Modes.IgnoreMyTalks,
+                        OutputLanguages = OutputLanguages.Persian,
+                        UserVoiceDetectorName = "test"
+                    };
+                    
+                    var result=await apiClient.SendAsync("api/Interpreter/UploadEncodeAudio", HttpMethod.Post,request,false);
+                    
+                    var jsonOptions = new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    };
+                    var interpreterResponse = JsonSerializer.Deserialize<InterpreterResponse>(result.Content, jsonOptions);
+                    
+                    var streamMemory = new MemoryStream(interpreterResponse.TranslatedAudio);
+                    var decodedAudioStream=await _opusCodecService.DecodeAsync(streamMemory);
+                    
+                    var player= sp?.GetService<IAudioPlaybackService>() ?? throw new InvalidOperationException("IApiClient not registered in DI.");
+                    
+                    await player.PlayAsync(decodedAudioStream);
                     
 
                 }

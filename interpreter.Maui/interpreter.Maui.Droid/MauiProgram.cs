@@ -25,6 +25,7 @@ namespace interpreter.Maui
             builder.Services.AddHttpClient<IApiClient, ApiClient>(client =>
             {
                 client.BaseAddress = new Uri("https://regestea.ir/");
+                client.Timeout = TimeSpan.FromSeconds(60);
             });
 
             // HttpClient used for auth; same base address

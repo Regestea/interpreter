@@ -13,13 +13,7 @@ public class VoiceEmbedding
     public string Name { get; set; } = string.Empty;
     
     // Store as JSON in database
-    private string EmbeddingJson { get; set; } = string.Empty;
+    [Required] // Ensure this property is not null
+    public string EmbeddingJson { get; set; } 
     
-    // Use this in memory
-    [NotMapped] // If using EF Core
-    public List<float> Embedding 
-    { 
-        get => JsonSerializer.Deserialize<List<float>>(EmbeddingJson) ?? new();
-        set => EmbeddingJson = JsonSerializer.Serialize(value);
-    }
 }

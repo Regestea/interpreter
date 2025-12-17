@@ -58,9 +58,15 @@ public class AndroidAudioRecordingService : IAndroidAudioRecordingService
         return RecordingState.LastFilePath;
     }
     
-    public Task<Stream> RecordAudioTrack(int durationSeconds)
+    public async Task<Stream> RecordAudioTrack(int durationSeconds)
     {
-        return Task.Run(() =>
+        // Ensure permissions are granted before starting recording
+        if (!await RequestPermissionsAsync())
+        {
+            throw new UnauthorizedAccessException("Microphone permissions are not granted.");
+        }
+
+        return await Task.Run(() =>
         {
             var duration = TimeSpan.FromSeconds(durationSeconds);
             return _audioRecorderService.RecordForDuration(duration);

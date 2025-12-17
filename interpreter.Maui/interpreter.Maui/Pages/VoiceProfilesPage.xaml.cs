@@ -219,7 +219,8 @@ public partial class VoiceProfilesPage : ContentPage
     {
         if (DurationPicker.SelectedIndex >= 0)
         {
-            _selectedDurationSeconds = DurationPicker.SelectedIndex == 0 ? 30 : 60;
+            // Map the selected index to the corresponding duration
+            _selectedDurationSeconds = (DurationPicker.SelectedIndex + 1) * 5 + 5; // 10, 15, 20 seconds
         }
     }
 

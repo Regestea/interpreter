@@ -146,8 +146,9 @@
                                     SelectedIndexChanged="OnDurationChanged">
                                 <Picker.ItemsSource>
                                     <x:Array Type="{x:Type x:String}">
-                                        <x:String>30 seconds</x:String>
-                                        <x:String>60 seconds</x:String>
+                                        <x:String>10 seconds</x:String>
+                                        <x:String>15 seconds</x:String>
+                                        <x:String>20 seconds</x:String>
                                     </x:Array>
                                 </Picker.ItemsSource>
                             </Picker>

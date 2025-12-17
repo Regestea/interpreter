@@ -8,5 +8,10 @@ public class CreateVoiceDetectorRequest
     public string Name { get; set; }
     
     [Required]
-    public byte[] Voice { get; set; }
+    public required string Voice { get; set; }
+    
+    /// <summary>
+    /// Gets the audio file as a byte array by decoding the base64 string
+    /// </summary>
+    public byte[] GetAudioBytes() => Convert.FromBase64String(Voice);
 }

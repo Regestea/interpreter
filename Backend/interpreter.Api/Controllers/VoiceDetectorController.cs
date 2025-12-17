@@ -1,9 +1,12 @@
-﻿using interpreter.Api.Data;
+﻿using System.Text.Json;
+using IdempotentAPI.Filters;
+using interpreter.Api.Data;
 using interpreter.Api.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Models.Shared.Requests;
 using Models.Shared.Responses;
+using Opus.Services;
 using SpeechBrain;
 
 namespace interpreter.Api.Controllers;
@@ -15,17 +18,20 @@ public class VoiceDetectorController : ControllerBase
     private readonly ILogger<VoiceDetectorController> _logger;
     private readonly InterpreterDbContext _dbContext;
     private readonly ISpeechBrainRecognition _speechBrainRecognition;
+    private readonly IOpusCodecService _opusCodecService;
 
     public VoiceDetectorController(
         ILogger<VoiceDetectorController> logger, InterpreterDbContext dbContext,
-        ISpeechBrainRecognition speechBrainRecognition)
+        ISpeechBrainRecognition speechBrainRecognition, IOpusCodecService opusCodecService)
     {
         _logger = logger;
         _dbContext = dbContext;
         _speechBrainRecognition = speechBrainRecognition;
+        _opusCodecService = opusCodecService;
     }
 
     [HttpPost]
+    [Idempotent(ExpiresInMilliseconds = 90000)]
     public async Task<IActionResult> Create([FromBody] CreateVoiceDetectorRequest request)
     {
         try
@@ -35,21 +41,41 @@ public class VoiceDetectorController : ControllerBase
 
             if (request.Voice.Length == 0)
                 return BadRequest("File is required");
+            var audioBytes = request.GetAudioBytes();
+            await using var audioStream = new MemoryStream(audioBytes);
+            await using var decodedMemoryStream=new MemoryStream();
+            try
+            {
+                var decodedVoice=await _opusCodecService.DecodeAsync(audioStream);
+                
+                await decodedVoice.CopyToAsync(decodedMemoryStream);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
 
-            var embedding = _speechBrainRecognition.GetAudioEmbedding(request.Voice);
+            var embedding = _speechBrainRecognition.GetAudioEmbedding(decodedMemoryStream.ToArray());
 
-            var VoiceEmbedding = new VoiceEmbedding()
+            if (embedding.Count == 0)
+            {
+                return BadRequest("Failed to generate audio embedding.");
+            }
+            
+            var voiceEmbedding = new VoiceEmbedding()
             {
                 Id = Guid.NewGuid(),
                 Name = request.Name,
-                Embedding = embedding
+                EmbeddingJson = JsonSerializer.Serialize(embedding)
             };
 
-            _dbContext.VoiceEmbeddings.Add(VoiceEmbedding);
+            _dbContext.VoiceEmbeddings.Add(voiceEmbedding);
             await _dbContext.SaveChangesAsync();
+            await Task.Delay(20000);
             return Ok(new CreateVoiceDetectorResponse
             {
-                Id = VoiceEmbedding.Id,
+                Id = voiceEmbedding.Id,
                 Name = request.Name
             });
         }

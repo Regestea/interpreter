@@ -41,9 +41,9 @@ public class VoiceProfileService : IVoiceProfileService
             var request = new CreateVoiceDetectorRequest()
             {
                 Name =  createVoiceProfile.Name,
-                Voice =  memoryStream.ToArray()
+                Voice =  Convert.ToBase64String(memoryStream.ToArray())
             };
-            var result=await _apiClient.SendAsync("api/VoiceDetector", HttpMethod.Post,request,false);
+            var result=await _apiClient.SendAsync("api/VoiceDetector", HttpMethod.Post,request,false,Guid.NewGuid());
 
             var jsonOptions = new JsonSerializerOptions
             {
