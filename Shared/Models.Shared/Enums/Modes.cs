@@ -4,5 +4,6 @@ public enum Modes
 {
     TranslateEverything,
     IgnoreMyTalks,
-    HelpMeToTalk
+    HelpMeToTalk,
+    OnlyMyNativeLanguageTranslate
 }

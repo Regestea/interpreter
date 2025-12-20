@@ -9,9 +9,8 @@ public class InterpreterRequest
     public required string AudioFile { get; set; }
 
     public InputAudioLanguages InputAudioLanguages { get; set; }
-
-    [Required] 
-    public string UserVoiceDetectorName { get; set; } = null!;
+    
+    public Guid? VoiceProfileId { get; set; } 
 
     public bool WithTts { get; set; } = true;
 

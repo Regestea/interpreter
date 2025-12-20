@@ -1,4 +1,6 @@
 ﻿using System.Diagnostics;
+using System.Text.Json;
+using IdempotentAPI.Filters;
 using interpreter.Api.Data;
 using Microsoft.AspNetCore.Mvc;
 using interpreter.Api.Services;
@@ -50,6 +52,7 @@ public class InterpreterController : ControllerBase
     /// <param name="request">The interpreter request containing audio file and configuration</param>
     /// <returns>Result of the file processing with Opus-encoded translated audio</returns>
     [HttpPost("UploadEncodeAudio")]
+    [Idempotent(ExpiresInMilliseconds = 90000)]
     [ProducesResponseType(typeof(InterpreterResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -68,13 +71,6 @@ public class InterpreterController : ControllerBase
         st.Start();
         try
         {
-
-            if (string.IsNullOrWhiteSpace(request.UserVoiceDetectorName))
-            {
-                _logger.LogWarning("User voice detector name is missing");
-                return BadRequest(new { error = "User voice detector name is required" });
-            }
-
             var streamAudio = new MemoryStream(request.GetAudioBytes());
             
             // Decode the Opus audio to PCM
@@ -121,23 +117,23 @@ public class InterpreterController : ControllerBase
             }
 
             // Perform voice recognition
-            // _logger.LogInformation("Performing voice recognition for user: {UserName}", request.UserVoiceDetectorName);
-            // var mainEmbedding = await _dbContext.VoiceEmbeddings
-            //     .FirstOrDefaultAsync(x => x.Name == request.UserVoiceDetectorName);
+            _logger.LogInformation("Performing voice recognition for user: {UserName}", request.VoiceProfileId);
+            var mainEmbedding = await _dbContext.VoiceEmbeddings
+                .FirstOrDefaultAsync(x => x.Id == request.VoiceProfileId);
 
-            // if (mainEmbedding == null)
-            // {
-            //     _logger.LogWarning("Voice embedding not found for user: {UserName}", request.UserVoiceDetectorName);
-            //     return BadRequest(new { error = $"Voice embedding '{request.UserVoiceDetectorName}' not found" });
-            // }
+          
 
             bool isMainUser=false;
-            // using (var ms = new MemoryStream())
-            // {
-            //     decodedAudio.Position = 0; // Reset stream position
-            //     await decodedAudio.CopyToAsync(ms);
-            //     isMainUser = _speechBrainRecognition.CompareAudio(ms.ToArray(), mainEmbedding.Embedding).IsMatch;
-            // }
+            if (mainEmbedding != null)
+            {
+                using (var ms = new MemoryStream())
+                {
+                    decodedAudio.Position = 0; // Reset stream position
+                    await decodedAudio.CopyToAsync(ms);
+                    isMainUser = _speechBrainRecognition.CompareAudio(ms.ToArray(), JsonSerializer.Deserialize<List<float>>(mainEmbedding.EmbeddingJson)).IsMatch;
+                }
+            }
+         
             
             _logger.LogInformation("Voice recognition result - IsMainUser: {IsMainUser}", isMainUser);
 
@@ -179,6 +175,7 @@ public class InterpreterController : ControllerBase
 
             // Translate the text
             _logger.LogInformation("Translating text from {SourceLang} to {TargetLang}", sourceLanguage, targetLanguage);
+            _logger.LogInformation("Original Text : {original}",audioText);
             var translatedText = await _translationService.TranslateAsync(audioText, targetLanguage);
             _logger.LogInformation("Translated text: {Text}", translatedText.TranslatedText);
 
@@ -186,6 +183,20 @@ public class InterpreterController : ControllerBase
             {
                 _logger.LogWarning("Translation resulted in empty text");
                 return Ok(new InterpreterResponse());
+            }
+
+            if (request.WithTts == false)
+            {
+                _logger.LogInformation("response only text without tts as requested");
+                var responseOnlyText = new InterpreterResponse
+                {
+                    OriginalText = audioText,
+                    TranslatedText = translatedText.TranslatedText,
+                    AudioInputLanguage = sourceLanguage
+                };
+                st.Stop();
+                _logger.LogError("it takes aobut :"+st.ElapsedMilliseconds);
+                return Ok(responseOnlyText);
             }
 
             // Generate speech from translated text
