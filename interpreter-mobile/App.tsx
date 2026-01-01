@@ -1,35 +1,76 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, Button, Alert } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
+import notifee from '@notifee/react-native';
+import { Audio, InterruptionModeIOS } from 'expo-av';
+
+// Register foreground service outside of component
+notifee.registerForegroundService((notification) => {
+  return new Promise(() => {
+    console.log("Foreground service started");
+  });
+});
 
 export default function App() {
   const [isRecording, setIsRecording] = useState(false);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const recordingRef = useRef<Audio.Recording | null>(null);
 
   useEffect(() => {
     // Cleanup on unmount
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+      if (recordingRef.current) {
+        recordingRef.current.stopAndUnloadAsync().catch(console.error);
       }
+      notifee.stopForegroundService().catch(console.error);
     };
   }, []);
 
-  const startForegroundService = () => {
+  const startForegroundService = async () => {
     try {
       console.log('📱 Starting foreground service...');
+      
+      // Request audio permissions
+      const permission = await Audio.requestPermissionsAsync();
+
+      if (!permission.granted) {
+        Alert.alert('Permission Required', 'Please grant microphone permission to record audio.');
+        return;
+      }
+
+      // Set audio mode for recording
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+        staysActiveInBackground: true,
+        interruptionModeIOS: InterruptionModeIOS.DuckOthers,
+      });
+
+      // Create recording instance
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+
+      recordingRef.current = recording;
+
+      // Create notification channel
+      const channelId = await notifee.createChannel({
+        id: "recording",
+        name: "Recording",
+      });
+
+      // Display notification as foreground service
+      await notifee.displayNotification({
+        title: "Android audio background recording",
+        body: "recording...",
+        android: {
+          channelId,
+          asForegroundService: true,
+        },
+      });
+
+      setIsRecording(true);
       console.log('✅ Foreground service initialized');
       console.log('🚀 Foreground service is now running');
-      
-      // Simulate foreground service logging every 2 seconds
-      let counter = 0;
-      intervalRef.current = setInterval(() => {
-        counter++;
-        console.log(`🎙️ [Foreground Service] Running... (${counter}s)`);
-        console.log(`📊 [Foreground Service] Processing data chunk #${counter}`);
-      }, 2000);
-      
-      setIsRecording(true);
       console.log('▶️ Service started successfully');
     } catch (error) {
       console.error('❌ Failed to start foreground service:', error);
@@ -37,18 +78,21 @@ export default function App() {
     }
   };
 
-  const stopForegroundService = () => {
+  const stopForegroundService = async () => {
     try {
       console.log('⏹️ Stopping foreground service...');
       
-      // Stop the interval timer
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-        console.log('⏱️ Service timer cleared');
+      // Stop and unload recording
+      if (recordingRef.current) {
+        await recordingRef.current.stopAndUnloadAsync();
+        recordingRef.current = null;
+        console.log('🎙️ Recording stopped and unloaded');
       }
       
+      // Stop foreground service
+      await notifee.stopForegroundService();
       console.log('🛑 Foreground service stopped');
+      
       setIsRecording(false);
       console.log('📱 Service state updated to idle');
     } catch (error) {
