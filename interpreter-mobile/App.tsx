@@ -1,11 +1,11 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, Button, Alert } from 'react-native';
-import { useEffect, useRef, useState } from 'react';
+import { StyleSheet, Text, View, Button, Alert, PermissionsAndroid, Platform } from 'react-native';
+import { useEffect, useState } from 'react';
 import notifee from '@notifee/react-native';
-import { Audio, InterruptionModeIOS } from 'expo-av';
+import LiveAudioStream from 'react-native-live-audio-stream';
 
 // Register foreground service outside of component
-notifee.registerForegroundService((notification) => {
+notifee.registerForegroundService((_notification) => {
   return new Promise(() => {
     console.log("Foreground service started");
   });
@@ -13,44 +13,64 @@ notifee.registerForegroundService((notification) => {
 
 export default function App() {
   const [isRecording, setIsRecording] = useState(false);
-  const recordingRef = useRef<Audio.Recording | null>(null);
+  const [isStreaming, setIsStreaming] = useState(false);
 
   useEffect(() => {
     // Cleanup on unmount
     return () => {
-      if (recordingRef.current) {
-        recordingRef.current.stopAndUnloadAsync().catch(console.error);
+      if (isStreaming) {
+        LiveAudioStream.stop();
       }
       notifee.stopForegroundService().catch(console.error);
     };
-  }, []);
+  }, [isStreaming]);
 
   const startForegroundService = async () => {
     try {
       console.log('📱 Starting foreground service...');
       
-      // Request audio permissions
-      const permission = await Audio.requestPermissionsAsync();
-
-      if (!permission.granted) {
-        Alert.alert('Permission Required', 'Please grant microphone permission to record audio.');
-        return;
+      // Request audio permissions for Android
+      if (Platform.OS === 'android') {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+          {
+            title: 'Microphone Permission',
+            message: 'This app needs access to your microphone to stream audio.',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
+          }
+        );
+        
+        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+          Alert.alert('Permission Required', 'Please grant microphone permission to access audio.');
+          return;
+        }
       }
 
-      // Set audio mode for recording
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: true,
-        interruptionModeIOS: InterruptionModeIOS.DuckOthers,
+      // Configure audio stream
+      const options = {
+        sampleRate: 16000,  // 16kHz sample rate
+        channels: 1,        // Mono
+        bitsPerSample: 16,  // 16-bit
+        audioSource: 6,     // VOICE_RECOGNITION
+        bufferSize: 4096,   // Buffer size
+        wavFile: 'audio.wav' // Required by library but won't be used for streaming
+      };
+
+      LiveAudioStream.init(options);
+
+      // Set up audio data listener
+      LiveAudioStream.on('data', (data: string) => {
+        // This is where you'll receive audio chunks as base64 strings
+        // You can process the audio data here
+        console.log('📊 Received audio chunk, length:', data.length);
+        // TODO: Process audio chunk (you'll implement this later)
       });
 
-      // Create recording instance
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-
-      recordingRef.current = recording;
+      // Start streaming
+      LiveAudioStream.start();
+      setIsStreaming(true);
 
       // Create notification channel
       const channelId = await notifee.createChannel({
@@ -60,8 +80,8 @@ export default function App() {
 
       // Display notification as foreground service
       await notifee.displayNotification({
-        title: "Android audio background recording",
-        body: "recording...",
+        title: "Android audio background streaming",
+        body: "streaming microphone...",
         android: {
           channelId,
           asForegroundService: true,
@@ -82,11 +102,11 @@ export default function App() {
     try {
       console.log('⏹️ Stopping foreground service...');
       
-      // Stop and unload recording
-      if (recordingRef.current) {
-        await recordingRef.current.stopAndUnloadAsync();
-        recordingRef.current = null;
-        console.log('🎙️ Recording stopped and unloaded');
+      // Stop audio streaming
+      if (isStreaming) {
+        LiveAudioStream.stop();
+        setIsStreaming(false);
+        console.log('🎙️ Audio streaming stopped');
       }
       
       // Stop foreground service
