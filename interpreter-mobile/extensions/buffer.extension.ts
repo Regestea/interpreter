@@ -37,5 +37,5 @@ Buffer.prototype.calculateAudioLevel = function() {
   let percentage = ((db - MIN_DB) / (MAX_DB - MIN_DB)) * 100;
   percentage = Math.max(0, Math.min(100, percentage));
 
-  return percentage;
+  return Math.round(percentage);
 };
