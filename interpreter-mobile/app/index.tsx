@@ -1,13 +1,16 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, Button } from 'react-native';
-import { useAudioStream } from './hooks/useAudioStream';
 
-export default function App() {
+import { StyleSheet, Text, View, Button } from 'react-native';
+import { useAudioStream } from '../hooks/useAudioStream';
+import {Link} from "expo-router";
+
+export default function Index() {
   const { isRecording, toggleRecording } = useAudioStream();
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Interpreter Mobile App</Text>
+      <Link href={"/settings"}>settings</Link>
       <Text style={styles.status}>
         Status: {isRecording ? '🔴 Recording' : '⚫ Idle'}
       </Text>
