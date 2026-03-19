@@ -1,4 +1,5 @@
 import './App.css'
+import {Outlet} from "react-router";
 
 function App() {
 
@@ -7,7 +8,9 @@ function App() {
       <>
           <div className="main-container">
               <div className="container-box">
-                  <h1 className="hello-world">Hello World</h1>
+                  <div className="w-100 h-100">
+                      <Outlet />
+                  </div>
               </div>
           </div>
 
