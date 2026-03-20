@@ -1,6 +1,5 @@
 import './App.css'
 import {Outlet} from "react-router";
-import {} from "@fortawesome/fontawesome-svg-core";
 import {faBookOpen,
     faEarthAsia,
     faRobot} from "@fortawesome/free-solid-svg-icons";
