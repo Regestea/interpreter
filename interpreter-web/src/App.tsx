@@ -1,5 +1,10 @@
 import './App.css'
 import {Outlet} from "react-router";
+import {} from "@fortawesome/fontawesome-svg-core";
+import {faBookOpen,
+    faEarthAsia,
+    faRobot} from "@fortawesome/free-solid-svg-icons";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 
 function App() {
 
@@ -17,10 +22,9 @@ function App() {
           <nav className="navbar navbar-dark glass-nav fixed-bottom">
               <div className="container-fluid px-4">
                   <div className="d-flex justify-content-center w-100">
-                      <button className="btn">Home</button>
-                      <button className="btn">Dashboard</button>
-                      <button className="btn">Settings</button>
-                      <button className="btn">Profile</button>
+                      <button className="btn d-flex justify-content-center"><FontAwesomeIcon className="align-self-center" icon={faBookOpen}/></button>
+                      <button className="btn d-flex justify-content-center"><FontAwesomeIcon className="align-self-center" icon={faEarthAsia}/></button>
+                      <button className="btn d-flex justify-content-center"><FontAwesomeIcon className="align-self-center" icon={faRobot}/></button>
                   </div>
               </div>
           </nav>
