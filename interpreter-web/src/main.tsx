@@ -6,8 +6,8 @@ import './index.css'
 import App from './App.tsx'
 import {createBrowserRouter, RouterProvider} from "react-router";
 import NotFound from "./common/components/NotFound.tsx";
-import Settings from "./features/Settings/Settings.tsx";
 import Home from "./features/Home.tsx";
+import Translator from "./features/translator/Translator.tsx";
 
 const router = createBrowserRouter([
     {
@@ -20,8 +20,8 @@ const router = createBrowserRouter([
                 element: <Home />,
             },
             {
-                path: "Settings",
-                element: <Settings />,
+                path: "translator",
+                element: <Translator/>,
             },
         ],
     },

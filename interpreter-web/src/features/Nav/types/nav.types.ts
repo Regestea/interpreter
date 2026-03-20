@@ -1,0 +1,1 @@
+﻿export type CurrentNav = 'study' | 'translator' | 'assistance' | 'home';

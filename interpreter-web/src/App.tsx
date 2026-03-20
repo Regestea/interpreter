@@ -1,13 +1,10 @@
 import './App.css'
 import {Outlet} from "react-router";
-import {faBookOpen,
-    faEarthAsia,
-    faRobot} from "@fortawesome/free-solid-svg-icons";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import Nav from "./features/Nav/Nav.tsx";
 
 function App() {
-
-
+    
+    
   return (
       <>
           <div className="main-container">
@@ -18,15 +15,7 @@ function App() {
               </div>
           </div>
 
-          <nav className="navbar navbar-dark glass-nav fixed-bottom">
-              <div className="container-fluid px-4">
-                  <div className="d-flex justify-content-center w-100">
-                      <button className="btn d-flex justify-content-center"><FontAwesomeIcon className="align-self-center" icon={faBookOpen}/></button>
-                      <button className="btn d-flex justify-content-center"><FontAwesomeIcon className="align-self-center" icon={faEarthAsia}/></button>
-                      <button className="btn d-flex justify-content-center"><FontAwesomeIcon className="align-self-center" icon={faRobot}/></button>
-                  </div>
-              </div>
-          </nav>
+         <Nav/>
       </>
   )
 }
