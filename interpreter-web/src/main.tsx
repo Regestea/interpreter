@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import {createBrowserRouter, RouterProvider} from "react-router";
 import NotFound from "./common/components/NotFound.tsx";
-import Home from "./features/Home.tsx";
+import Home from "./features/home/Home.tsx";
 import Translator from "./features/translator/Translator.tsx";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './index.css'
