@@ -1,6 +1,6 @@
 import './App.css'
 import {Outlet} from "react-router";
-import Nav from "./features/Nav/Nav.tsx";
+import Nav from "./features/nav/Nav.tsx";
 
 function App() {
     
