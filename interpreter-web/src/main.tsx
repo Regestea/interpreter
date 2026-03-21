@@ -1,13 +1,12 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import 'bootstrap/dist/css/bootstrap.min.css';
-import './index.css'
-
 import App from './App.tsx'
 import {createBrowserRouter, RouterProvider} from "react-router";
 import NotFound from "./common/components/NotFound.tsx";
 import Home from "./features/Home.tsx";
 import Translator from "./features/translator/Translator.tsx";
+import 'bootstrap/dist/css/bootstrap.min.css';
+import './index.css'
 
 const router = createBrowserRouter([
     {

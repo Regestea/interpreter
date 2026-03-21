@@ -1,15 +1,16 @@
 ﻿import NavButton from "./NavButton.tsx";
 import {faRotateBack, faNoteSticky, faPlay} from "@fortawesome/free-solid-svg-icons";
-import {useNavStore} from "../store/currentNavStore.ts";
+import {useNavigate} from "react-router";
 
-type NavStudyProps = {};
 
 function NavStudy() {
 
-    const setCurrentNav = useNavStore((state) => state.setCurrentNav);
+    const navigate = useNavigate();
     
     return <>
-        <NavButton onClick={()=>{setCurrentNav("home")}} icon={faRotateBack}/>
+        <NavButton onClick={() => {
+            navigate("/");
+        }} icon={faRotateBack}/>
         <NavButton icon={faNoteSticky}/>
         <NavButton icon={faPlay}/>
     </>;
