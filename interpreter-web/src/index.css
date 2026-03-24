@@ -80,9 +80,10 @@ select option {
     backdrop-filter: blur(20px);
     color: white;
     padding: 1rem;
+    border-radius: 20px;
 }
-.modal-content * {
-    border: none;
+.modal-header {
+    border:none;
 }
 
 button:focus,
