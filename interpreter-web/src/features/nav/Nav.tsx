@@ -1,6 +1,6 @@
 ﻿import NavHome from "./components/NavHome.tsx";
 import NavAssistance from "./components/NavAssistance.tsx";
-import NavLiveTranslation from "./components/NavLiveTranslation.tsx";
+import NavTranslator from "./components/NavTranslator.tsx";
 import NavStudy from "./components/NavStudy.tsx";
 import {useLocation} from "react-router";
 import type {CurrentNav} from "./types/nav.types.ts";
@@ -20,7 +20,7 @@ function Nav() {
             case 'study':
                 return <NavStudy />;
             case 'translator':
-                return <NavLiveTranslation />;
+                return <NavTranslator />;
             case 'assistance':
                 return <NavAssistance />;
             default:
