@@ -4,13 +4,15 @@ interface UseSpeechSegmenterOptions {
     chunkDurationMs?: number;      // طول هر قطعه: 200 میلی‌ثانیه
     windowSizeChunks?: number;     // تعداد کل قطعات پنجره لغزان: 15
     silenceThresholdChunks?: number; // حداقل تعداد 0ها برای قطع صدا: 9
-    volumeThreshold?: number;      // حد آستانه حجم صدا برای تشخیص 1 (بسته به میکروفون قابل تنظیم است)
-    postRollMs?: number;           // زمان اضافه در انتهای ضبط برای جلوگیری از بریده شدن انتهای صدا
+    postRollMs?: number;           // زمان اضافه در انتهای ضبط برای جلوگیری از بریده شدن
+    calibrationDurationMs?: number; // زمان کالیبراسیون اولیه برای تشخیص نویز محیط (مثلا 2000 میلی‌ثانیه)
+    sensitivityOffset?: number;    // حاشیه حساسیت بالاتر از کف نویز برای تشخیص صحبت (مثلا 5 واحد)
 }
 
 interface UseSpeechSegmenterReturn {
     isListening: boolean;
     isRecording: boolean;
+    isCalibrating: boolean;        // وضعیت جدید برای نمایش در UI حین کالیبره کردن
     audioSegments: Blob[];
     startListening: () => Promise<void>;
     stopListening: () => void;
@@ -21,11 +23,13 @@ export const useSpeechSegmenter = ({
                                        chunkDurationMs = 200,
                                        windowSizeChunks = 15,
                                        silenceThresholdChunks = 9,
-                                       volumeThreshold = 15,
-                                       postRollMs = 500, // 500 میلی‌ثانیه ضبط اضافه برای کامل افتادن کلمه آخر
+                                       postRollMs = 500,
+                                       calibrationDurationMs = 2000,
+                                       sensitivityOffset = 5,
                                    }: UseSpeechSegmenterOptions = {}): UseSpeechSegmenterReturn => {
     const [isListening, setIsListening] = useState<boolean>(false);
     const [isRecording, setIsRecording] = useState<boolean>(false);
+    const [isCalibrating, setIsCalibrating] = useState<boolean>(false);
     const [audioSegments, setAudioSegments] = useState<Blob[]>([]);
     const [error, setError] = useState<string | null>(null);
 
@@ -38,11 +42,17 @@ export const useSpeechSegmenter = ({
     const isRecordingRef = useRef<boolean>(false);
     const audioChunksRef = useRef<Blob[]>([]);
 
-    // Refs مربوط به Sliding Window
+    // Sliding Window & VAD Refs
     const lastChunkTimeRef = useRef<number>(0);
     const currentChunkHasSpeechRef = useRef<boolean>(false);
-    const slidingWindowRef = useRef<number[]>([]); // حاوی 0 (سکوت) و 1 (صدا)
+    const slidingWindowRef = useRef<number[]>([]);
     const stopTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Calibration Refs
+    const isCalibratingRef = useRef<boolean>(false);
+    const calibrationStartTimeRef = useRef<number>(0);
+    const calibrationSamplesRef = useRef<number[]>([]);
+    const dynamicThresholdRef = useRef<number>(15); // مقدار پیش‌فرض که بعد از کالیبره آپدیت می‌شود
 
     const startRecording = useCallback(() => {
         if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'inactive') {
@@ -50,8 +60,6 @@ export const useSpeechSegmenter = ({
             mediaRecorderRef.current.start();
             isRecordingRef.current = true;
             setIsRecording(true);
-
-            // پاکسازی پنجره هنگام شروع یک دیالوگ جدید برای جلوگیری از تداخل
             slidingWindowRef.current = [];
 
             if (stopTimeoutRef.current) {
@@ -66,15 +74,13 @@ export const useSpeechSegmenter = ({
             mediaRecorderRef.current.stop();
             isRecordingRef.current = false;
             setIsRecording(false);
-            slidingWindowRef.current = []; // ریست کردن پنجره برای دیالوگ بعدی
+            slidingWindowRef.current = [];
         }
     }, []);
 
     const triggerStopRecording = useCallback(() => {
-        // جلوگیری از اجرای چندباره تایمر توقف
         if (stopTimeoutRef.current) return;
 
-        // اعمال Post-roll برای جلوگیری از بریده شدن انتهای صدا
         stopTimeoutRef.current = setTimeout(() => {
             finalizeStopRecording();
             stopTimeoutRef.current = null;
@@ -92,39 +98,56 @@ export const useSpeechSegmenter = ({
         const averageVolume = sum / bufferLength;
         const currentTime = Date.now();
 
-        // اگر در این فریم (کسری از ثانیه) صدا از آستانه بالاتر بود، این قطعه 200 میلی‌ثانیه‌ای برابر 1 خواهد شد
-        if (averageVolume > volumeThreshold) {
+        // ----------------------------------------------------
+        // فاز کالیبراسیون (اندازه‌گیری کف نویز)
+        // ----------------------------------------------------
+        if (isCalibratingRef.current) {
+            calibrationSamplesRef.current.push(averageVolume);
+
+            // اگر زمان کالیبراسیون تمام شد
+            if (currentTime - calibrationStartTimeRef.current >= calibrationDurationMs) {
+                // محاسبه میانگین نویز محیط
+                const noiseSum = calibrationSamplesRef.current.reduce((a, b) => a + b, 0);
+                const noiseFloor = noiseSum / calibrationSamplesRef.current.length;
+
+                // تنظیم حد آستانه دینامیک بر اساس نویز محیط + حساسیت
+                dynamicThresholdRef.current = noiseFloor + sensitivityOffset;
+
+                isCalibratingRef.current = false;
+                setIsCalibrating(false);
+                lastChunkTimeRef.current = currentTime; // شروع زمان‌بندی قطعات بعد از کالیبره
+            }
+
+            animationFrameIdRef.current = requestAnimationFrame(processAudio);
+            return; // خروج از تابع تا زمانی که کالیبراسیون تمام شود
+        }
+
+        // ----------------------------------------------------
+        // فاز تشخیص صحبت (بر اساس آستانه دینامیک محاسبه شده)
+        // ----------------------------------------------------
+        if (averageVolume > dynamicThresholdRef.current) {
             currentChunkHasSpeechRef.current = true;
 
-            // اگر در حال ضبط نیستیم، فورا ضبط را شروع کن (جلوگیری از بریده شدن ابتدای صدا)
             if (!isRecordingRef.current) {
                 startRecording();
             } else if (stopTimeoutRef.current) {
-                // اگر تایمر توقف روشن شده بود ولی کاربر دوباره صحبت کرد، توقف را لغو کن
                 clearTimeout(stopTimeoutRef.current);
                 stopTimeoutRef.current = null;
             }
         }
 
-        // بررسی پایان بازه 200 میلی‌ثانیه‌ای (Chunk)
+        // پردازش پنجره لغزان
         if (currentTime - lastChunkTimeRef.current >= chunkDurationMs) {
-            // 1 برای صدا، 0 برای سکوت
             const chunkStatus = currentChunkHasSpeechRef.current ? 1 : 0;
-
-            // اضافه کردن وضعیت به انتهای پنجره لغزان
             slidingWindowRef.current.push(chunkStatus);
 
-            // حفظ طول پنجره روی حداکثر 15 قطعه
             if (slidingWindowRef.current.length > windowSizeChunks) {
-                slidingWindowRef.current.shift(); // حذف قدیمی‌ترین قطعه از ابتدای آرایه
+                slidingWindowRef.current.shift();
             }
 
-            // اگر در حال ضبط هستیم، پنجره را برای یافتن سکوت بررسی می‌کنیم
             if (isRecordingRef.current && !stopTimeoutRef.current) {
-                // شمارش تعداد 0ها در آرایه فعلی
                 const silentChunksCount = slidingWindowRef.current.filter((val) => val === 0).length;
 
-                // اگر پنجره پر شده (15 تایی است) و تعداد 0ها حداقل 9 تا است
                 if (
                     slidingWindowRef.current.length === windowSizeChunks &&
                     silentChunksCount >= silenceThresholdChunks
@@ -133,18 +156,17 @@ export const useSpeechSegmenter = ({
                 }
             }
 
-            // ریست کردن متغیرها برای پردازش قطعه 200 میلی‌ثانیه‌ای بعدی
             currentChunkHasSpeechRef.current = false;
             lastChunkTimeRef.current = currentTime;
         }
 
-        // ادامه چرخه بررسی صدا
         animationFrameIdRef.current = requestAnimationFrame(processAudio);
     }, [
         chunkDurationMs,
         windowSizeChunks,
         silenceThresholdChunks,
-        volumeThreshold,
+        calibrationDurationMs,
+        sensitivityOffset,
         startRecording,
         triggerStopRecording
     ]);
@@ -179,8 +201,13 @@ export const useSpeechSegmenter = ({
 
             setIsListening(true);
 
-            // مقداردهی اولیه برای شروع حلقه
-            lastChunkTimeRef.current = Date.now();
+            // مقداردهی اولیه برای فاز کالیبراسیون
+            isCalibratingRef.current = true;
+            setIsCalibrating(true);
+            calibrationStartTimeRef.current = Date.now();
+            calibrationSamplesRef.current = [];
+
+            // مقداردهی اولیه برای حلقه اصلی
             currentChunkHasSpeechRef.current = false;
             slidingWindowRef.current = [];
 
@@ -208,6 +235,8 @@ export const useSpeechSegmenter = ({
             audioContextRef.current.close();
         }
         setIsListening(false);
+        setIsCalibrating(false);
+        isCalibratingRef.current = false;
     }, [finalizeStopRecording]);
 
     useEffect(() => {
@@ -217,6 +246,7 @@ export const useSpeechSegmenter = ({
     return {
         isListening,
         isRecording,
+        isCalibrating,
         audioSegments,
         startListening,
         stopListening,
