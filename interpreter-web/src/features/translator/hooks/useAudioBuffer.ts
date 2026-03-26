@@ -1,18 +1,25 @@
 ﻿import { useState, useRef, useCallback, useEffect } from 'react';
 
+// اضافه کردن webkitAudioContext به تایپ‌های سراسری Window برای رفع خطای any
+declare global {
+    interface Window {
+        webkitAudioContext?: typeof AudioContext;
+    }
+}
+
 interface UseSpeechSegmenterOptions {
-    chunkDurationMs?: number;      // طول هر قطعه: 200 میلی‌ثانیه
-    windowSizeChunks?: number;     // تعداد کل قطعات پنجره لغزان: 15
-    silenceThresholdChunks?: number; // حداقل تعداد 0ها برای قطع صدا: 9
-    postRollMs?: number;           // زمان اضافه در انتهای ضبط برای جلوگیری از بریده شدن
-    calibrationDurationMs?: number; // زمان کالیبراسیون اولیه برای تشخیص نویز محیط (مثلا 2000 میلی‌ثانیه)
-    sensitivityOffset?: number;    // حاشیه حساسیت بالاتر از کف نویز برای تشخیص صحبت (مثلا 5 واحد)
+    chunkDurationMs?: number;
+    windowSizeChunks?: number;
+    silenceThresholdChunks?: number;
+    postRollMs?: number;
+    calibrationDurationMs?: number;
+    sensitivityOffset?: number;
 }
 
 interface UseSpeechSegmenterReturn {
     isListening: boolean;
     isRecording: boolean;
-    isCalibrating: boolean;        // وضعیت جدید برای نمایش در UI حین کالیبره کردن
+    isCalibrating: boolean;
     audioSegments: Blob[];
     startListening: () => Promise<void>;
     stopListening: () => void;
@@ -46,13 +53,15 @@ export const useSpeechSegmenter = ({
     const lastChunkTimeRef = useRef<number>(0);
     const currentChunkHasSpeechRef = useRef<boolean>(false);
     const slidingWindowRef = useRef<number[]>([]);
-    const stopTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // رفع خطای TS2503 با استفاده از ReturnType
+    const stopTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Calibration Refs
     const isCalibratingRef = useRef<boolean>(false);
     const calibrationStartTimeRef = useRef<number>(0);
     const calibrationSamplesRef = useRef<number[]>([]);
-    const dynamicThresholdRef = useRef<number>(15); // مقدار پیش‌فرض که بعد از کالیبره آپدیت می‌شود
+    const dynamicThresholdRef = useRef<number>(15);
 
     const startRecording = useCallback(() => {
         if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'inactive') {
@@ -88,79 +97,75 @@ export const useSpeechSegmenter = ({
     }, [finalizeStopRecording, postRollMs]);
 
     const processAudio = useCallback(() => {
-        if (!analyserRef.current) return;
+        // رفع خطای ESLint با تعریف یک تابع داخلی برای ایجاد حلقه پردازش
+        const analyzeFrame = () => {
+            if (!analyserRef.current) return;
 
-        const bufferLength = analyserRef.current.frequencyBinCount;
-        const dataArray = new Uint8Array(bufferLength);
-        analyserRef.current.getByteFrequencyData(dataArray);
+            const bufferLength = analyserRef.current.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            analyserRef.current.getByteFrequencyData(dataArray);
 
-        const sum = dataArray.reduce((a, b) => a + b, 0);
-        const averageVolume = sum / bufferLength;
-        const currentTime = Date.now();
+            const sum = dataArray.reduce((a, b) => a + b, 0);
+            const averageVolume = sum / bufferLength;
+            const currentTime = Date.now();
 
-        // ----------------------------------------------------
-        // فاز کالیبراسیون (اندازه‌گیری کف نویز)
-        // ----------------------------------------------------
-        if (isCalibratingRef.current) {
-            calibrationSamplesRef.current.push(averageVolume);
+            if (isCalibratingRef.current) {
+                calibrationSamplesRef.current.push(averageVolume);
 
-            // اگر زمان کالیبراسیون تمام شد
-            if (currentTime - calibrationStartTimeRef.current >= calibrationDurationMs) {
-                // محاسبه میانگین نویز محیط
-                const noiseSum = calibrationSamplesRef.current.reduce((a, b) => a + b, 0);
-                const noiseFloor = noiseSum / calibrationSamplesRef.current.length;
+                if (currentTime - calibrationStartTimeRef.current >= calibrationDurationMs) {
+                    const noiseSum = calibrationSamplesRef.current.reduce((a, b) => a + b, 0);
+                    const noiseFloor = noiseSum / calibrationSamplesRef.current.length;
 
-                // تنظیم حد آستانه دینامیک بر اساس نویز محیط + حساسیت
-                dynamicThresholdRef.current = noiseFloor + sensitivityOffset;
+                    dynamicThresholdRef.current = noiseFloor + sensitivityOffset;
 
-                isCalibratingRef.current = false;
-                setIsCalibrating(false);
-                lastChunkTimeRef.current = currentTime; // شروع زمان‌بندی قطعات بعد از کالیبره
+                    isCalibratingRef.current = false;
+                    setIsCalibrating(false);
+                    lastChunkTimeRef.current = currentTime;
+                }
+
+                animationFrameIdRef.current = requestAnimationFrame(analyzeFrame);
+                return;
             }
 
-            animationFrameIdRef.current = requestAnimationFrame(processAudio);
-            return; // خروج از تابع تا زمانی که کالیبراسیون تمام شود
-        }
+            if (averageVolume > dynamicThresholdRef.current) {
+                currentChunkHasSpeechRef.current = true;
 
-        // ----------------------------------------------------
-        // فاز تشخیص صحبت (بر اساس آستانه دینامیک محاسبه شده)
-        // ----------------------------------------------------
-        if (averageVolume > dynamicThresholdRef.current) {
-            currentChunkHasSpeechRef.current = true;
-
-            if (!isRecordingRef.current) {
-                startRecording();
-            } else if (stopTimeoutRef.current) {
-                clearTimeout(stopTimeoutRef.current);
-                stopTimeoutRef.current = null;
-            }
-        }
-
-        // پردازش پنجره لغزان
-        if (currentTime - lastChunkTimeRef.current >= chunkDurationMs) {
-            const chunkStatus = currentChunkHasSpeechRef.current ? 1 : 0;
-            slidingWindowRef.current.push(chunkStatus);
-
-            if (slidingWindowRef.current.length > windowSizeChunks) {
-                slidingWindowRef.current.shift();
-            }
-
-            if (isRecordingRef.current && !stopTimeoutRef.current) {
-                const silentChunksCount = slidingWindowRef.current.filter((val) => val === 0).length;
-
-                if (
-                    slidingWindowRef.current.length === windowSizeChunks &&
-                    silentChunksCount >= silenceThresholdChunks
-                ) {
-                    triggerStopRecording();
+                if (!isRecordingRef.current) {
+                    startRecording();
+                } else if (stopTimeoutRef.current) {
+                    clearTimeout(stopTimeoutRef.current);
+                    stopTimeoutRef.current = null;
                 }
             }
 
-            currentChunkHasSpeechRef.current = false;
-            lastChunkTimeRef.current = currentTime;
-        }
+            if (currentTime - lastChunkTimeRef.current >= chunkDurationMs) {
+                const chunkStatus = currentChunkHasSpeechRef.current ? 1 : 0;
+                slidingWindowRef.current.push(chunkStatus);
 
-        animationFrameIdRef.current = requestAnimationFrame(processAudio);
+                if (slidingWindowRef.current.length > windowSizeChunks) {
+                    slidingWindowRef.current.shift();
+                }
+
+                if (isRecordingRef.current && !stopTimeoutRef.current) {
+                    const silentChunksCount = slidingWindowRef.current.filter((val) => val === 0).length;
+
+                    if (
+                        slidingWindowRef.current.length === windowSizeChunks &&
+                        silentChunksCount >= silenceThresholdChunks
+                    ) {
+                        triggerStopRecording();
+                    }
+                }
+
+                currentChunkHasSpeechRef.current = false;
+                lastChunkTimeRef.current = currentTime;
+            }
+
+            animationFrameIdRef.current = requestAnimationFrame(analyzeFrame);
+        };
+
+        // شروع حلقه
+        analyzeFrame();
     }, [
         chunkDurationMs,
         windowSizeChunks,
@@ -177,8 +182,11 @@ export const useSpeechSegmenter = ({
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             mediaStreamRef.current = stream;
 
-            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+            // استفاده از AudioContext ایمن بدون خطای any
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            const audioContext = new AudioContextClass!();
             audioContextRef.current = audioContext;
+
             const source = audioContext.createMediaStreamSource(stream);
             const analyser = audioContext.createAnalyser();
             analyser.fftSize = 512;
@@ -201,13 +209,11 @@ export const useSpeechSegmenter = ({
 
             setIsListening(true);
 
-            // مقداردهی اولیه برای فاز کالیبراسیون
             isCalibratingRef.current = true;
             setIsCalibrating(true);
             calibrationStartTimeRef.current = Date.now();
             calibrationSamplesRef.current = [];
 
-            // مقداردهی اولیه برای حلقه اصلی
             currentChunkHasSpeechRef.current = false;
             slidingWindowRef.current = [];
 
