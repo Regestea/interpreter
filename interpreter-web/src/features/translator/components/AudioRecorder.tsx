@@ -1,97 +1,86 @@
 ﻿import React from 'react';
-import {useSpeechSegmenter} from "../hooks/useAudioBuffer.ts";
+import {useSpeechSegmenter} from "../hooks/useSpeechSegmenter.ts";
 
-const AudioRecorderComponent: React.FC = () => {
+const SpeechDictation: React.FC = () => {
+    // ۱. فراخوانی هوک و استخراج مقادیر
+    // شما می‌توانید تنظیمات دلخواه خود را به عنوان ورودی پاس دهید (اختیاری)
     const {
         isListening,
         isRecording,
+        isCalibrating,
         audioSegments,
         startListening,
         stopListening,
         error,
     } = useSpeechSegmenter({
-        silenceDurationMs: 3000,
-        volumeThreshold: 15,
+        chunkDurationMs: 200,      // تنظیمات دلخواه (اختیاری)
+        silenceThresholdChunks: 8,
+        // تنظیمات دلخواه (اختیاری)
     });
 
     return (
-        <div style={{ padding: '20px', fontFamily: 'sans-serif', direction: 'rtl' }}>
-            <h2>ضبط هوشمند دیالوگ‌ها</h2>
+        <div style={{ padding: '20px', fontFamily: 'sans-serif', maxWidth: '600px', margin: '0 auto' }}>
+            <h2>Speech Segmentation Dictation</h2>
 
-            {error && <p style={{ color: 'red' }}>{error}</p>}
-
-            <div style={{ marginBottom: '20px' }}>
+            {/* ۲. بخش کنترل‌ها (دکمه‌های شروع و پایان) */}
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
                 <button
-                    onClick={isListening ? stopListening : startListening}
-                    style={{
-                        padding: '10px 20px',
-                        backgroundColor: isListening ? '#f44336' : '#4CAF50',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '5px',
-                        cursor: 'pointer',
-                        fontSize: '16px'
-                    }}
+                    onClick={startListening}
+                    disabled={isListening}
+                    style={{ padding: '10px 20px', cursor: isListening ? 'not-allowed' : 'pointer' }}
                 >
-                    {isListening ? 'توقف شنود میکروفون' : 'شروع شنود میکروفون'}
+                    Start Listening
+                </button>
+
+                <button
+                    onClick={stopListening}
+                    disabled={!isListening}
+                    style={{ padding: '10px 20px', cursor: !isListening ? 'not-allowed' : 'pointer' }}
+                >
+                    Stop Listening
                 </button>
             </div>
 
-            <div style={{ marginBottom: '30px' }}>
-                <strong>وضعیت سیستم: </strong>
-                {isListening ? (
-                    <span style={{ color: isRecording ? '#4CAF50' : '#FF9800', fontWeight: 'bold' }}>
-            {isRecording ? 'در حال ضبط صحبت...' : 'در انتظار صحبت (سکوت)...'}
-          </span>
-                ) : (
-                    <span style={{ color: 'gray' }}>خاموش</span>
-                )}
+            {/* ۳. بخش نمایش وضعیت (Status) */}
+            <div style={{ marginBottom: '20px', padding: '10px', backgroundColor: '#f0f0f0', borderRadius: '5px' }}>
+                <strong>System Status: </strong>
+                {!isListening && <span>🔴 Offline (Press Start)</span>}
+                {isListening && isCalibrating && <span style={{ color: 'orange' }}>⚙️ Calibrating Environment Noise... Please be quiet.</span>}
+                {isListening && !isCalibrating && !isRecording && <span style={{ color: 'blue' }}>🟢 Listening... (Waiting for speech)</span>}
+                {isListening && !isCalibrating && isRecording && <span style={{ color: 'red' }}>🎙️ Recording Speech...</span>}
             </div>
 
-            <div>
-                <h3>دیالوگ‌های ضبط شده ({audioSegments.length})</h3>
-
-                {/* کانتینر ردیفی برای نمایش تکه صداها */}
-                <div
-                    style={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: '20px',
-                        marginTop: '15px'
-                    }}
-                >
-                    {audioSegments.map((blob, index) => {
-                        const url = URL.createObjectURL(blob);
-                        return (
-                            <div
-                                key={index}
-                                style={{
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    padding: '15px',
-                                    border: '1px solid #ddd',
-                                    borderRadius: '8px',
-                                    backgroundColor: '#f9f9f9',
-                                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-                                }}
-                            >
-                <span style={{ marginBottom: '10px', fontWeight: 'bold' }}>
-                  قطعه $ {index + 1} $
-                </span>
-                                {/* پلیر پخش صدا */}
-                                <audio controls src={url} style={{ width: '250px' }} />
-                            </div>
-                        );
-                    })}
+            {/* ۴. نمایش خطا در صورت عدم دسترسی به میکروفون */}
+            {error && (
+                <div style={{ color: 'red', marginBottom: '20px' }}>
+                    <strong>Error:</strong> {error}
                 </div>
+            )}
 
-                {audioSegments.length === 0 && (
-                    <p style={{ color: '#888' }}>هنوز هیچ دیالوگی ضبط نشده است.</p>
+            {/* ۵. لیست قطعات صوتی ضبط شده */}
+            <div>
+                <h3>Recorded Segments ({audioSegments.length})</h3>
+                {audioSegments.length === 0 ? (
+                    <p style={{ color: 'gray' }}>No audio segments recorded yet.</p>
+                ) : (
+                    <ul style={{ listStyleType: 'none', padding: 0 }}>
+                        {audioSegments.map((blob, index) => {
+                            // ساخت یک URL موقت برای پخش فایل صوتی در مرورگر
+                            const audioUrl = URL.createObjectURL(blob);
+
+                            return (
+                                <li key={index} style={{ marginBottom: '15px', padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }}>
+                                    <div style={{ marginBottom: '5px' }}>Segment #{index + 1}</div>
+                                    {/* تگ audio برای پخش صدای ضبط شده */}
+                                    <audio src={audioUrl} controls style={{ width: '100%' }} />
+                                </li>
+                            );
+                        })}
+                    </ul>
                 )}
             </div>
         </div>
     );
 };
 
-export default AudioRecorderComponent;
+export default SpeechDictation;
