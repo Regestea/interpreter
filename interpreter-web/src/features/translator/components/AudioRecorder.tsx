@@ -16,8 +16,12 @@ const SpeechDictation: React.FC = () => {
         stopListening,
         error,
     } = useSpeechSegmenter({
-        chunkDurationMs: 200,
-        silenceThresholdChunks: 8,
+        chunkDurationMs: 100, 
+        windowSizeChunks: 15, 
+        silenceThresholdChunks: 6,
+        postRollMs: 400,
+        calibrationDurationMs: 2000,
+        sensitivityOffset: 5,
         onSegmentReady: handleSegmentReady,
     });
 
