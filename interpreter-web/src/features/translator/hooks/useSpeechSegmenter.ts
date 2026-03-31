@@ -39,9 +39,9 @@ export const useSpeechSegmenter = (
 ): UseSpeechSegmenterReturn => {
     const config = { ...DEFAULT_SEGMENTER_CONFIG, ...options };
 
-    const [isListening, setIsListening] = useState<boolean>(false);
-    const [isRecording, setIsRecording] = useState<boolean>(false);
-    const [isCalibrating, setIsCalibrating] = useState<boolean>(false);
+    const [isListening, setIsListening] = useState(false);
+    const [isRecording, setIsRecording] = useState(false);
+    const [isCalibrating, setIsCalibrating] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const audioContextRef = useRef<AudioContext | null>(null);
@@ -50,20 +50,20 @@ export const useSpeechSegmenter = (
     const analyserRef = useRef<AnalyserNode | null>(null);
     const animationFrameIdRef = useRef<number | null>(null);
 
-    const isRecordingRef = useRef<boolean>(false);
+    const isRecordingRef = useRef(false);
     const audioChunksRef = useRef<Blob[]>([]);
-    const lastChunkTimeRef = useRef<number>(0);
-    const currentChunkHasSpeechRef = useRef<boolean>(false);
+    const lastChunkTimeRef = useRef(0);
+    const currentChunkHasSpeechRef = useRef(false);
     const slidingWindowRef = useRef<number[]>([]);
     const stopTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const isCalibratingRef = useRef<boolean>(false);
-    const calibrationStartTimeRef = useRef<number>(0);
+    const isCalibratingRef = useRef(false);
+    const calibrationStartTimeRef = useRef(0);
     const calibrationSamplesRef = useRef<number[]>([]);
-    const dynamicThresholdRef = useRef<number>(15);
+    const dynamicThresholdRef = useRef(15);
 
     const startRecording = useCallback(() => {
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'inactive') {
+        if (mediaRecorderRef.current?.state === 'inactive') {
             audioChunksRef.current = [];
             mediaRecorderRef.current.start();
             isRecordingRef.current = true;
@@ -73,11 +73,12 @@ export const useSpeechSegmenter = (
             if (stopTimeoutRef.current) {
                 clearTimeout(stopTimeoutRef.current);
                 stopTimeoutRef.current = null;
-            }}
+            }
+        }
     }, []);
 
     const finalizeStopRecording = useCallback(() => {
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        if (mediaRecorderRef.current?.state === 'recording') {
             mediaRecorderRef.current.stop();
             isRecordingRef.current = false;
             setIsRecording(false);
@@ -89,29 +90,27 @@ export const useSpeechSegmenter = (
         if (stopTimeoutRef.current) return;
 
         stopTimeoutRef.current = setTimeout(() => {
-            finalizeStopRecording();stopTimeoutRef.current = null;
+            finalizeStopRecording();
+            stopTimeoutRef.current = null;
         }, config.postRollMs);
     }, [finalizeStopRecording, config.postRollMs]);
 
     const processAudio = useCallback(() => {
+        const dataArray = new Uint8Array(analyserRef.current?.frequencyBinCount || 0);
+
         const analyzeFrame = () => {
             if (!analyserRef.current) return;
 
-            const bufferLength = analyserRef.current.frequencyBinCount;
-            const dataArray = new Uint8Array(bufferLength);
             analyserRef.current.getByteFrequencyData(dataArray);
 
-            const sum = dataArray.reduce((acc, val) => acc + val, 0);
-            const averageVolume = sum / bufferLength;
+            const averageVolume = dataArray.reduce((acc, val) => acc + val, 0) / dataArray.length;
             const currentTime = Date.now();
 
             if (isCalibratingRef.current) {
                 calibrationSamplesRef.current.push(averageVolume);
 
                 if (currentTime - calibrationStartTimeRef.current >= config.calibrationDurationMs) {
-                    const noiseSum = calibrationSamplesRef.current.reduce((acc, val) => acc + val, 0);
-                    const noiseFloor = noiseSum / calibrationSamplesRef.current.length;
-
+                    const noiseFloor = calibrationSamplesRef.current.reduce((acc, val) => acc + val, 0) / calibrationSamplesRef.current.length;
                     dynamicThresholdRef.current = noiseFloor + config.sensitivityOffset;
 
                     isCalibratingRef.current = false;
@@ -135,20 +134,16 @@ export const useSpeechSegmenter = (
             }
 
             if (currentTime - lastChunkTimeRef.current >= config.chunkDurationMs) {
-                const chunkStatus = currentChunkHasSpeechRef.current ? 1 : 0;
-                slidingWindowRef.current.push(chunkStatus);
+                slidingWindowRef.current.push(currentChunkHasSpeechRef.current ? 1 : 0);
 
                 if (slidingWindowRef.current.length > config.windowSizeChunks) {
                     slidingWindowRef.current.shift();
                 }
 
                 if (isRecordingRef.current && !stopTimeoutRef.current) {
-                    const silentChunksCount = slidingWindowRef.current.filter((val) => val === 0).length;
+                    const silentChunksCount = slidingWindowRef.current.filter(val => val === 0).length;
 
-                    if (
-                        slidingWindowRef.current.length === config.windowSizeChunks &&
-                        silentChunksCount >= config.silenceThresholdChunks
-                    ) {
+                    if (slidingWindowRef.current.length === config.windowSizeChunks && silentChunksCount >= config.silenceThresholdChunks) {
                         triggerStopRecording();
                     }
                 }
@@ -161,33 +156,34 @@ export const useSpeechSegmenter = (
         };
 
         analyzeFrame();
-    }, [
-        config.chunkDurationMs,
-        config.windowSizeChunks,
-        config.silenceThresholdChunks,
-        config.calibrationDurationMs,
-        config.sensitivityOffset,
-        startRecording,
-        triggerStopRecording,
-    ]);
+    }, [config, startRecording, triggerStopRecording]);
 
-    const startListening = async () => {
+    const startListening = useCallback(async () => {
         setError(null);
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             mediaStreamRef.current = stream;
 
             const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-            const audioContext = new AudioContextClass!();
+            if (!AudioContextClass) {
+                throw new Error('AudioContext not supported');
+            }
+
+            const audioContext = new AudioContextClass();
             audioContextRef.current = audioContext;
 
             const source = audioContext.createMediaStreamSource(stream);
             const analyser = audioContext.createAnalyser();
             analyser.fftSize = 512;
+            analyser.smoothingTimeConstant = 0.8;
             source.connect(analyser);
             analyserRef.current = analyser;
 
-            const mediaRecorder = new MediaRecorder(stream);
+            const mediaRecorder = new MediaRecorder(stream, {
+                mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+                    ? 'audio/webm;codecs=opus'
+                    : 'audio/webm'
+            });
             mediaRecorderRef.current = mediaRecorder;
 
             mediaRecorder.ondataavailable = (event) => {
@@ -197,44 +193,47 @@ export const useSpeechSegmenter = (
             };
 
             mediaRecorder.onstop = () => {
-                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-                if (options.onSegmentReady) {
-                    options.onSegmentReady(audioBlob);
-                }
+                const audioBlob = new Blob(audioChunksRef.current, {
+                    type: mediaRecorder.mimeType
+                });
+                options.onSegmentReady?.(audioBlob);
             };
 
             setIsListening(true);
-
             isCalibratingRef.current = true;
             setIsCalibrating(true);
             calibrationStartTimeRef.current = Date.now();
             calibrationSamplesRef.current = [];
-
             currentChunkHasSpeechRef.current = false;
             slidingWindowRef.current = [];
 
             processAudio();
         } catch (err) {
-            setError('Microphone access denied or an error occurred.');
+            const errorMessage = err instanceof Error ? err.message : 'Microphone access denied or an error occurred.';
+            setError(errorMessage);
             console.error(err);
         }
-    };
+    }, [options, processAudio]);
 
     const stopListening = useCallback(() => {
         if (animationFrameIdRef.current) {
             cancelAnimationFrame(animationFrameIdRef.current);
+            animationFrameIdRef.current = null;
         }
         if (stopTimeoutRef.current) {
             clearTimeout(stopTimeoutRef.current);
+            stopTimeoutRef.current = null;
         }
         if (isRecordingRef.current) {
             finalizeStopRecording();
         }
         if (mediaStreamRef.current) {
-            mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+            mediaStreamRef.current.getTracks().forEach(track => track.stop());
+            mediaStreamRef.current = null;
         }
-        if (audioContextRef.current) {
-            audioContextRef.current.close();
+        if (audioContextRef.current?.state !== 'closed') {
+            audioContextRef.current?.close();
+            audioContextRef.current = null;
         }
 
         setIsListening(false);
