@@ -1,23 +1,18 @@
 ﻿import { useState, useRef, useCallback, useEffect } from 'react';
 
-// Make webkitAudioContext available globally to prevent TypeScript 'any' errors
 declare global {
     interface Window {
         webkitAudioContext?: typeof AudioContext;
     }
 }
 
-// ============================================================================
-// CORE CONFIGURATION
-// Modify these default values to fine-tune Voice Activity Detection (VAD)
-// ============================================================================
 export const DEFAULT_SEGMENTER_CONFIG = {
-    chunkDurationMs: 200,          // Duration of a single sliding window chunk
-    windowSizeChunks: 15,          // Total chunks in the window (e.g., 15 * 200ms = 3000ms)
-    silenceThresholdChunks: 9,     // Minimum silent chunks needed to trigger recording stop
-    postRollMs: 500,               // Delay before stopping to prevent cutting off the last word
-    calibrationDurationMs: 2000,   // Initial duration to measure the ambient noise floor
-    sensitivityOffset: 5,          // Buffer added to the noise floor to determine speech threshold
+    chunkDurationMs: 200,
+    windowSizeChunks: 15,
+    silenceThresholdChunks: 9,
+    postRollMs: 500,
+    calibrationDurationMs: 2000,
+    sensitivityOffset: 5,
 };
 
 interface UseSpeechSegmenterOptions {
@@ -27,13 +22,13 @@ interface UseSpeechSegmenterOptions {
     postRollMs?: number;
     calibrationDurationMs?: number;
     sensitivityOffset?: number;
+    onSegmentReady?: (segment: Blob) => void;
 }
 
 interface UseSpeechSegmenterReturn {
     isListening: boolean;
     isRecording: boolean;
     isCalibrating: boolean;
-    audioSegments: Blob[];
     startListening: () => Promise<void>;
     stopListening: () => void;
     error: string | null;
@@ -42,30 +37,19 @@ interface UseSpeechSegmenterReturn {
 export const useSpeechSegmenter = (
     options: UseSpeechSegmenterOptions = {}
 ): UseSpeechSegmenterReturn => {
-    // Merge user options with default configurations
     const config = { ...DEFAULT_SEGMENTER_CONFIG, ...options };
 
-    // --------------------------------------------------------------------------
-    // States
-    // --------------------------------------------------------------------------
     const [isListening, setIsListening] = useState<boolean>(false);
     const [isRecording, setIsRecording] = useState<boolean>(false);
     const [isCalibrating, setIsCalibrating] = useState<boolean>(false);
-    const [audioSegments, setAudioSegments] = useState<Blob[]>([]);
     const [error, setError] = useState<string | null>(null);
 
-    // --------------------------------------------------------------------------
-    // Media & Audio Node Refs
-    // --------------------------------------------------------------------------
     const audioContextRef = useRef<AudioContext | null>(null);
     const mediaStreamRef = useRef<MediaStream | null>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const analyserRef = useRef<AnalyserNode | null>(null);
     const animationFrameIdRef = useRef<number | null>(null);
 
-    // --------------------------------------------------------------------------
-    // Recording & VAD Refs
-    // --------------------------------------------------------------------------
     const isRecordingRef = useRef<boolean>(false);
     const audioChunksRef = useRef<Blob[]>([]);
     const lastChunkTimeRef = useRef<number>(0);
@@ -73,17 +57,10 @@ export const useSpeechSegmenter = (
     const slidingWindowRef = useRef<number[]>([]);
     const stopTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    // --------------------------------------------------------------------------
-    // Calibration Refs
-    // --------------------------------------------------------------------------
     const isCalibratingRef = useRef<boolean>(false);
     const calibrationStartTimeRef = useRef<number>(0);
     const calibrationSamplesRef = useRef<number[]>([]);
-    const dynamicThresholdRef = useRef<number>(15); // Fallback threshold
-
-    // ============================================================================
-    // Recording Controllers
-    // ============================================================================
+    const dynamicThresholdRef = useRef<number>(15);
 
     const startRecording = useCallback(() => {
         if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'inactive') {
@@ -96,8 +73,7 @@ export const useSpeechSegmenter = (
             if (stopTimeoutRef.current) {
                 clearTimeout(stopTimeoutRef.current);
                 stopTimeoutRef.current = null;
-            }
-        }
+            }}
     }, []);
 
     const finalizeStopRecording = useCallback(() => {
@@ -113,14 +89,9 @@ export const useSpeechSegmenter = (
         if (stopTimeoutRef.current) return;
 
         stopTimeoutRef.current = setTimeout(() => {
-            finalizeStopRecording();
-            stopTimeoutRef.current = null;
+            finalizeStopRecording();stopTimeoutRef.current = null;
         }, config.postRollMs);
     }, [finalizeStopRecording, config.postRollMs]);
-
-    // ============================================================================
-    // Core Audio Processing Loop
-    // ============================================================================
 
     const processAudio = useCallback(() => {
         const analyzeFrame = () => {
@@ -134,7 +105,6 @@ export const useSpeechSegmenter = (
             const averageVolume = sum / bufferLength;
             const currentTime = Date.now();
 
-            // --- Phase 1: Environmental Noise Calibration ---
             if (isCalibratingRef.current) {
                 calibrationSamplesRef.current.push(averageVolume);
 
@@ -142,7 +112,6 @@ export const useSpeechSegmenter = (
                     const noiseSum = calibrationSamplesRef.current.reduce((acc, val) => acc + val, 0);
                     const noiseFloor = noiseSum / calibrationSamplesRef.current.length;
 
-                    // Set dynamic threshold based on calculated noise floor
                     dynamicThresholdRef.current = noiseFloor + config.sensitivityOffset;
 
                     isCalibratingRef.current = false;
@@ -151,10 +120,9 @@ export const useSpeechSegmenter = (
                 }
 
                 animationFrameIdRef.current = requestAnimationFrame(analyzeFrame);
-                return; // Skip VAD processing until calibration is complete
+                return;
             }
 
-            // --- Phase 2: Voice Activity Detection (VAD) ---
             if (averageVolume > dynamicThresholdRef.current) {
                 currentChunkHasSpeechRef.current = true;
 
@@ -166,17 +134,14 @@ export const useSpeechSegmenter = (
                 }
             }
 
-            // --- Phase 3: Sliding Window Processing ---
             if (currentTime - lastChunkTimeRef.current >= config.chunkDurationMs) {
                 const chunkStatus = currentChunkHasSpeechRef.current ? 1 : 0;
                 slidingWindowRef.current.push(chunkStatus);
 
-                // Maintain the fixed window size
                 if (slidingWindowRef.current.length > config.windowSizeChunks) {
                     slidingWindowRef.current.shift();
                 }
 
-                // Evaluate stop condition based on silence threshold
                 if (isRecordingRef.current && !stopTimeoutRef.current) {
                     const silentChunksCount = slidingWindowRef.current.filter((val) => val === 0).length;
 
@@ -188,12 +153,10 @@ export const useSpeechSegmenter = (
                     }
                 }
 
-                // Reset for the next chunk
                 currentChunkHasSpeechRef.current = false;
                 lastChunkTimeRef.current = currentTime;
             }
 
-            // Queue next frame
             animationFrameIdRef.current = requestAnimationFrame(analyzeFrame);
         };
 
@@ -208,17 +171,12 @@ export const useSpeechSegmenter = (
         triggerStopRecording,
     ]);
 
-    // ============================================================================
-    // Initialization & Cleanup
-    // ============================================================================
-
     const startListening = async () => {
         setError(null);
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             mediaStreamRef.current = stream;
 
-            // Cross-browser AudioContext initialization
             const AudioContextClass = window.AudioContext || window.webkitAudioContext;
             const audioContext = new AudioContextClass!();
             audioContextRef.current = audioContext;
@@ -240,18 +198,18 @@ export const useSpeechSegmenter = (
 
             mediaRecorder.onstop = () => {
                 const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-                setAudioSegments((prev) => [...prev, audioBlob]);
+                if (options.onSegmentReady) {
+                    options.onSegmentReady(audioBlob);
+                }
             };
 
             setIsListening(true);
 
-            // Initialize Calibration State
             isCalibratingRef.current = true;
             setIsCalibrating(true);
             calibrationStartTimeRef.current = Date.now();
             calibrationSamplesRef.current = [];
 
-            // Initialize VAD State
             currentChunkHasSpeechRef.current = false;
             slidingWindowRef.current = [];
 
@@ -292,7 +250,6 @@ export const useSpeechSegmenter = (
         isListening,
         isRecording,
         isCalibrating,
-        audioSegments,
         startListening,
         stopListening,
         error,
