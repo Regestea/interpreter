@@ -37,7 +37,16 @@ interface UseSpeechSegmenterReturn {
 export const useSpeechSegmenter = (
     options: UseSpeechSegmenterOptions = {}
 ): UseSpeechSegmenterReturn => {
-    const config = { ...DEFAULT_SEGMENTER_CONFIG, ...options };
+    // Destructuring با مقادیر پیش‌فرض برای جلوگیری از رندرهای اضافی
+    const {
+        chunkDurationMs = DEFAULT_SEGMENTER_CONFIG.chunkDurationMs,
+        windowSizeChunks = DEFAULT_SEGMENTER_CONFIG.windowSizeChunks,
+        silenceThresholdChunks = DEFAULT_SEGMENTER_CONFIG.silenceThresholdChunks,
+        postRollMs = DEFAULT_SEGMENTER_CONFIG.postRollMs,
+        calibrationDurationMs = DEFAULT_SEGMENTER_CONFIG.calibrationDurationMs,
+        sensitivityOffset = DEFAULT_SEGMENTER_CONFIG.sensitivityOffset,
+        onSegmentReady
+    } = options;
 
     const [isListening, setIsListening] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
@@ -92,8 +101,8 @@ export const useSpeechSegmenter = (
         stopTimeoutRef.current = setTimeout(() => {
             finalizeStopRecording();
             stopTimeoutRef.current = null;
-        }, config.postRollMs);
-    }, [finalizeStopRecording, config.postRollMs]);
+        }, postRollMs);
+    }, [finalizeStopRecording, postRollMs]);
 
     const processAudio = useCallback(() => {
         const dataArray = new Uint8Array(analyserRef.current?.frequencyBinCount || 0);
@@ -103,15 +112,27 @@ export const useSpeechSegmenter = (
 
             analyserRef.current.getByteFrequencyData(dataArray);
 
-            const averageVolume = dataArray.reduce((acc, val) => acc + val, 0) / dataArray.length;
+            // محاسبه بهینه میانگین صدا با حلقه for
+            let sum = 0;
+            const length = dataArray.length;
+            for (let i = 0; i < length; i++) {
+                sum += dataArray[i];
+            }
+            const averageVolume = sum / length;
             const currentTime = Date.now();
 
             if (isCalibratingRef.current) {
                 calibrationSamplesRef.current.push(averageVolume);
 
-                if (currentTime - calibrationStartTimeRef.current >= config.calibrationDurationMs) {
-                    const noiseFloor = calibrationSamplesRef.current.reduce((acc, val) => acc + val, 0) / calibrationSamplesRef.current.length;
-                    dynamicThresholdRef.current = noiseFloor + config.sensitivityOffset;
+                if (currentTime - calibrationStartTimeRef.current >= calibrationDurationMs) {
+                    let calSum = 0;
+                    for (let i = 0; i < calibrationSamplesRef.current.length; i++) {
+                        calSum += calibrationSamplesRef.current[i];
+                    }
+                    const noiseFloor = calSum / calibrationSamplesRef.current.length;
+
+                    // فرمول آستانه نویز: $Threshold = NoiseFloor + Offset$
+                    dynamicThresholdRef.current = noiseFloor + sensitivityOffset;
 
                     isCalibratingRef.current = false;
                     setIsCalibrating(false);
@@ -133,17 +154,20 @@ export const useSpeechSegmenter = (
                 }
             }
 
-            if (currentTime - lastChunkTimeRef.current >= config.chunkDurationMs) {
+            if (currentTime - lastChunkTimeRef.current >= chunkDurationMs) {
                 slidingWindowRef.current.push(currentChunkHasSpeechRef.current ? 1 : 0);
 
-                if (slidingWindowRef.current.length > config.windowSizeChunks) {
+                if (slidingWindowRef.current.length > windowSizeChunks) {
                     slidingWindowRef.current.shift();
                 }
 
                 if (isRecordingRef.current && !stopTimeoutRef.current) {
-                    const silentChunksCount = slidingWindowRef.current.filter(val => val === 0).length;
+                    let silentChunksCount = 0;
+                    for (let i = 0; i < slidingWindowRef.current.length; i++) {
+                        if (slidingWindowRef.current[i] === 0) silentChunksCount++;
+                    }
 
-                    if (slidingWindowRef.current.length === config.windowSizeChunks && silentChunksCount >= config.silenceThresholdChunks) {
+                    if (slidingWindowRef.current.length === windowSizeChunks && silentChunksCount >= silenceThresholdChunks) {
                         triggerStopRecording();
                     }
                 }
@@ -156,20 +180,42 @@ export const useSpeechSegmenter = (
         };
 
         analyzeFrame();
-    }, [config, startRecording, triggerStopRecording]);
+    }, [
+        calibrationDurationMs,
+        chunkDurationMs,
+        sensitivityOffset,
+        silenceThresholdChunks,
+        windowSizeChunks,
+        startRecording,
+        triggerStopRecording
+    ]);
 
     const startListening = useCallback(async () => {
+        // Guard Clause برای جلوگیری از اجرای همزمان و نشت حافظه
+        if (isListening || mediaStreamRef.current) return;
+
         setError(null);
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            // ۱. بهینه‌سازی Constraints برای Whisper
+            const audioConstraints: MediaTrackConstraints = {
+                sampleRate: 16000,      // $16 kHz$
+                channelCount: 1,        // Mono ($1$ Channel)
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true
+            };
+
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
             mediaStreamRef.current = stream;
 
             const AudioContextClass = window.AudioContext || window.webkitAudioContext;
             if (!AudioContextClass) {
-                throw new Error('AudioContext not supported');
+                setError('AudioContext not supported in this browser');
+                return;
             }
 
-            const audioContext = new AudioContextClass();
+            // ۲. همگام‌سازی AudioContext با نرخ نمونه‌برداری Whisper
+            const audioContext = new AudioContextClass({ sampleRate: 16000 });
             audioContextRef.current = audioContext;
 
             const source = audioContext.createMediaStreamSource(stream);
@@ -179,11 +225,26 @@ export const useSpeechSegmenter = (
             source.connect(analyser);
             analyserRef.current = analyser;
 
-            const mediaRecorder = new MediaRecorder(stream, {
-                mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-                    ? 'audio/webm;codecs=opus'
-                    : 'audio/webm'
-            });
+            // ۳. انتخاب هوشمندانه فرمت برای پشتیبانی کراس‌پلتفرم (مخصوصاً Safari)
+            let optionsMimeType: string | undefined = undefined;
+            if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+                optionsMimeType = 'audio/webm;codecs=opus';
+            } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+                optionsMimeType = 'audio/webm';
+            } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+                optionsMimeType = 'audio/mp4';
+            }
+
+            // ۴. تنظیم Bitrate بهینه برای کلام
+            const mediaRecorderOptions: MediaRecorderOptions = {
+                audioBitsPerSecond: 32000, // $32 kbps$
+            };
+
+            if (optionsMimeType) {
+                mediaRecorderOptions.mimeType = optionsMimeType;
+            }
+
+            const mediaRecorder = new MediaRecorder(stream, mediaRecorderOptions);
             mediaRecorderRef.current = mediaRecorder;
 
             mediaRecorder.ondataavailable = (event) => {
@@ -193,10 +254,13 @@ export const useSpeechSegmenter = (
             };
 
             mediaRecorder.onstop = () => {
+                const actualMimeType = mediaRecorder.mimeType || 'audio/webm';
                 const audioBlob = new Blob(audioChunksRef.current, {
-                    type: mediaRecorder.mimeType
+                    type: actualMimeType
                 });
-                options.onSegmentReady?.(audioBlob);
+                if (onSegmentReady) {
+                    onSegmentReady(audioBlob);
+                }
             };
 
             setIsListening(true);
@@ -213,7 +277,7 @@ export const useSpeechSegmenter = (
             setError(errorMessage);
             console.error(err);
         }
-    }, [options, processAudio]);
+    }, [isListening, onSegmentReady, processAudio]);
 
     const stopListening = useCallback(() => {
         if (animationFrameIdRef.current) {
@@ -231,8 +295,8 @@ export const useSpeechSegmenter = (
             mediaStreamRef.current.getTracks().forEach(track => track.stop());
             mediaStreamRef.current = null;
         }
-        if (audioContextRef.current?.state !== 'closed') {
-            audioContextRef.current?.close();
+        if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+            audioContextRef.current.close();
             audioContextRef.current = null;
         }
 
@@ -241,6 +305,7 @@ export const useSpeechSegmenter = (
         isCalibratingRef.current = false;
     }, [finalizeStopRecording]);
 
+    // پاکسازی کامل هنگام Unmount شدن کامپوننت
     useEffect(() => {
         return () => stopListening();
     }, [stopListening]);
