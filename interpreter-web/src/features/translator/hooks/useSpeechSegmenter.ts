@@ -237,7 +237,7 @@ export const useSpeechSegmenter = (
 
             // ۴. تنظیم Bitrate بهینه برای کلام
             const mediaRecorderOptions: MediaRecorderOptions = {
-                audioBitsPerSecond: 32000, // $32 kbps$
+                audioBitsPerSecond: 128000, // $128 kbps$
             };
 
             if (optionsMimeType) {
