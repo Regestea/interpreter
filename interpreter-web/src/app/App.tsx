@@ -9,7 +9,7 @@ function App() {
       <>
           <div className="main-container">
               <div className="container-box">
-                  <div className="w-100 h-100">
+                  <div className="w-100 h-100 d-grid">
                       <Outlet />
                   </div>
               </div>

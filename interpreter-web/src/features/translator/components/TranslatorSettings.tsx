@@ -1,10 +1,9 @@
 ﻿import {useNavTranslatorStore} from "../store/translator.store.ts";
 import {appStorage} from "../../../shared/storage/app.storage.ts";
-import {OutputLanguage} from "../../../shared/enums/outputLanguage.enum.ts";
-import {InputLanguage} from "../../../shared/enums/inputLanguage.enum.ts";
 import {useForm} from "react-hook-form";
 import BaseModal from "../../../shared/components/BaseModal.tsx";
-import type {TranslatorSettings} from "../types/translator.types.ts";
+import type {TranslatorSettingsType} from "../types/translator.types.ts";
+
 
 
 export function TranslatorSettings() {
@@ -14,26 +13,16 @@ export function TranslatorSettings() {
 
     const closeModal = () => setIsShowSettings(false);
 
-    let settings:TranslatorSettings | null = appStorage.getData("translator");
-    if (settings == null){
-        settings={
-            inputLanguage: InputLanguage.English,
-            outputLanguage: OutputLanguage.Persian,
-            audioRead: false,
-            ignoreMyTalks: false,
-            voiceTune: "goodvoice"
-        };
-        appStorage.setData("translator",settings);
-    }
+    const settings:TranslatorSettingsType = appStorage.getData("translator");
 
     const {
         register,
         handleSubmit
-    } = useForm<TranslatorSettings>({
+    } = useForm<TranslatorSettingsType>({
         defaultValues: settings
     });
 
-    const onSubmit = (values:TranslatorSettings) => {
+    const onSubmit = (values:TranslatorSettingsType) => {
         console.log(values);
         appStorage.setData("translator",values);
         closeModal();
@@ -53,16 +42,16 @@ export function TranslatorSettings() {
                 <div className="mb-3">
                     <label className="form-label">Input Language</label>
                     <select className="form-select" {...register("inputLanguage")}>
-                        <option value="en">English</option>
-                        <option value="fa">Persian</option>
+                        <option value="EN">English</option>
+                        <option value="FA">Persian</option>
                     </select>
                 </div>
 
                 <div className="mb-3">
                     <label className="form-label">Output Language</label>
                     <select className="form-select" {...register("outputLanguage")}>
-                        <option value="en">English</option>
-                        <option value="fa">Persian</option>
+                        <option value="EN">English</option>
+                        <option value="FA">Persian</option>
                     </select>
                 </div>
 

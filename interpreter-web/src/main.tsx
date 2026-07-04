@@ -7,6 +7,7 @@ import { router } from './app/router.tsx';
 import { StrictMode } from 'react';
 import './index.css';
 
+
 const queryClient = new QueryClient();
 InitializeSettingsService.run();
 
